@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Creator } from '@/types';
 import { getCreatorByUserId, addContentSubmission } from '@/lib/firestore';
-import { SectionCard, Button } from '@/components/ui';
+import { SectionCard, Button, useToast } from '@/components/ui';
 import { CONTENT_DEADLINE_DAYS } from '@/lib/constants';
 import { useAuth } from '@/lib/auth-context';
 import { ProtectedRoute } from '@/components/auth';
@@ -31,6 +31,7 @@ function getFirstName(fullName: string): string {
 
 export default function CreatorDashboardPage() {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [creator, setCreator] = useState<Creator | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -64,7 +65,7 @@ export default function CreatorDashboardPage() {
     if (!creator) return;
 
     if (!newContentUrl.trim()) {
-      setError('Please enter a valid URL');
+      showToast('Please enter a valid URL', 'error');
       return;
     }
 
@@ -75,9 +76,12 @@ export default function CreatorDashboardPage() {
       setNewContentUrl('');
       // Refetch creator data
       await fetchCreator();
+      showToast('Content submitted!', 'success');
     } catch (err) {
       console.error('Error submitting content:', err);
-      setError(err instanceof Error ? err.message : 'Failed to submit content. Please try again.');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to submit content. Please try again.';
+      setError(errorMessage);
+      showToast(errorMessage, 'error');
     } finally {
       setSubmitting(false);
     }

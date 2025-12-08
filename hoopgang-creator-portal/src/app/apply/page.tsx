@@ -8,10 +8,12 @@ import { CreatorApplicationInput, ProductType, Size } from '@/types';
 import { PRODUCTS, SIZES } from '@/lib/constants';
 import { createCreator, updateCreator } from '@/lib/firestore';
 import { useAuth } from '@/lib/auth-context';
+import { useToast } from '@/components/ui';
 
 export default function ApplyPage() {
   const router = useRouter();
   const { signUp, user } = useAuth();
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -176,20 +178,22 @@ export default function ApplyPage() {
       // 3. Update creator document with userId
       await updateCreator(creatorDocId, { userId });
 
-      // 4. Redirect to dashboard (user is now logged in)
+      // 4. Show success toast and redirect to dashboard (user is now logged in)
+      showToast('Application submitted! Welcome to HoopGang!', 'success');
       router.push('/creator/dashboard');
       
     } catch (err) {
       console.error('Application error:', err);
+      let errorMessage = 'Failed to submit application. Please try again.';
       if (err instanceof Error) {
         if (err.message.includes('email-already-in-use')) {
-          setError('An account with this email already exists. Please log in instead.');
+          errorMessage = 'An account with this email already exists. Please log in instead.';
         } else {
-          setError(err.message);
+          errorMessage = err.message;
         }
-      } else {
-        setError('Failed to submit application. Please try again.');
       }
+      setError(errorMessage);
+      showToast(errorMessage, 'error');
     } finally {
       setLoading(false);
     }

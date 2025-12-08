@@ -5,7 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { Creator, CreatorStatus, Carrier } from '@/types';
 import { getCreatorById, updateCreator } from '@/lib/firestore';
 import { CREATOR_STATUSES, CARRIERS } from '@/lib/constants';
-import { SectionCard, StatusBadge, DetailRow, StarRating, Button } from '@/components/ui';
+import { SectionCard, StatusBadge, DetailRow, StarRating, Button, useToast } from '@/components/ui';
 import { ProtectedRoute } from '@/components/auth';
 
 /**
@@ -36,6 +36,7 @@ export default function CreatorDetailPage() {
   const router = useRouter();
   const params = useParams();
   const id = params.id as string;
+  const { showToast } = useToast();
 
   const [creator, setCreator] = useState<Creator | null>(null);
   const [loading, setLoading] = useState(true);
@@ -101,9 +102,11 @@ export default function CreatorDetailPage() {
         await updateCreator(creator.id, updateData);
         // Refetch creator data
         await fetchCreator();
+        showToast('Changes saved!', 'success');
       }
     } catch (error) {
       console.error('Error saving changes:', error);
+      showToast('Failed to save changes', 'error');
     } finally {
       setSaving(false);
     }

@@ -12,6 +12,7 @@ import {
   orderBy,
   Timestamp,
   serverTimestamp,
+  runTransaction,
 } from 'firebase/firestore';
 import { db } from './firebase';
 import {
@@ -56,6 +57,48 @@ function convertTimestamps<T>(data: any): T {
 }
 
 /**
+ * Generates a sequential creator ID using a Firestore counter
+ * Format: CRT-YYYY-XXX (e.g., CRT-2024-001, CRT-2024-002)
+ */
+export async function generateSequentialCreatorId(): Promise<string> {
+  const year = new Date().getFullYear();
+  const counterDocRef = doc(db, 'counters', 'creatorId');
+
+  const newCount = await runTransaction(db, async (transaction) => {
+    const counterDoc = await transaction.get(counterDocRef);
+
+    let currentCount = 0;
+    let currentYear = year;
+
+    if (counterDoc.exists()) {
+      const data = counterDoc.data();
+      currentCount = data.currentValue || 0;
+      currentYear = data.year || year;
+
+      // Reset counter if it's a new year
+      if (currentYear !== year) {
+        currentCount = 0;
+        currentYear = year;
+      }
+    }
+
+    const nextCount = currentCount + 1;
+
+    transaction.set(counterDocRef, {
+      currentValue: nextCount,
+      year: currentYear,
+      updatedAt: Timestamp.now(),
+    });
+
+    return nextCount;
+  });
+
+  // Pad the number to 3 digits (001, 002, ... 999)
+  const paddedCount = newCount.toString().padStart(3, '0');
+  return `CRT-${year}-${paddedCount}`;
+}
+
+/**
  * Creates a new creator document in Firestore
  */
 export async function createCreator(
@@ -63,7 +106,9 @@ export async function createCreator(
   userId?: string
 ): Promise<string> {
   const now = Timestamp.now();
-  const creatorId = generateCreatorId();
+  
+  // Use sequential ID instead of random
+  const creatorId = await generateSequentialCreatorId();
   
   const initialStatusHistory = [
     {
@@ -76,12 +121,12 @@ export async function createCreator(
     ...data,
     id: '', // Will be set after document creation
     creatorId,
-    userId, // Add this line
     status: 'pending' as CreatorStatus,
     statusHistory: initialStatusHistory,
     contentSubmissions: [],
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
+    ...(userId && { userId }), // Only include if defined
   };
 
   const docRef = await addDoc(collection(db, CREATORS_COLLECTION), creatorData);

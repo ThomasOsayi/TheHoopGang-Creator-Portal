@@ -4,12 +4,13 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Creator, CreatorStatus, DashboardStats } from '@/types';
 import { getAllCreators, getDashboardStats, updateCreator } from '@/lib/firestore';
-import { StatCard } from '@/components/ui';
+import { StatCard, useToast } from '@/components/ui';
 import { FilterBar, CreatorTable } from '@/components/creators';
 import { ProtectedRoute } from '@/components/auth';
 
 export default function AdminCreatorsPage() {
   const router = useRouter();
+  const { showToast } = useToast();
   const [creators, setCreators] = useState<Creator[]>([]);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -83,8 +84,10 @@ export default function AdminCreatorsPage() {
       await updateCreator(id, { status: 'approved' as CreatorStatus });
       // Refetch data to update UI
       await fetchData();
+      showToast('Creator approved!', 'success');
     } catch (error) {
       console.error('Error approving creator:', error);
+      showToast('Failed to approve creator', 'error');
     }
   };
 
