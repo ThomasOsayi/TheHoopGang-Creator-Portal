@@ -11,7 +11,7 @@ interface ButtonProps {
   className?: string;
 }
 
-export default function Button({
+export function Button({
   children,
   variant = 'primary',
   size = 'md',

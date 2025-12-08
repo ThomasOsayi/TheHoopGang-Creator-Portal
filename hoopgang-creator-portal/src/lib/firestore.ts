@@ -13,6 +13,8 @@ import {
   Timestamp,
   serverTimestamp,
   runTransaction,
+  limit,
+  startAfter,
 } from 'firebase/firestore';
 import { db } from './firebase';
 import {
@@ -196,22 +198,46 @@ export async function getCreatorByUserId(userId: string): Promise<Creator | null
 }
 
 /**
- * Fetches all creators, optionally filtered by status, min followers, or search term
- * Note: Firestore doesn't support full-text search, so search filtering is done client-side
+ * Fetches creators with pagination support
  */
 export async function getAllCreators(filters?: {
   status?: CreatorStatus;
   minFollowers?: number;
   search?: string;
-}): Promise<Creator[]> {
-  let q = query(collection(db, CREATORS_COLLECTION), orderBy('createdAt', 'desc'));
+  limit?: number;
+  lastDoc?: any; // For cursor-based pagination
+}): Promise<{ creators: Creator[]; lastDoc: any; hasMore: boolean }> {
+  const pageLimit = filters?.limit || 10;
 
+  // Build query based on filters
+  let q;
   if (filters?.status) {
-    q = query(q, where('status', '==', filters.status));
+    q = query(
+      collection(db, CREATORS_COLLECTION),
+      where('status', '==', filters.status),
+      orderBy('createdAt', 'desc'),
+      limit(pageLimit + 1) // Fetch one extra to check if there are more
+    );
+  } else {
+    q = query(
+      collection(db, CREATORS_COLLECTION),
+      orderBy('createdAt', 'desc'),
+      limit(pageLimit + 1) // Fetch one extra to check if there are more
+    );
+  }
+
+  if (filters?.lastDoc) {
+    q = query(q, startAfter(filters.lastDoc));
   }
 
   const querySnapshot = await getDocs(q);
-  let creators = querySnapshot.docs.map((docSnap) =>
+  const docs = querySnapshot.docs;
+
+  // Check if there are more results
+  const hasMore = docs.length > pageLimit;
+  const resultDocs = hasMore ? docs.slice(0, pageLimit) : docs;
+
+  let creators = resultDocs.map((docSnap) =>
     convertTimestamps<Creator>({
       id: docSnap.id,
       ...docSnap.data(),
@@ -239,7 +265,11 @@ export async function getAllCreators(filters?: {
     );
   }
 
-  return creators;
+  return {
+    creators,
+    lastDoc: resultDocs[resultDocs.length - 1] || null,
+    hasMore,
+  };
 }
 
 /**
@@ -346,7 +376,16 @@ export async function addContentSubmission(
  * Calculates dashboard statistics
  */
 export async function getDashboardStats(): Promise<DashboardStats> {
-  const allCreators = await getAllCreators();
+  // Fetch all creators without pagination for stats
+  const q = query(collection(db, CREATORS_COLLECTION));
+  const querySnapshot = await getDocs(q);
+
+  const allCreators = querySnapshot.docs.map((docSnap) =>
+    convertTimestamps<Creator>({
+      id: docSnap.id,
+      ...docSnap.data(),
+    })
+  );
 
   const stats: DashboardStats = {
     totalApplications: allCreators.length,
@@ -359,7 +398,6 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     ghostRate: 0,
   };
 
-  // Calculate ghost rate (ghosted / total)
   if (stats.totalApplications > 0) {
     stats.ghostRate = (stats.ghosted / stats.totalApplications) * 100;
   }
