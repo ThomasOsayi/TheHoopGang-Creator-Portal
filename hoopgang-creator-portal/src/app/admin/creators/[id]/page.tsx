@@ -5,7 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { Creator, CreatorStatus, Carrier } from '@/types';
 import { getCreatorById, updateCreator } from '@/lib/firestore';
 import { CREATOR_STATUSES, CARRIERS } from '@/lib/constants';
-import { SectionCard, StatusBadge, DetailRow, StarRating, Button, useToast } from '@/components/ui';
+import { SectionCard, StatusBadge, DetailRow, StarRating, Button, useToast, TrackingStatus, AddTrackingForm } from '@/components/ui';
 import { ProtectedRoute } from '@/components/auth';
 
 /**
@@ -295,11 +295,38 @@ export default function CreatorDetailPage() {
                   {saving ? 'Saving...' : 'Save Changes'}
                 </Button>
 
+                {/* Shipment Tracking Section */}
+                <div className="border-t border-white/10 pt-4 mt-4">
+                  <h3 className="text-white font-semibold mb-4">📦 Shipment Tracking</h3>
+                  
+                  {creator.trackingNumber ? (
+                    <TrackingStatus
+                      shipment={creator.shipment}
+                      trackingNumber={creator.trackingNumber}
+                      carrier={creator.carrier}
+                      creatorId={creator.id}
+                      onRefresh={fetchCreator}
+                    />
+                  ) : (
+                    <AddTrackingForm
+                      creatorId={creator.id}
+                      onSuccess={fetchCreator}
+                    />
+                  )}
+                </div>
+
+                {/* Delivery Information */}
                 {creator.deliveredAt && (
                   <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 mt-4">
-                    <p className="text-green-400 text-sm">
-                      Delivered: {formatDateTime(creator.deliveredAt)}
+                    <p className="text-green-400 text-sm font-medium mb-2">✅ Package Delivered</p>
+                    <p className="text-green-300/80 text-sm">
+                      Delivery Date: {formatDateTime(creator.deliveredAt)}
                     </p>
+                    {creator.contentDeadline && (
+                      <p className="text-green-300/80 text-sm mt-1">
+                        Content Deadline: {formatDateTime(creator.contentDeadline)}
+                      </p>
+                    )}
                   </div>
                 )}
               </div>

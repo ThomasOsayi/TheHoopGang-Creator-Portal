@@ -27,10 +27,10 @@ export const SIZES: Array<{ value: Size; label: string }> = [
 ];
 
 export const CARRIERS: Array<{ value: Carrier; label: string }> = [
-  { value: 'USPS', label: 'USPS' },
-  { value: 'UPS', label: 'UPS' },
-  { value: 'FedEx', label: 'FedEx' },
-  { value: 'DHL', label: 'DHL' },
+  { value: 'yanwen', label: 'Yanwen' },
+  { value: 'usps', label: 'USPS' },
+  { value: 'ups', label: 'UPS' },
+  { value: 'fedex', label: 'FedEx' },
 ];
 
 export const CONTENT_DEADLINE_DAYS = 14;

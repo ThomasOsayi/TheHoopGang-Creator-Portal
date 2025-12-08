@@ -4,9 +4,9 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Creator } from '@/types';
+import { Creator, ShippingStatus } from '@/types';
 import { getCreatorByUserId, addContentSubmission } from '@/lib/firestore';
-import { SectionCard, Button, useToast } from '@/components/ui';
+import { SectionCard, Button, useToast, TrackingProgress } from '@/components/ui';
 import { CONTENT_DEADLINE_DAYS } from '@/lib/constants';
 import { useAuth } from '@/lib/auth-context';
 import { ProtectedRoute } from '@/components/auth';
@@ -260,47 +260,75 @@ export default function CreatorDashboardPage() {
           </div>
         </SectionCard>
 
-        {/* Package Card */}
-        <SectionCard title="Your Package" icon="📦" className="mb-6">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <div className="text-white/60 text-sm mb-1">Product</div>
-              <div className="text-white font-medium">
-                {creator.product} ({creator.size})
-              </div>
-            </div>
-            <div>
-              <div className="text-white/60 text-sm mb-1">Tracking Number</div>
-              <div className="text-white font-medium">
-                {creator.trackingNumber || 'Pending'}
-              </div>
-            </div>
-            <div>
-              <div className="text-white/60 text-sm mb-1">Carrier</div>
-              <div className="text-white font-medium">{creator.carrier || '—'}</div>
-            </div>
-            <div>
-              <div className="text-white/60 text-sm mb-1">Status</div>
-              <div className="text-white font-medium">
-                {creator.status === 'delivered'
-                  ? 'Delivered ✅'
-                  : creator.status === 'shipped'
-                    ? 'Shipped'
-                    : creator.status === 'approved'
-                      ? 'Approved'
-                      : 'Pending'}
-              </div>
-            </div>
-          </div>
+        {/* Package Card - Only show if not pending */}
+        {creator.status !== 'pending' && (
+          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 mb-6">
+            <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+              <span>📦</span> Your Package
+            </h2>
 
-          {creator.deliveredAt && (
-            <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 mt-4 text-center">
-              <p className="text-green-400 text-sm">
-                Delivered on {formatDate(creator.deliveredAt)}
-              </p>
-            </div>
-          )}
-        </SectionCard>
+            {creator.trackingNumber ? (
+              <div className="space-y-6">
+                {/* Map status to ShippingStatus */}
+                {(() => {
+                  let currentStatus: ShippingStatus;
+                  
+                  if (creator.shipment?.shippingStatus) {
+                    currentStatus = creator.shipment.shippingStatus;
+                  } else {
+                    // Map creator.status to ShippingStatus
+                    if (creator.status === 'shipped') {
+                      currentStatus = 'transit'; // Default to transit when shipped
+                    } else if (creator.status === 'delivered') {
+                      currentStatus = 'delivered';
+                    } else {
+                      currentStatus = 'pending';
+                    }
+                  }
+                  
+                  return (
+                    <TrackingProgress
+                      currentStatus={currentStatus}
+                      trackingNumber={creator.trackingNumber}
+                      carrier={creator.carrier}
+                      lastUpdate={creator.shipment?.lastUpdate}
+                    />
+                  );
+                })()}
+
+                {/* Countdown for delivered packages */}
+                {creator.status === 'delivered' && creator.contentDeadline && (
+                  <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-6 text-center">
+                    {(() => {
+                      const deadline = creator.contentDeadline!;
+                      const now = new Date();
+                      const diffTime = deadline.getTime() - now.getTime();
+                      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                      const isOverdue = diffDays < 0;
+                      
+                      return (
+                        <>
+                          <div className="text-5xl font-bold text-orange-500 mb-2">
+                            {isOverdue ? 0 : diffDays}
+                          </div>
+                          <div className="text-white font-medium text-lg">
+                            {isOverdue ? 'Deadline passed' : `${diffDays === 1 ? 'day' : 'days'} left to post content`}
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </div>
+                )}
+              </div>
+            ) : creator.status === 'approved' ? (
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-6 text-center">
+                <p className="text-blue-400 text-lg">
+                  Your package will ship soon! We'll update you when it's on the way.
+                </p>
+              </div>
+            ) : null}
+          </div>
+        )}
 
         {/* Content Submission Card */}
         <SectionCard title="Submit Your Content" icon="🎥" className="mb-6">

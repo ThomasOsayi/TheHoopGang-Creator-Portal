@@ -16,7 +16,7 @@ export type ProductType =
 
 export type Size = 'S' | 'M' | 'L' | 'XL' | 'XXL';
 
-export type Carrier = 'USPS' | 'UPS' | 'FedEx' | 'DHL';
+export type Carrier = 'yanwen' | 'usps' | 'ups' | 'fedex';
 
 export interface ContentSubmission {
   url: string;
@@ -76,6 +76,7 @@ export interface Creator {
   carrier?: Carrier;
   shippedAt?: Date;
   deliveredAt?: Date;
+  shipment?: ShipmentTracking;
   
   // --- Content Submissions (max 3 TikToks) ---
   contentSubmissions: ContentSubmission[];
@@ -125,4 +126,31 @@ export interface DashboardStats {
   completed: number;
   ghosted: number;
   ghostRate: number;
+}
+
+// --- Shipping Tracking Types ---
+
+export type ShippingStatus = 
+  | 'pending' 
+  | 'transit' 
+  | 'pickup' 
+  | 'delivered' 
+  | 'undelivered' 
+  | 'exception' 
+  | 'expired';
+
+export interface TrackingEvent {
+  date: string;
+  description: string;
+  location: string;
+}
+
+export interface ShipmentTracking {
+  trackingNumber: string;
+  carrier: Carrier;
+  shippingStatus: ShippingStatus;
+  estimatedDelivery?: string;
+  lastUpdate: Date;
+  events: TrackingEvent[];
+  trackingMoreId?: string;
 }
