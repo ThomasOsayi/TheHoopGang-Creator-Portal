@@ -66,7 +66,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Create tracking in TrackingMore API
+    console.log('[POST /api/tracking] Registering tracking with TrackingMore:', { trackingNumber: cleanedTrackingNumber, carrier });
     const trackingResponse = await createTracking(cleanedTrackingNumber, carrier as Carrier);
+    console.log('[POST /api/tracking] createTracking response:', JSON.stringify(trackingResponse));
 
     // Get initial tracking status
     const shipment = await getTrackingStatus(cleanedTrackingNumber, carrier as Carrier);
@@ -145,7 +147,9 @@ export async function GET(request: NextRequest) {
     }
 
     // Refresh tracking status from TrackingMore API
+    console.log('[GET /api/tracking] Fetching status for:', { trackingNumber: creator.trackingNumber, carrier: creator.carrier });
     const shipment = await getTrackingStatus(creator.trackingNumber, creator.carrier);
+    console.log('[GET /api/tracking] TrackingMore response:', JSON.stringify(shipment));
 
     // Build shipment object, excluding undefined values
     const shipmentData: ShipmentTracking = {

@@ -163,13 +163,20 @@ async function apiRequest(endpoint: string, options: RequestInit = {}): Promise<
   
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
+    console.error('[apiRequest] TrackingMore API error:', { 
+      status: response.status, 
+      statusText: response.statusText,
+      errorData 
+    });
     throw new Error(
+      errorData.meta?.message || 
       errorData.message || 
       `TrackingMore API error: ${response.status} ${response.statusText}`
     );
   }
   
   const data = await response.json();
+  console.log('[apiRequest] TrackingMore API success:', { endpoint, dataKeys: Object.keys(data) });
   
   // TrackingMore API wraps responses in a data object
   if (data.data !== undefined) {
@@ -238,6 +245,8 @@ export async function createTracking(
     }),
   });
   
+  console.log('[createTracking] Raw API response:', JSON.stringify(response));
+  
   return {
     id: response.id || response.tracking_id || '',
     tracking_number: response.tracking_number || trackingNumber,
@@ -264,6 +273,8 @@ export async function getTrackingStatus(
       method: 'GET',
     }
   );
+  
+  console.log('[getTrackingStatus] Raw API response:', JSON.stringify(response));
   
   // Parse tracking events from response
   const events = parseTrackingEvents(
