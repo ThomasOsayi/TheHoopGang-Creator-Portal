@@ -40,7 +40,7 @@ export default function AdminCreatorsPage() {
     setLoading(true);
     try {
       const result = await getAllCreators({
-        status: statusFilter || undefined,
+        status: (statusFilter as CreatorStatus) || undefined,
         minFollowers: minFollowers ? parseInt(minFollowers, 10) : undefined,
         search: searchQuery || undefined,
         limit: PAGE_SIZE,
