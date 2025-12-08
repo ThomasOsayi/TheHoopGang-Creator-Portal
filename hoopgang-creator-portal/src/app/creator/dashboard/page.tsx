@@ -1,0 +1,405 @@
+// src/app/creator/dashboard/page.tsx
+
+'use client';
+
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { Creator } from '@/types';
+import { getAllCreators, addContentSubmission } from '@/lib/firestore';
+import { SectionCard, Button } from '@/components/ui';
+import { CONTENT_DEADLINE_DAYS } from '@/lib/constants';
+
+/**
+ * Formats a date to a readable string
+ */
+function formatDate(date: Date): string {
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+}
+
+/**
+ * Extracts first name from full name
+ */
+function getFirstName(fullName: string): string {
+  return fullName.split(' ')[0];
+}
+
+export default function CreatorDashboardPage() {
+  const [creator, setCreator] = useState<Creator | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [newContentUrl, setNewContentUrl] = useState<string>('');
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch creator data (MVP: get most recent creator)
+  useEffect(() => {
+    fetchCreator();
+  }, []);
+
+  const fetchCreator = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const creators = await getAllCreators();
+      if (creators.length > 0) {
+        // For MVP, use the most recent creator (already sorted by createdAt desc)
+        setCreator(creators[0]);
+      }
+    } catch (err) {
+      console.error('Error fetching creator:', err);
+      setError('Failed to load your dashboard. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmitContent = async () => {
+    if (!creator) return;
+
+    if (!newContentUrl.trim()) {
+      setError('Please enter a valid URL');
+      return;
+    }
+
+    setSubmitting(true);
+    setError(null);
+    try {
+      await addContentSubmission(creator.id, newContentUrl.trim());
+      setNewContentUrl('');
+      // Refetch creator data
+      await fetchCreator();
+    } catch (err) {
+      console.error('Error submitting content:', err);
+      setError(err instanceof Error ? err.message : 'Failed to submit content. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Calculate days remaining for content deadline
+  const getDaysRemaining = (): { days: number | null; label: string } => {
+    if (!creator) return { days: null, label: 'Starts after delivery' };
+
+    let deadline: Date | null = null;
+
+    if (creator.contentDeadline) {
+      deadline = creator.contentDeadline;
+    } else if (creator.deliveredAt) {
+      deadline = new Date(creator.deliveredAt);
+      deadline.setDate(deadline.getDate() + CONTENT_DEADLINE_DAYS);
+    }
+
+    if (!deadline) {
+      return { days: null, label: 'Starts after delivery' };
+    }
+
+    const now = new Date();
+    const diffTime = deadline.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    return { days: diffDays, label: diffDays > 0 ? 'DAYS REMAINING' : 'DEADLINE PASSED' };
+  };
+
+  // Determine timeline step states
+  const getTimelineSteps = (): Array<{ label: string; status: 'completed' | 'active' | 'pending' | 'failed'; date?: string }> => {
+    if (!creator) return [];
+
+    const status = creator.status;
+    const steps: Array<{ label: string; status: 'completed' | 'active' | 'pending' | 'failed'; date?: string }> = [
+      { label: 'Application Received', status: 'completed' },
+      { label: 'Application Approved', status: 'pending' },
+      { label: 'Package Shipped', status: 'pending' },
+      { label: 'Package Delivered', status: 'pending' },
+      { label: 'Content Completed', status: 'pending' },
+    ];
+
+    if (status === 'pending') {
+      steps[0].status = 'active';
+    } else if (status === 'approved') {
+      steps[0].status = 'completed';
+      steps[1].status = 'completed';
+      steps[2].status = 'active';
+    } else if (status === 'shipped') {
+      steps[0].status = 'completed';
+      steps[1].status = 'completed';
+      steps[2].status = 'completed';
+      steps[3].status = 'active';
+    } else if (status === 'delivered') {
+      steps[0].status = 'completed';
+      steps[1].status = 'completed';
+      steps[2].status = 'completed';
+      steps[3].status = 'completed';
+      steps[4].status = 'active';
+    } else if (status === 'completed') {
+      steps.forEach((step) => (step.status = 'completed'));
+    } else if (status === 'ghosted') {
+      steps[0].status = 'completed';
+      steps[1].status = 'completed';
+      steps[2].status = 'completed';
+      steps[3].status = 'completed';
+      steps[4].status = 'failed';
+    }
+
+    // Add dates from statusHistory if available
+    steps.forEach((step, index) => {
+      const statusMap: Record<number, Creator['status']> = {
+        0: 'pending',
+        1: 'approved',
+        2: 'shipped',
+        3: 'delivered',
+        4: 'completed',
+      };
+      const targetStatus = statusMap[index];
+      if (targetStatus && creator.statusHistory) {
+        const historyEntry = creator.statusHistory.find((h) => h.status === targetStatus);
+        if (historyEntry) {
+          step.date = formatDate(historyEntry.timestamp);
+        }
+      }
+    });
+
+    return steps;
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-zinc-950 via-zinc-900 to-zinc-950 py-8 px-4">
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center py-12">
+            <p className="text-white/60">Loading...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!creator) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-zinc-950 via-zinc-900 to-zinc-950 py-8 px-4">
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center py-12">
+            <p className="text-white/60 mb-4">No application found</p>
+            <Link href="/apply">
+              <Button variant="primary">Apply Now</Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const firstName = getFirstName(creator.fullName);
+  const timelineSteps = getTimelineSteps();
+  const daysRemaining = getDaysRemaining();
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-zinc-950 via-zinc-900 to-zinc-950 py-8 px-4">
+      <div className="max-w-3xl mx-auto">
+        {/* Error Display */}
+        {error && (
+          <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl mb-6">
+            {error}
+          </div>
+        )}
+
+        {/* Welcome Banner */}
+        <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-3xl p-8 text-center mb-8">
+          <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
+            Welcome back, {firstName}! 🏀
+          </h1>
+          <p className="text-white/90">You're officially part of the HoopGang Creator Squad</p>
+        </div>
+
+        {/* Status Timeline */}
+        <SectionCard title="Your Collaboration Status" icon="📋" className="mb-6">
+          <div className="relative">
+            {/* Vertical line - positioned to align with header icon */}
+            <div className="absolute left-2 top-0 bottom-0 w-0.5 bg-white/20" />
+
+            {timelineSteps.map((step, index) => (
+              <div key={index} className="relative mb-6 last:mb-0 pl-10">
+                {/* Dot - aligned with line */}
+                <div
+                  className={`absolute left-0 w-4 h-4 rounded-full ${
+                    step.status === 'completed'
+                      ? 'bg-green-500'
+                      : step.status === 'active'
+                        ? 'bg-orange-500 animate-pulse'
+                        : step.status === 'failed'
+                          ? 'bg-red-500'
+                          : 'bg-white/20'
+                  }`}
+                />
+
+                {/* Content */}
+                <div>
+                  <div className="font-medium text-white">{step.label}</div>
+                  {step.date && (
+                    <div className="text-sm text-white/50 mt-0.5">{step.date}</div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+
+        {/* Package Card */}
+        <SectionCard title="Your Package" icon="📦" className="mb-6">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <div className="text-white/60 text-sm mb-1">Product</div>
+              <div className="text-white font-medium">
+                {creator.product} ({creator.size})
+              </div>
+            </div>
+            <div>
+              <div className="text-white/60 text-sm mb-1">Tracking Number</div>
+              <div className="text-white font-medium">
+                {creator.trackingNumber || 'Pending'}
+              </div>
+            </div>
+            <div>
+              <div className="text-white/60 text-sm mb-1">Carrier</div>
+              <div className="text-white font-medium">{creator.carrier || '—'}</div>
+            </div>
+            <div>
+              <div className="text-white/60 text-sm mb-1">Status</div>
+              <div className="text-white font-medium">
+                {creator.status === 'delivered'
+                  ? 'Delivered ✅'
+                  : creator.status === 'shipped'
+                    ? 'Shipped'
+                    : creator.status === 'approved'
+                      ? 'Approved'
+                      : 'Pending'}
+              </div>
+            </div>
+          </div>
+
+          {creator.deliveredAt && (
+            <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 mt-4 text-center">
+              <p className="text-green-400 text-sm">
+                Delivered on {formatDate(creator.deliveredAt)}
+              </p>
+            </div>
+          )}
+        </SectionCard>
+
+        {/* Content Submission Card */}
+        <SectionCard title="Submit Your Content" icon="🎥" className="mb-6">
+          {[0, 1, 2].map((index) => {
+            const submission = creator.contentSubmissions[index];
+            const isNextToSubmit = index === creator.contentSubmissions.length;
+            const isPending = index > creator.contentSubmissions.length;
+
+            return (
+              <div
+                key={index}
+                className={`flex items-center gap-4 py-3 ${
+                  index < 2 ? 'border-b border-white/10' : ''
+                }`}
+              >
+                <div className="font-medium text-white w-24">TikTok {index + 1}:</div>
+
+                {submission ? (
+                  <>
+                    <div className="flex-1 text-white/70 truncate">{submission.url}</div>
+                    <Button variant="secondary" disabled size="sm">
+                      ✓ Submitted
+                    </Button>
+                  </>
+                ) : isNextToSubmit ? (
+                  <>
+                    <input
+                      type="url"
+                      value={newContentUrl}
+                      onChange={(e) => setNewContentUrl(e.target.value)}
+                      placeholder="Enter TikTok URL..."
+                      className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-orange-500/50 transition-colors"
+                      disabled={submitting}
+                    />
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={handleSubmitContent}
+                      disabled={submitting || !newContentUrl.trim()}
+                      loading={submitting}
+                    >
+                      Submit
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex-1 text-white/30">—</div>
+                    <Button variant="secondary" disabled size="sm">
+                      Pending
+                    </Button>
+                  </>
+                )}
+              </div>
+            );
+          })}
+        </SectionCard>
+
+        {/* Agreement Card */}
+        <SectionCard title="Your Agreement" icon="📋" className="mb-6">
+          <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-6">
+            <h3 className="font-semibold text-white mb-4">You agreed to:</h3>
+            <ul className="space-y-3">
+              <li className="flex items-start gap-3">
+                <span className="text-xl">🏀</span>
+                <span className="text-white/80 text-sm">
+                  Post 3 TikToks featuring your HoopGang product within 14 days
+                </span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-xl">🏀</span>
+                <span className="text-white/80 text-sm">Tag @thehoopgang in every post</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-xl">🏀</span>
+                <span className="text-white/80 text-sm">Use trending basketball sounds</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-xl">🏀</span>
+                <span className="text-white/80 text-sm">Show the product in action</span>
+              </li>
+            </ul>
+
+            {/* Countdown */}
+            <div className="bg-white/5 rounded-xl p-4 mt-6 text-center">
+              <div className="text-4xl font-bold text-orange-500 mb-1">
+                {daysRemaining.days !== null ? daysRemaining.days : '—'}
+              </div>
+              <div className="text-white/60 text-sm">{daysRemaining.label}</div>
+            </div>
+          </div>
+        </SectionCard>
+
+        {/* Perks Card */}
+        <SectionCard title="What's Next" icon="🎁">
+          <p className="text-white/60 mb-4">
+            Complete all 3 TikToks to unlock exclusive perks:
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[
+              { icon: '⭐', text: 'Get featured on @thehoopgang' },
+              { icon: '🎁', text: 'Early access to new drops' },
+              { icon: '💰', text: 'Unlock paid collaboration opportunities' },
+              { icon: '🏀', text: 'Join the exclusive Creator Squad' },
+            ].map((perk, index) => (
+              <div key={index} className="flex items-center gap-3 bg-white/5 rounded-xl p-4">
+                <span className="text-2xl">{perk.icon}</span>
+                <span className="text-white/80 text-sm">{perk.text}</span>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+      </div>
+    </div>
+  );
+}
+
