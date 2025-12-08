@@ -104,6 +104,7 @@ export default function TrackingStatus({
   const { showToast } = useToast();
   const [isExpanded, setIsExpanded] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Determine current status
   const currentStatus = shipment?.shippingStatus || 'pending';
@@ -132,6 +133,34 @@ export default function TrackingStatus({
       showToast('Failed to refresh tracking', 'error');
     } finally {
       setIsRefreshing(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm('Are you sure you want to remove tracking information? This cannot be undone.')) {
+      return;
+    }
+    
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/tracking?creatorId=${creatorId}`, {
+        method: 'DELETE',
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        showToast('Tracking information removed', 'success');
+        if (onRefresh) {
+          onRefresh();
+        }
+      } else {
+        showToast(data.error || 'Failed to remove tracking', 'error');
+      }
+    } catch (error) {
+      console.error('Error deleting tracking:', error);
+      showToast('Failed to remove tracking', 'error');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -195,6 +224,15 @@ export default function TrackingStatus({
             loading={isRefreshing}
           >
             Refresh
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={handleDelete}
+            loading={isDeleting}
+            className="text-red-400 hover:text-red-300"
+          >
+            Remove
           </Button>
         </div>
       </div>
