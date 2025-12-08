@@ -2,17 +2,26 @@
 
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { CreatorApplicationInput, ProductType, Size } from '@/types';
 import { PRODUCTS, SIZES } from '@/lib/constants';
-import { createCreator } from '@/lib/firestore';
+import { createCreator, updateCreator } from '@/lib/firestore';
+import { useAuth } from '@/lib/auth-context';
 
 export default function ApplyPage() {
   const router = useRouter();
+  const { signUp, user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      router.push('/creator/dashboard');
+    }
+  }, [user, router]);
 
   const [formData, setFormData] = useState<CreatorApplicationInput>({
     fullName: '',
@@ -36,6 +45,9 @@ export default function ApplyPage() {
     previousBrands: false,
     agreedToTerms: false,
   });
+
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -132,6 +144,14 @@ export default function ApplyPage() {
       setError('You must agree to the terms to submit your application');
       return false;
     }
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return false;
+    }
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return false;
+    }
     return true;
   };
 
@@ -147,14 +167,29 @@ export default function ApplyPage() {
     setLoading(true);
 
     try {
-      await createCreator(formData);
-      setSuccess(true);
+      // 1. Create the creator document first
+      const creatorDocId = await createCreator(formData);
+
+      // 2. Create auth account and link to creator
+      const userId = await signUp(formData.email, password, 'creator', creatorDocId);
+
+      // 3. Update creator document with userId
+      await updateCreator(creatorDocId, { userId });
+
+      // 4. Redirect to dashboard (user is now logged in)
+      router.push('/creator/dashboard');
       
-      setTimeout(() => {
-        router.push('/creator/dashboard');
-      }, 2000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to submit application. Please try again.');
+      console.error('Application error:', err);
+      if (err instanceof Error) {
+        if (err.message.includes('email-already-in-use')) {
+          setError('An account with this email already exists. Please log in instead.');
+        } else {
+          setError(err.message);
+        }
+      } else {
+        setError('Failed to submit application. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -225,6 +260,41 @@ export default function ApplyPage() {
                     placeholder="jordan@email.com"
                     required
                     className={inputClasses}
+                  />
+                </div>
+              </div>
+
+              {/* Password Fields */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="password" className={labelClasses}>
+                    Password <span className="text-orange-500">*</span>
+                  </label>
+                  <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    minLength={6}
+                    className={inputClasses}
+                    placeholder="Create a password (min 6 characters)"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="confirmPassword" className={labelClasses}>
+                    Confirm Password <span className="text-orange-500">*</span>
+                  </label>
+                  <input
+                    type="password"
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    className={inputClasses}
+                    placeholder="Confirm your password"
                   />
                 </div>
               </div>

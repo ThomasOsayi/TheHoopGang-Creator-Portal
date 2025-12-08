@@ -41,6 +41,7 @@ export interface ShippingAddress {
 export interface Creator {
   // Document ID: auto-generated
   id: string;
+  userId?: string; // Firebase Auth UID - links to users collection
   
   // --- Application Data (from /apply form) ---
   fullName: string;

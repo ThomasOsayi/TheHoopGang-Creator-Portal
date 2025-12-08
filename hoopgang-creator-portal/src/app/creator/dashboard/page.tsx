@@ -5,9 +5,11 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Creator } from '@/types';
-import { getAllCreators, addContentSubmission } from '@/lib/firestore';
+import { getCreatorByUserId, addContentSubmission } from '@/lib/firestore';
 import { SectionCard, Button } from '@/components/ui';
 import { CONTENT_DEADLINE_DAYS } from '@/lib/constants';
+import { useAuth } from '@/lib/auth-context';
+import { ProtectedRoute } from '@/components/auth';
 
 /**
  * Formats a date to a readable string
@@ -28,26 +30,28 @@ function getFirstName(fullName: string): string {
 }
 
 export default function CreatorDashboardPage() {
+  const { user } = useAuth();
   const [creator, setCreator] = useState<Creator | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [newContentUrl, setNewContentUrl] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch creator data (MVP: get most recent creator)
+  // Fetch creator data
   useEffect(() => {
-    fetchCreator();
-  }, []);
+    if (user) {
+      fetchCreator();
+    }
+  }, [user]);
 
   const fetchCreator = async () => {
+    if (!user) return;
+    
     setLoading(true);
     setError(null);
     try {
-      const creators = await getAllCreators();
-      if (creators.length > 0) {
-        // For MVP, use the most recent creator (already sorted by createdAt desc)
-        setCreator(creators[0]);
-      }
+      const creatorData = await getCreatorByUserId(user.uid);
+      setCreator(creatorData);
     } catch (err) {
       console.error('Error fetching creator:', err);
       setError('Failed to load your dashboard. Please try again.');
@@ -167,28 +171,32 @@ export default function CreatorDashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-zinc-950 via-zinc-900 to-zinc-950 py-8 px-4">
-        <div className="max-w-3xl mx-auto">
-          <div className="text-center py-12">
-            <p className="text-white/60">Loading...</p>
+      <ProtectedRoute allowedRoles={['creator']}>
+        <div className="min-h-screen bg-gradient-to-b from-zinc-950 via-zinc-900 to-zinc-950 py-8 px-4">
+          <div className="max-w-3xl mx-auto">
+            <div className="text-center py-12">
+              <p className="text-white/60">Loading...</p>
+            </div>
           </div>
         </div>
-      </div>
+      </ProtectedRoute>
     );
   }
 
   if (!creator) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-zinc-950 via-zinc-900 to-zinc-950 py-8 px-4">
-        <div className="max-w-3xl mx-auto">
-          <div className="text-center py-12">
-            <p className="text-white/60 mb-4">No application found</p>
-            <Link href="/apply">
-              <Button variant="primary">Apply Now</Button>
-            </Link>
+      <ProtectedRoute allowedRoles={['creator']}>
+        <div className="min-h-screen bg-gradient-to-b from-zinc-950 via-zinc-900 to-zinc-950 py-8 px-4">
+          <div className="max-w-3xl mx-auto">
+            <div className="text-center py-12">
+              <p className="text-white/60 mb-4">No application found</p>
+              <Link href="/apply">
+                <Button variant="primary">Apply Now</Button>
+              </Link>
+            </div>
           </div>
         </div>
-      </div>
+      </ProtectedRoute>
     );
   }
 
@@ -197,7 +205,8 @@ export default function CreatorDashboardPage() {
   const daysRemaining = getDaysRemaining();
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-zinc-950 via-zinc-900 to-zinc-950 py-8 px-4">
+    <ProtectedRoute allowedRoles={['creator']}>
+      <div className="min-h-screen bg-gradient-to-b from-zinc-950 via-zinc-900 to-zinc-950 py-8 px-4">
       <div className="max-w-3xl mx-auto">
         {/* Error Display */}
         {error && (
@@ -401,6 +410,7 @@ export default function CreatorDashboardPage() {
         </SectionCard>
       </div>
     </div>
+    </ProtectedRoute>
   );
 }
 

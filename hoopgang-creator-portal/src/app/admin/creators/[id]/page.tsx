@@ -6,6 +6,7 @@ import { Creator, CreatorStatus, Carrier } from '@/types';
 import { getCreatorById, updateCreator } from '@/lib/firestore';
 import { CREATOR_STATUSES, CARRIERS } from '@/lib/constants';
 import { SectionCard, StatusBadge, DetailRow, StarRating, Button } from '@/components/ui';
+import { ProtectedRoute } from '@/components/auth';
 
 /**
  * Formats a date to a readable string
@@ -153,12 +154,14 @@ export default function CreatorDetailPage() {
     .join(', ');
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-zinc-950 via-zinc-900 to-zinc-950 py-8 px-4">
-      <div className="max-w-5xl mx-auto">
-        {/* Back Button */}
-        <Button variant="ghost" onClick={handleBack} className="mb-6">
-          ← Back to Dashboard
-        </Button>
+    <ProtectedRoute allowedRoles={['admin']}>
+      <div className="min-h-screen bg-gradient-to-b from-zinc-950 via-zinc-900 to-zinc-950 py-8 px-4">
+        <div className="max-w-5xl mx-auto">
+     
+          {/* Back Button */}
+          <Button variant="ghost" onClick={handleBack} className="mb-6">
+            ← Back to Dashboard
+          </Button>
 
         {/* Header Section */}
         <SectionCard>
@@ -360,8 +363,9 @@ export default function CreatorDetailPage() {
             </SectionCard>
           </div>
         </div>
+        </div>
       </div>
-    </div>
+    </ProtectedRoute>
   );
 }
 

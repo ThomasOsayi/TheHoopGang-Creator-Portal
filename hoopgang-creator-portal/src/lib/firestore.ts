@@ -58,7 +58,10 @@ function convertTimestamps<T>(data: any): T {
 /**
  * Creates a new creator document in Firestore
  */
-export async function createCreator(data: CreatorApplicationInput): Promise<Creator> {
+export async function createCreator(
+  data: CreatorApplicationInput,
+  userId?: string
+): Promise<string> {
   const now = Timestamp.now();
   const creatorId = generateCreatorId();
   
@@ -73,6 +76,7 @@ export async function createCreator(data: CreatorApplicationInput): Promise<Crea
     ...data,
     id: '', // Will be set after document creation
     creatorId,
+    userId, // Add this line
     status: 'pending' as CreatorStatus,
     statusHistory: initialStatusHistory,
     contentSubmissions: [],
@@ -85,18 +89,7 @@ export async function createCreator(data: CreatorApplicationInput): Promise<Crea
   // Update the document with its own ID
   await updateDoc(docRef, { id: docRef.id });
 
-  // Fetch the created document to return it
-  const createdDoc = await getDoc(docRef);
-  if (!createdDoc.exists()) {
-    throw new Error('Failed to create creator document');
-  }
-
-  const creator = convertTimestamps<Creator>({
-    id: docRef.id,
-    ...createdDoc.data(),
-  });
-
-  return creator;
+  return docRef.id;
 }
 
 /**
@@ -140,6 +133,21 @@ export async function getCreatorByCreatorId(creatorId: string): Promise<Creator 
   });
 
   return creator;
+}
+
+/**
+ * Fetches a creator by Firebase Auth user ID
+ */
+export async function getCreatorByUserId(userId: string): Promise<Creator | null> {
+  const q = query(collection(db, CREATORS_COLLECTION), where('userId', '==', userId));
+  const snapshot = await getDocs(q);
+  
+  if (snapshot.empty) {
+    return null;
+  }
+  
+  const docSnap = snapshot.docs[0];
+  return convertTimestamps<Creator>({ id: docSnap.id, ...docSnap.data() });
 }
 
 /**

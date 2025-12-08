@@ -6,6 +6,7 @@ import { Creator, CreatorStatus, DashboardStats } from '@/types';
 import { getAllCreators, getDashboardStats, updateCreator } from '@/lib/firestore';
 import { StatCard } from '@/components/ui';
 import { FilterBar, CreatorTable } from '@/components/creators';
+import { ProtectedRoute } from '@/components/auth';
 
 export default function AdminCreatorsPage() {
   const router = useRouter();
@@ -88,88 +89,90 @@ export default function AdminCreatorsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-zinc-950 via-zinc-900 to-zinc-950 py-8 px-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Header Section */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Admin Dashboard</h1>
-          <p className="text-white/60">Manage all creator collaborations</p>
-        </div>
+    <ProtectedRoute allowedRoles={['admin']}>
+      <div className="min-h-screen bg-gradient-to-b from-zinc-950 via-zinc-900 to-zinc-950 py-8 px-4">
+        <div className="max-w-7xl mx-auto">
+          {/* Header Section */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-white mb-2">Admin Dashboard</h1>
+            <p className="text-white/60">Manage all creator collaborations</p>
+          </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-          {stats ? (
-            <>
-              <StatCard
-                label="Total Applications"
-                value={stats.totalApplications}
-                icon="📊"
-                change="↑ this week"
-              />
-              <StatCard
-                label="Pending Review"
-                value={stats.pendingReview}
-                icon="⏳"
-                change="Needs attention"
-              />
-              <StatCard
-                label="Active Collabs"
-                value={stats.activeCollabs}
-                icon="🚀"
-                change="In progress"
-              />
-              <StatCard
-                label="Completed"
-                value={stats.completed}
-                icon="✅"
-                change={
-                  stats.totalApplications > 0
-                    ? `${((stats.completed / stats.totalApplications) * 100).toFixed(0)}%`
-                    : '0%'
-                }
-              />
-              <StatCard
-                label="Ghost Rate"
-                value={`${stats.ghostRate.toFixed(0)}%`}
-                icon="👻"
-                change="↓ improving"
-              />
-            </>
-          ) : (
-            // Loading state for stats
-            Array.from({ length: 5 }).map((_, i) => (
-              <div
-                key={i}
-                className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6"
-              >
-                <div className="text-white/60 text-sm mb-1">Loading...</div>
-                <div className="text-3xl font-bold text-white/30">—</div>
-              </div>
-            ))
-          )}
-        </div>
+          {/* Stats Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+            {stats ? (
+              <>
+                <StatCard
+                  label="Total Applications"
+                  value={stats.totalApplications}
+                  icon="📊"
+                  change="↑ this week"
+                />
+                <StatCard
+                  label="Pending Review"
+                  value={stats.pendingReview}
+                  icon="⏳"
+                  change="Needs attention"
+                />
+                <StatCard
+                  label="Active Collabs"
+                  value={stats.activeCollabs}
+                  icon="🚀"
+                  change="In progress"
+                />
+                <StatCard
+                  label="Completed"
+                  value={stats.completed}
+                  icon="✅"
+                  change={
+                    stats.totalApplications > 0
+                      ? `${((stats.completed / stats.totalApplications) * 100).toFixed(0)}%`
+                      : '0%'
+                  }
+                />
+                <StatCard
+                  label="Ghost Rate"
+                  value={`${stats.ghostRate.toFixed(0)}%`}
+                  icon="👻"
+                  change="↓ improving"
+                />
+              </>
+            ) : (
+              // Loading state for stats
+              Array.from({ length: 5 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6"
+                >
+                  <div className="text-white/60 text-sm mb-1">Loading...</div>
+                  <div className="text-3xl font-bold text-white/30">—</div>
+                </div>
+              ))
+            )}
+          </div>
 
-        {/* Filter Bar */}
-        <div className="mb-6">
-          <FilterBar
-            statusFilter={statusFilter}
-            searchQuery={searchQuery}
-            minFollowers={minFollowers}
-            onStatusChange={setStatusFilter}
-            onSearchChange={setSearchQuery}
-            onMinFollowersChange={setMinFollowers}
+          {/* Filter Bar */}
+          <div className="mb-6">
+            <FilterBar
+              statusFilter={statusFilter}
+              searchQuery={searchQuery}
+              minFollowers={minFollowers}
+              onStatusChange={setStatusFilter}
+              onSearchChange={setSearchQuery}
+              onMinFollowersChange={setMinFollowers}
+            />
+          </div>
+
+          {/* Creators Table */}
+          <CreatorTable
+            creators={filteredCreators}
+            onViewCreator={handleViewCreator}
+            onApprove={handleApprove}
+            loading={loading}
           />
         </div>
-
-        {/* Creators Table */}
-        <CreatorTable
-          creators={filteredCreators}
-          onViewCreator={handleViewCreator}
-          onApprove={handleApprove}
-          loading={loading}
-        />
       </div>
-    </div>
+    </ProtectedRoute>
   );
 }
 
