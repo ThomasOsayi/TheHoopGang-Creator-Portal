@@ -63,7 +63,9 @@ export default function AdminCreatorsPage() {
       const min = parseInt(minFollowers, 10);
       if (!isNaN(min)) {
         filtered = filtered.filter(
-          (creator) => creator.tiktokFollowers >= min
+          (creator) =>
+            creator.instagramFollowers >= min ||
+            creator.tiktokFollowers >= min
         );
       }
     }

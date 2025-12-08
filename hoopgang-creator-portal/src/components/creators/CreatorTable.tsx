@@ -23,6 +23,29 @@ function formatFollowers(count: number): string {
   return `${(count / 1000000).toFixed(1)}M`.replace('.0', '');
 }
 
+/**
+ * Generates tracking URL based on carrier
+ */
+function getTrackingUrl(trackingNumber: string, carrier?: string): string {
+  if (!carrier) {
+    // Default to USPS if no carrier specified
+    return `https://tools.usps.com/go/TrackConfirmAction?tLabels=${trackingNumber}`;
+  }
+
+  switch (carrier) {
+    case 'USPS':
+      return `https://tools.usps.com/go/TrackConfirmAction?tLabels=${trackingNumber}`;
+    case 'UPS':
+      return `https://www.ups.com/track?tracknum=${trackingNumber}`;
+    case 'FedEx':
+      return `https://www.fedex.com/fedextrack/?trknbr=${trackingNumber}`;
+    case 'DHL':
+      return `https://www.dhl.com/en/express/tracking.html?AWB=${trackingNumber}`;
+    default:
+      return `https://tools.usps.com/go/TrackConfirmAction?tLabels=${trackingNumber}`;
+  }
+}
+
 export default function CreatorTable({
   creators,
   onViewCreator,
@@ -99,7 +122,7 @@ export default function CreatorTable({
                   <div className="text-white/50 text-xs mt-0.5">{creator.creatorId}</div>
                 </td>
                 <td className="px-6 py-4 text-sm text-white/70">
-                  @{creator.tiktokHandle}
+                  @{creator.tiktokHandle.replace('@', '')}
                 </td>
                 <td className="px-6 py-4 text-sm text-white/70">
                   {formatFollowers(creator.tiktokFollowers)}
@@ -113,7 +136,7 @@ export default function CreatorTable({
                 <td className="px-6 py-4 text-sm">
                   {creator.trackingNumber ? (
                     <a
-                      href={`https://tools.usps.com/go/TrackConfirmAction?tLabels=${creator.trackingNumber}`}
+                      href={getTrackingUrl(creator.trackingNumber, creator.carrier)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-orange-400 hover:text-orange-300 transition-colors"
