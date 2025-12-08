@@ -18,14 +18,17 @@ const STATUS_MAP: Record<string, ShippingStatus> = {
   // Pending states
   'pending': 'pending',
   'notfound': 'pending',
+  'inforeceived': 'pending',
   'InfoReceived': 'pending',
   
   // In transit states
   'InTransit': 'transit',
+  'intransit': 'transit',
   'transit': 'transit',
   'OnTheWay': 'transit',
   'InTransport': 'transit',
   'OutForDelivery': 'transit',
+  'outfordelivery': 'transit',
   
   // Pickup states
   'PickUp': 'pickup',
@@ -268,9 +271,11 @@ export async function getTrackingStatus(
     response.destination_info
   );
   
-  // Determine shipping status
-  const apiStatus = response.status || response.tracking_status || 'pending';
+  // Determine shipping status - TrackingMore uses 'delivery_status' field
+  const apiStatus = response.delivery_status || response.status || response.tracking_status || 'pending';
+  console.log('TrackingMore raw status:', apiStatus, 'Full response keys:', Object.keys(response));
   const shippingStatus = normalizeStatus(apiStatus);
+  console.log('Normalized status:', shippingStatus);
   
   // Get last update time
   let lastUpdate = new Date();
@@ -305,7 +310,7 @@ export function getTrackingUrl(carrier: Carrier, trackingNumber: string): string
   
   switch (carrier) {
     case 'yanwen':
-      return `https://track.yw56.com.cn/en-US/track/${encoded}`;
+      return `https://www.17track.net/en/track#nums=${encoded}`;
     
     case 'usps':
       return `https://tools.usps.com/go/TrackConfirmAction?qtc_tLabels1=${encoded}`;
