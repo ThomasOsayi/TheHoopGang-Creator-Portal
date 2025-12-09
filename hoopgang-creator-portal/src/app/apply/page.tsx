@@ -6,7 +6,7 @@ import { useState, FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { CreatorApplicationInput, ProductType, Size } from '@/types';
 import { PRODUCTS, SIZES } from '@/lib/constants';
-import { createCreator, updateCreator } from '@/lib/firestore';
+import { createCreator, updateCreator, getCreatorByUserId } from '@/lib/firestore';
 import { useAuth } from '@/lib/auth-context';
 import { useToast } from '@/components/ui';
 
@@ -18,11 +18,24 @@ export default function ApplyPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  // Redirect if already logged in
+  // Redirect if user has an active collaboration (not completed/denied)
   useEffect(() => {
-    if (user) {
-      router.push('/creator/dashboard');
-    }
+    const checkExistingApplication = async () => {
+      if (user) {
+        try {
+          const existingCreator = await getCreatorByUserId(user.uid);
+          // Only redirect if they have an active (non-completed) collaboration
+          if (existingCreator && !['completed', 'denied', 'ghosted'].includes(existingCreator.status)) {
+            router.push('/creator/dashboard');
+          }
+          // If completed/denied/ghosted or no creator found, allow them to apply
+        } catch (err) {
+          // No existing application, allow them to apply
+          console.log('No existing application found, allowing new application');
+        }
+      }
+    };
+    checkExistingApplication();
   }, [user, router]);
 
   const [formData, setFormData] = useState<CreatorApplicationInput>({
@@ -178,9 +191,14 @@ export default function ApplyPage() {
       // 3. Update creator document with userId
       await updateCreator(creatorDocId, { userId });
 
-      // 4. Show success toast and redirect to dashboard (user is now logged in)
+      // 4. Show success state (don't redirect immediately)
+      setSuccess(true);
       showToast('Application submitted! Welcome to HoopGang!', 'success');
-      router.push('/creator/dashboard');
+
+      // 5. Small delay to ensure Firestore propagates the data
+      setTimeout(() => {
+        router.push('/creator/dashboard');
+      }, 1500);
       
     } catch (err) {
       console.error('Application error:', err);
@@ -194,8 +212,7 @@ export default function ApplyPage() {
       }
       setError(errorMessage);
       showToast(errorMessage, 'error');
-    } finally {
-      setLoading(false);
+      setLoading(false);  // Only set loading false on error
     }
   };
 

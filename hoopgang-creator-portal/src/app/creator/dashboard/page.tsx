@@ -230,6 +230,37 @@ export default function CreatorDashboardPage() {
           <p className="text-white/90">You're officially part of the HoopGang Creator Squad</p>
         </div>
 
+        {/* Completion Banner - show when all 3 videos submitted */}
+        {creator.contentSubmissions.length >= 3 && creator.status !== 'completed' && (
+          <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-3xl p-8 text-center mb-8">
+            <div className="text-5xl mb-4">🎉</div>
+            <h2 className="text-2xl font-bold text-white mb-2">
+              All Content Submitted!
+            </h2>
+            <p className="text-white/90">
+              Amazing work! Your submissions are being reviewed. You'll be marked as completed soon!
+            </p>
+          </div>
+        )}
+
+        {/* Already Completed Banner */}
+        {creator.status === 'completed' && (
+          <div className="bg-gradient-to-r from-cyan-500 to-blue-600 rounded-3xl p-8 text-center mb-8">
+            <div className="text-5xl mb-4">🏆</div>
+            <h2 className="text-2xl font-bold text-white mb-2">
+              Collaboration Complete!
+            </h2>
+            <p className="text-white/90 mb-4">
+              You crushed it! Thanks for being part of HoopGang.
+            </p>
+            <Link href="/apply">
+              <Button variant="secondary" className="bg-white/20 hover:bg-white/30 text-white">
+                Start a New Collaboration
+              </Button>
+            </Link>
+          </div>
+        )}
+
         {/* Status Timeline */}
         <SectionCard title="Your Collaboration Status" icon="📋" className="mb-6">
           <div className="relative">
@@ -333,116 +364,172 @@ export default function CreatorDashboardPage() {
           </div>
         )}
 
-        {/* Content Submission Card */}
-        <SectionCard title="Submit Your Content" icon="🎥" className="mb-6">
-          {[0, 1, 2].map((index) => {
-            const submission = creator.contentSubmissions[index];
-            const isNextToSubmit = index === creator.contentSubmissions.length;
-            const isPending = index > creator.contentSubmissions.length;
+        {/* Only show content-related sections after approval */}
+        {!['pending', 'denied'].includes(creator.status) && (
+          <>
+            {/* Content Submission Card */}
+            <SectionCard title="Submit Your Content" icon="🎥" className="mb-6">
+              {[0, 1, 2].map((index) => {
+                const submission = creator.contentSubmissions[index];
+                const isNextToSubmit = index === creator.contentSubmissions.length;
+                const isPending = index > creator.contentSubmissions.length;
 
-            return (
-              <div
-                key={index}
-                className={`flex items-center gap-4 py-3 ${
-                  index < 2 ? 'border-b border-white/10' : ''
-                }`}
-              >
-                <div className="font-medium text-white w-24">TikTok {index + 1}:</div>
+                return (
+                  <div
+                    key={index}
+                    className={`flex items-center gap-4 py-3 ${
+                      index < 2 ? 'border-b border-white/10' : ''
+                    }`}
+                  >
+                    <div className="font-medium text-white w-24">TikTok {index + 1}:</div>
 
-                {submission ? (
-                  <>
-                    <div className="flex-1 text-white/70 truncate">{submission.url}</div>
-                    <Button variant="secondary" disabled size="sm">
-                      ✓ Submitted
-                    </Button>
-                  </>
-                ) : isNextToSubmit ? (
-                  <>
-                    <input
-                      type="url"
-                      value={newContentUrl}
-                      onChange={(e) => setNewContentUrl(e.target.value)}
-                      placeholder="Enter TikTok URL..."
-                      className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-orange-500/50 transition-colors"
-                      disabled={submitting}
-                    />
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={handleSubmitContent}
-                      disabled={submitting || !newContentUrl.trim()}
-                      loading={submitting}
-                    >
-                      Submit
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <div className="flex-1 text-white/30">—</div>
-                    <Button variant="secondary" disabled size="sm">
-                      Pending
-                    </Button>
-                  </>
-                )}
+                    {submission ? (
+                      <>
+                        <div className="flex-1 text-white/70 truncate">{submission.url}</div>
+                        <Button variant="secondary" disabled size="sm">
+                          ✓ Submitted
+                        </Button>
+                      </>
+                    ) : isNextToSubmit ? (
+                      <>
+                        <input
+                          type="url"
+                          value={newContentUrl}
+                          onChange={(e) => setNewContentUrl(e.target.value)}
+                          placeholder="Enter TikTok URL..."
+                          className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-orange-500/50 transition-colors"
+                          disabled={submitting}
+                        />
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={handleSubmitContent}
+                          disabled={submitting || !newContentUrl.trim()}
+                          loading={submitting}
+                        >
+                          Submit
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex-1 text-white/30">—</div>
+                        <Button variant="secondary" disabled size="sm">
+                          Pending
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+            </SectionCard>
+
+            {/* Agreement Card */}
+            <SectionCard title="Your Agreement" icon="📋" className="mb-6">
+              <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-6">
+                <h3 className="font-semibold text-white mb-4">You agreed to:</h3>
+                <ul className="space-y-3">
+                  <li className="flex items-start gap-3">
+                    <span className="text-xl">🏀</span>
+                    <span className="text-white/80 text-sm">
+                      Post 3 TikToks featuring your HoopGang product within 14 days
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="text-xl">🏀</span>
+                    <span className="text-white/80 text-sm">Tag @thehoopgang in every post</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="text-xl">🏀</span>
+                    <span className="text-white/80 text-sm">Use trending basketball sounds</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="text-xl">🏀</span>
+                    <span className="text-white/80 text-sm">Show the product in action</span>
+                  </li>
+                </ul>
+
+                {/* Countdown with dates */}
+                <div className="bg-white/5 rounded-xl p-4 mt-6 text-center">
+                  {creator.deliveredAt && creator.contentDeadline ? (
+                    <>
+                      <div className="text-4xl font-bold text-orange-500 mb-1">
+                        {daysRemaining.days !== null ? Math.max(0, daysRemaining.days) : '—'}
+                      </div>
+                      <div className="text-white/60 text-sm mb-3">{daysRemaining.label}</div>
+                      <div className="border-t border-white/10 pt-3 mt-3">
+                        <div className="flex justify-between text-sm">
+                          <div>
+                            <span className="text-white/40">Start:</span>{' '}
+                            <span className="text-white/70">{formatDate(creator.deliveredAt)}</span>
+                          </div>
+                          <div>
+                            <span className="text-white/40">Deadline:</span>{' '}
+                            <span className="text-white/70">{formatDate(creator.contentDeadline)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-4xl font-bold text-orange-500 mb-1">—</div>
+                      <div className="text-white/60 text-sm">{daysRemaining.label}</div>
+                    </>
+                  )}
+                </div>
               </div>
-            );
-          })}
-        </SectionCard>
+            </SectionCard>
 
-        {/* Agreement Card */}
-        <SectionCard title="Your Agreement" icon="📋" className="mb-6">
-          <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-6">
-            <h3 className="font-semibold text-white mb-4">You agreed to:</h3>
-            <ul className="space-y-3">
-              <li className="flex items-start gap-3">
-                <span className="text-xl">🏀</span>
-                <span className="text-white/80 text-sm">
-                  Post 3 TikToks featuring your HoopGang product within 14 days
-                </span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="text-xl">🏀</span>
-                <span className="text-white/80 text-sm">Tag @thehoopgang in every post</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="text-xl">🏀</span>
-                <span className="text-white/80 text-sm">Use trending basketball sounds</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="text-xl">🏀</span>
-                <span className="text-white/80 text-sm">Show the product in action</span>
-              </li>
-            </ul>
-
-            {/* Countdown */}
-            <div className="bg-white/5 rounded-xl p-4 mt-6 text-center">
-              <div className="text-4xl font-bold text-orange-500 mb-1">
-                {daysRemaining.days !== null ? daysRemaining.days : '—'}
+            {/* Perks Card */}
+            <SectionCard title="What's Next" icon="🎁">
+              <p className="text-white/60 mb-4">
+                Complete all 3 TikToks to unlock exclusive perks:
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[
+                  { icon: '⭐', text: 'Get featured on @thehoopgang' },
+                  { icon: '🎁', text: 'Early access to new drops' },
+                  { icon: '💰', text: 'Unlock paid collaboration opportunities' },
+                  { icon: '🏀', text: 'Join the exclusive Creator Squad' },
+                ].map((perk, index) => (
+                  <div key={index} className="flex items-center gap-3 bg-white/5 rounded-xl p-4">
+                    <span className="text-2xl">{perk.icon}</span>
+                    <span className="text-white/80 text-sm">{perk.text}</span>
+                  </div>
+                ))}
               </div>
-              <div className="text-white/60 text-sm">{daysRemaining.label}</div>
+            </SectionCard>
+          </>
+        )}
+
+        {/* Show pending message for pending/denied creators */}
+        {creator.status === 'pending' && (
+          <SectionCard title="What's Next?" icon="⏳" className="mb-6">
+            <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-6 text-center">
+              <p className="text-yellow-400 text-lg font-medium mb-2">
+                Your application is under review!
+              </p>
+              <p className="text-white/60">
+                We'll notify you once your application has been approved. This usually takes 1-3 business days.
+              </p>
             </div>
-          </div>
-        </SectionCard>
+          </SectionCard>
+        )}
 
-        {/* Perks Card */}
-        <SectionCard title="What's Next" icon="🎁">
-          <p className="text-white/60 mb-4">
-            Complete all 3 TikToks to unlock exclusive perks:
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {[
-              { icon: '⭐', text: 'Get featured on @thehoopgang' },
-              { icon: '🎁', text: 'Early access to new drops' },
-              { icon: '💰', text: 'Unlock paid collaboration opportunities' },
-              { icon: '🏀', text: 'Join the exclusive Creator Squad' },
-            ].map((perk, index) => (
-              <div key={index} className="flex items-center gap-3 bg-white/5 rounded-xl p-4">
-                <span className="text-2xl">{perk.icon}</span>
-                <span className="text-white/80 text-sm">{perk.text}</span>
-              </div>
-            ))}
-          </div>
-        </SectionCard>
+        {creator.status === 'denied' && (
+          <SectionCard title="Application Status" icon="❌" className="mb-6">
+            <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-6 text-center">
+              <p className="text-red-400 text-lg font-medium mb-2">
+                Application Not Approved
+              </p>
+              <p className="text-white/60 mb-4">
+                Unfortunately, your application wasn't approved this time. You can apply again with a new application.
+              </p>
+              <Link href="/apply">
+                <Button variant="primary">Apply Again</Button>
+              </Link>
+            </div>
+          </SectionCard>
+        )}
       </div>
     </div>
     </ProtectedRoute>
