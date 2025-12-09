@@ -106,14 +106,15 @@ export interface User {
 export interface CreatorApplicationInput {
   fullName: string;
   email: string;
-  phone: string;
   instagramHandle: string;
   instagramFollowers: number;
   tiktokHandle: string;
   tiktokFollowers: number;
   bestContentUrl: string;
-  product: ProductType;
+  product: string;
   size: Size;
+  height?: string;
+  weight?: string;
   shippingAddress: ShippingAddress;
   whyCollab: string;
   previousBrands: boolean;

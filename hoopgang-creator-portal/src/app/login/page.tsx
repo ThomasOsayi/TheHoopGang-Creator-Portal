@@ -1,3 +1,5 @@
+// src/app/login/page.tsx
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -12,13 +14,12 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [loginAttempted, setLoginAttempted] = useState(false);
-  
+
   const { signIn, userData, loading: authLoading } = useAuth();
   const router = useRouter();
 
   // Handle redirect after successful login
   useEffect(() => {
-    // Only redirect if login was attempted and we have userData
     if (loginAttempted && userData && !authLoading) {
       if (userData.role === 'admin') {
         router.push('/admin/creators');
@@ -30,7 +31,7 @@ export default function LoginPage() {
     }
   }, [loginAttempted, userData, authLoading, router]);
 
-  // Also redirect if user is already logged in when visiting login page
+  // Redirect if user is already logged in
   useEffect(() => {
     if (!authLoading && userData) {
       if (userData.role === 'admin') {
@@ -48,9 +49,8 @@ export default function LoginPage() {
 
     try {
       await signIn(email, password);
-      // Mark that login was attempted - useEffect will handle redirect
       setLoginAttempted(true);
-      setLoading(false); // Clear loading state to show success before redirect
+      setLoading(false);
     } catch (err) {
       console.error('Login error:', err);
       setError('Invalid email or password');
@@ -58,64 +58,104 @@ export default function LoginPage() {
     }
   };
 
-  // Show loading state while checking auth
+  // Auth loading state
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-zinc-950 via-zinc-900 to-zinc-950 flex items-center justify-center">
-        <div className="text-white/60">Loading...</div>
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center relative overflow-hidden">
+        {/* Background Orbs */}
+        <div className="fixed inset-0 pointer-events-none overflow-hidden">
+          <div className="absolute -top-40 -right-40 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl" />
+          <div className="absolute top-1/3 -left-40 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl" />
+        </div>
+
+        <div className="relative z-10 flex items-center gap-3">
+          <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+          <span className="text-white/60">Loading...</span>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-zinc-950 via-zinc-900 to-zinc-950 flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-zinc-950 flex items-center justify-center px-4 relative overflow-hidden">
+      {/* Background Gradient Orbs */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl" />
+        <div className="absolute top-1/3 -left-40 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl" />
+        <div className="absolute -bottom-40 right-1/4 w-72 h-72 bg-orange-500/5 rounded-full blur-3xl" />
+      </div>
+
+      <div className="w-full max-w-md relative z-10">
+        {/* Header */}
         <div className="text-center mb-8">
-          <div className="text-5xl mb-4">🏀</div>
+          <Link href="/" className="inline-block">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-500/20 to-orange-600/10 border border-orange-500/20 mb-6 hover:scale-105 transition-transform">
+              <span className="text-4xl">🏀</span>
+            </div>
+          </Link>
           <h1 className="text-2xl font-bold text-white">Welcome Back</h1>
           <p className="text-white/60 mt-2">Sign in to your HoopGang account</p>
         </div>
 
-        <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8">
+        {/* Login Card */}
+        <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-8 hover:border-white/20 transition-all duration-300">
+          {/* Error Message */}
           {error && (
-            <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl mb-6 text-sm">
+            <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl mb-6 text-sm flex items-center gap-3">
+              <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
               {error}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-white/80 text-sm font-medium mb-2">
+              <label className="block text-white/50 text-xs uppercase tracking-wider mb-2">
                 Email
               </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-orange-500/50 transition-colors"
-                placeholder="you@example.com"
-              />
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+                  </svg>
+                </span>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="w-full bg-white/5 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent hover:bg-white/[0.08] transition-all"
+                  placeholder="you@example.com"
+                />
+              </div>
             </div>
 
             <div>
-              <label className="block text-white/80 text-sm font-medium mb-2">
+              <label className="block text-white/50 text-xs uppercase tracking-wider mb-2">
                 Password
               </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-orange-500/50 transition-colors"
-                placeholder="••••••••"
-              />
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                </span>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="w-full bg-white/5 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent hover:bg-white/[0.08] transition-all"
+                  placeholder="••••••••"
+                />
+              </div>
             </div>
 
             <Button
               type="submit"
               variant="primary"
-              className="w-full"
+              className="w-full py-3 text-base"
               disabled={loading}
               loading={loading}
             >
@@ -123,12 +163,36 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <p className="text-center text-white/50 text-sm mt-6">
+          {/* Divider */}
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-white/10" />
+            </div>
+            <div className="relative flex justify-center text-xs">
+              <span className="px-3 bg-zinc-900/50 text-white/40 uppercase tracking-wider">or</span>
+            </div>
+          </div>
+
+          {/* Sign Up Link */}
+          <p className="text-center text-white/50 text-sm">
             Want to become a creator?{' '}
-            <Link href="/apply" className="text-orange-400 hover:text-orange-300">
+            <Link href="/apply" className="text-orange-400 hover:text-orange-300 transition-colors font-medium">
               Apply here
             </Link>
           </p>
+        </div>
+
+        {/* Back to Home */}
+        <div className="text-center mt-6">
+          <Link
+            href="/"
+            className="text-white/40 hover:text-white/60 text-sm transition-colors inline-flex items-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Back to Home
+          </Link>
         </div>
       </div>
     </div>
