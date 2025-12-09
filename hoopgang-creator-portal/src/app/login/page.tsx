@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
@@ -11,9 +11,35 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [loginAttempted, setLoginAttempted] = useState(false);
   
-  const { signIn, userData } = useAuth();
+  const { signIn, userData, loading: authLoading } = useAuth();
   const router = useRouter();
+
+  // Handle redirect after successful login
+  useEffect(() => {
+    // Only redirect if login was attempted and we have userData
+    if (loginAttempted && userData && !authLoading) {
+      if (userData.role === 'admin') {
+        router.push('/admin/creators');
+      } else if (userData.role === 'creator') {
+        router.push('/creator/dashboard');
+      } else {
+        router.push('/');
+      }
+    }
+  }, [loginAttempted, userData, authLoading, router]);
+
+  // Also redirect if user is already logged in when visiting login page
+  useEffect(() => {
+    if (!authLoading && userData) {
+      if (userData.role === 'admin') {
+        router.push('/admin/creators');
+      } else if (userData.role === 'creator') {
+        router.push('/creator/dashboard');
+      }
+    }
+  }, [authLoading, userData, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,15 +48,24 @@ export default function LoginPage() {
 
     try {
       await signIn(email, password);
-      // Redirect based on role (will be determined after auth state updates)
-      router.push('/');
+      // Mark that login was attempted - useEffect will handle redirect
+      setLoginAttempted(true);
     } catch (err) {
       console.error('Login error:', err);
       setError('Invalid email or password');
-    } finally {
       setLoading(false);
     }
+    // Note: Don't setLoading(false) on success - let the redirect happen
   };
+
+  // Show loading state while checking auth
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-zinc-950 via-zinc-900 to-zinc-950 flex items-center justify-center">
+        <div className="text-white/60">Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-zinc-950 via-zinc-900 to-zinc-950 flex items-center justify-center px-4">
@@ -84,7 +119,7 @@ export default function LoginPage() {
               disabled={loading}
               loading={loading}
             >
-              Sign In
+              {loading ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>
 
@@ -99,4 +134,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
