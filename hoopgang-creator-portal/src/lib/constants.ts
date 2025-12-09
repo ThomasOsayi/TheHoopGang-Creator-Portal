@@ -4,6 +4,7 @@ import { CreatorStatus, ProductType, Size, Carrier } from '@/types';
 
 export const CREATOR_STATUSES: Array<{ value: CreatorStatus; label: string; color: string }> = [
   { value: 'pending', label: 'Pending', color: 'yellow' },
+  { value: 'denied', label: 'Denied', color: 'red' },
   { value: 'approved', label: 'Approved', color: 'blue' },
   { value: 'shipped', label: 'Shipped', color: 'purple' },
   { value: 'delivered', label: 'Delivered', color: 'green' },
@@ -28,9 +29,6 @@ export const SIZES: Array<{ value: Size; label: string }> = [
 
 export const CARRIERS: Array<{ value: Carrier; label: string }> = [
   { value: 'yanwen', label: 'Yanwen' },
-  { value: 'usps', label: 'USPS' },
-  { value: 'ups', label: 'UPS' },
-  { value: 'fedex', label: 'FedEx' },
 ];
 
 export const CONTENT_DEADLINE_DAYS = 14;
@@ -54,6 +52,7 @@ export function generateCreatorId(): string {
 export function getStatusColor(status: CreatorStatus): string {
   const colorMap: Record<CreatorStatus, string> = {
     pending: 'bg-yellow-100 text-yellow-800',
+    denied: 'bg-red-100 text-red-800',
     approved: 'bg-blue-100 text-blue-800',
     shipped: 'bg-purple-100 text-purple-800',
     delivered: 'bg-green-100 text-green-800',

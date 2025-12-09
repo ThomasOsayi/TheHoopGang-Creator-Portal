@@ -2,11 +2,13 @@
 
 import { Creator } from '@/types';
 import { StatusBadge, ProgressDots, StarRating, Button } from '@/components/ui';
+import { getTrackingUrl } from '@/lib/tracking';
 
 interface CreatorTableProps {
   creators: Creator[];
   onViewCreator: (id: string) => void;
   onApprove?: (id: string) => void;
+  onDeny?: (id: string) => void;
   loading?: boolean;
 }
 
@@ -23,33 +25,12 @@ function formatFollowers(count: number): string {
   return `${(count / 1000000).toFixed(1)}M`.replace('.0', '');
 }
 
-/**
- * Generates tracking URL based on carrier
- */
-function getTrackingUrl(trackingNumber: string, carrier?: string): string {
-  if (!carrier) {
-    // Default to USPS if no carrier specified
-    return `https://tools.usps.com/go/TrackConfirmAction?tLabels=${trackingNumber}`;
-  }
-
-  switch (carrier) {
-    case 'USPS':
-      return `https://tools.usps.com/go/TrackConfirmAction?tLabels=${trackingNumber}`;
-    case 'UPS':
-      return `https://www.ups.com/track?tracknum=${trackingNumber}`;
-    case 'FedEx':
-      return `https://www.fedex.com/fedextrack/?trknbr=${trackingNumber}`;
-    case 'DHL':
-      return `https://www.dhl.com/en/express/tracking.html?AWB=${trackingNumber}`;
-    default:
-      return `https://tools.usps.com/go/TrackConfirmAction?tLabels=${trackingNumber}`;
-  }
-}
 
 export default function CreatorTable({
   creators,
   onViewCreator,
   onApprove,
+  onDeny,
   loading = false,
 }: CreatorTableProps) {
   if (loading) {
@@ -136,7 +117,7 @@ export default function CreatorTable({
                 <td className="px-6 py-4 text-sm">
                   {creator.trackingNumber ? (
                     <a
-                      href={getTrackingUrl(creator.trackingNumber, creator.carrier)}
+                      href={getTrackingUrl(creator.carrier || 'yanwen', creator.trackingNumber)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-orange-400 hover:text-orange-300 transition-colors"
@@ -162,14 +143,28 @@ export default function CreatorTable({
                   )}
                 </td>
                 <td className="px-6 py-4 text-sm">
-                  {creator.status === 'pending' && onApprove ? (
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => onApprove(creator.id)}
-                    >
-                      Approve
-                    </Button>
+                  {creator.status === 'pending' && (onApprove || onDeny) ? (
+                    <div className="flex gap-2">
+                      {onApprove && (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => onApprove(creator.id)}
+                        >
+                          Approve
+                        </Button>
+                      )}
+                      {onDeny && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onDeny(creator.id)}
+                          className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                        >
+                          Deny
+                        </Button>
+                      )}
+                    </div>
                   ) : (
                     <Button
                       variant="primary"

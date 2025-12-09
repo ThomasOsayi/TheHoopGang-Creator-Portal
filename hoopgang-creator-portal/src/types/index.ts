@@ -2,6 +2,7 @@
 
 export type CreatorStatus = 
   | 'pending' 
+  | 'denied'
   | 'approved' 
   | 'shipped' 
   | 'delivered' 
@@ -16,7 +17,7 @@ export type ProductType =
 
 export type Size = 'S' | 'M' | 'L' | 'XL' | 'XXL';
 
-export type Carrier = 'yanwen' | 'usps' | 'ups' | 'fedex';
+export type Carrier = 'yanwen';
 
 export interface ContentSubmission {
   url: string;

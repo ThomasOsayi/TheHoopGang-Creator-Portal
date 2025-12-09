@@ -1,3 +1,5 @@
+// src/app/admin/creators/page.tsx
+
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
@@ -128,6 +130,19 @@ export default function AdminCreatorsPage() {
     }
   };
 
+  const handleDeny = async (id: string) => {
+    try {
+      await updateCreator(id, { status: 'denied' as CreatorStatus });
+      // Refetch creators to update UI
+      const lastDoc = currentPage > 1 ? lastDocs[currentPage - 2] : undefined;
+      await fetchCreators(lastDoc);
+      showToast('Creator denied', 'success');
+    } catch (error) {
+      console.error('Error denying creator:', error);
+      showToast('Failed to deny creator', 'error');
+    }
+  };
+
   const handleNextPage = () => {
     const lastDoc = lastDocs[currentPage - 1];
     if (lastDoc && hasMore) {
@@ -228,6 +243,7 @@ export default function AdminCreatorsPage() {
             creators={filteredCreators}
             onViewCreator={handleViewCreator}
             onApprove={handleApprove}
+            onDeny={handleDeny}
             loading={loading}
           />
 

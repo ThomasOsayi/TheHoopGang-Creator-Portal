@@ -39,9 +39,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!carrier || !['yanwen', 'usps', 'ups', 'fedex'].includes(carrier)) {
+    if (!carrier || carrier !== 'yanwen') {
       return NextResponse.json(
-        { success: false, error: 'Invalid carrier. Must be yanwen, usps, ups, or fedex' },
+        { success: false, error: 'Invalid carrier. Only Yanwen is supported' },
         { status: 400 }
       );
     }

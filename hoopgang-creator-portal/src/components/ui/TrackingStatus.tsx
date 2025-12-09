@@ -71,9 +71,6 @@ const STATUS_CONFIG: Record<
 
 const CARRIER_LABELS: Record<Carrier, string> = {
   yanwen: 'Yanwen',
-  usps: 'USPS',
-  ups: 'UPS',
-  fedex: 'FedEx',
 };
 
 /**
@@ -385,9 +382,6 @@ export function AddTrackingForm({ creatorId, onSuccess }: AddTrackingFormProps) 
             disabled={isSubmitting}
           >
             <option value="yanwen" className="bg-zinc-900">Yanwen</option>
-            <option value="usps" className="bg-zinc-900">USPS</option>
-            <option value="ups" className="bg-zinc-900">UPS</option>
-            <option value="fedex" className="bg-zinc-900">FedEx</option>
           </select>
         </div>
 

@@ -10,6 +10,7 @@ export default function StatusBadge({ status, size = 'md' }: StatusBadgeProps) {
   
   const colorMap: Record<CreatorStatus, string> = {
     pending: 'bg-yellow-500/20 text-yellow-400',
+    denied: 'bg-red-500/20 text-red-400',
     approved: 'bg-blue-500/20 text-blue-400',
     shipped: 'bg-purple-500/20 text-purple-400',
     delivered: 'bg-green-500/20 text-green-400',

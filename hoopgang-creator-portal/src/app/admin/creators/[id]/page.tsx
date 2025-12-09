@@ -1,10 +1,12 @@
+// src/app/admin/creators/[id]/page.tsx
+
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Creator, CreatorStatus, Carrier } from '@/types';
 import { getCreatorById, updateCreator } from '@/lib/firestore';
-import { CREATOR_STATUSES, CARRIERS } from '@/lib/constants';
+import { CREATOR_STATUSES } from '@/lib/constants';
 import { SectionCard, StatusBadge, DetailRow, StarRating, Button, useToast, TrackingStatus, AddTrackingForm } from '@/components/ui';
 import { ProtectedRoute } from '@/components/auth';
 
@@ -42,8 +44,6 @@ export default function CreatorDetailPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editedStatus, setEditedStatus] = useState<CreatorStatus | ''>('');
-  const [editedTrackingNumber, setEditedTrackingNumber] = useState<string>('');
-  const [editedCarrier, setEditedCarrier] = useState<Carrier | ''>('');
   const [editedRating, setEditedRating] = useState<number>(0);
   const [editedNotes, setEditedNotes] = useState<string>('');
 
@@ -62,8 +62,6 @@ export default function CreatorDetailPage() {
         setCreator(creatorData);
         // Populate edited fields with current values
         setEditedStatus(creatorData.status);
-        setEditedTrackingNumber(creatorData.trackingNumber || '');
-        setEditedCarrier(creatorData.carrier || '');
         setEditedRating(creatorData.rating || 0);
         setEditedNotes(creatorData.internalNotes || '');
       }
@@ -84,12 +82,6 @@ export default function CreatorDetailPage() {
       // Only include changed fields
       if (editedStatus && editedStatus !== creator.status) {
         updateData.status = editedStatus as CreatorStatus;
-      }
-      if (editedTrackingNumber !== (creator.trackingNumber || '')) {
-        updateData.trackingNumber = editedTrackingNumber || undefined;
-      }
-      if (editedCarrier !== (creator.carrier || '')) {
-        updateData.carrier = editedCarrier || undefined;
       }
       if (editedRating !== (creator.rating || 0)) {
         updateData.rating = editedRating || undefined;
@@ -253,33 +245,6 @@ export default function CreatorDetailPage() {
                     {CREATOR_STATUSES.map((status) => (
                       <option key={status.value} value={status.value} className="bg-zinc-900">
                         {status.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-white/60 text-sm mb-2">Tracking Number</label>
-                  <input
-                    type="text"
-                    value={editedTrackingNumber}
-                    onChange={(e) => setEditedTrackingNumber(e.target.value)}
-                    className={inputClasses.replace('appearance-none cursor-pointer', '')}
-                    placeholder="Enter tracking number"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-white/60 text-sm mb-2">Carrier</label>
-                  <select
-                    value={editedCarrier}
-                    onChange={(e) => setEditedCarrier(e.target.value as Carrier | '')}
-                    className={inputClasses}
-                  >
-                    <option value="" className="bg-zinc-900">Select carrier</option>
-                    {CARRIERS.map((carrier) => (
-                      <option key={carrier.value} value={carrier.value} className="bg-zinc-900">
-                        {carrier.label}
                       </option>
                     ))}
                   </select>

@@ -8,9 +8,6 @@ const API_KEY = process.env.TRACKINGMORE_API_KEY;
 // Carrier code mapping: our internal codes -> TrackingMore API codes
 const CARRIER_CODE_MAP: Record<Carrier, string> = {
   yanwen: 'yanwen-unified-api',
-  usps: 'usps',
-  ups: 'ups',
-  fedex: 'fedex',
 };
 
 // TrackingMore API response status -> our ShippingStatus
@@ -127,9 +124,6 @@ export function getCarrierFromTrackingMoreCode(trackingMoreCode: string): Carrie
   // Reverse mapping: TrackingMore code -> our internal code
   const reverseMap: Record<string, Carrier> = {
     'yanwen-unified-api': 'yanwen',
-    'usps': 'usps',
-    'ups': 'ups',
-    'fedex': 'fedex',
   };
 
   return reverseMap[trackingMoreCode] || null;
@@ -322,15 +316,6 @@ export function getTrackingUrl(carrier: Carrier, trackingNumber: string): string
   switch (carrier) {
     case 'yanwen':
       return `https://www.17track.net/en/track#nums=${encoded}`;
-    
-    case 'usps':
-      return `https://tools.usps.com/go/TrackConfirmAction?qtc_tLabels1=${encoded}`;
-    
-    case 'ups':
-      return `https://www.ups.com/track?tracknum=${encoded}`;
-    
-    case 'fedex':
-      return `https://www.fedex.com/apps/fedextrack/?tracknumbers=${encoded}`;
     
     default:
       return '';

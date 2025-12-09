@@ -127,6 +127,9 @@ export default function CreatorDashboardPage() {
     if (status === 'pending') {
       steps[0].status = 'completed';
       steps[1].status = 'active';
+    } else if (status === 'denied') {
+      steps[0].status = 'completed';
+      steps[1].status = 'failed';
     } else if (status === 'approved') {
       steps[0].status = 'completed';
       steps[1].status = 'completed';
