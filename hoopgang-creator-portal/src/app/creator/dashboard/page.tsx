@@ -253,12 +253,34 @@ export default function CreatorDashboardPage() {
             <div className="absolute bottom-4 right-4 text-6xl opacity-10 group-hover:opacity-20 transition-opacity">🏀</div>
             
             <div className="relative">
-              <h1 className="text-2xl md:text-3xl font-bold text-white mb-2 group-hover:text-orange-100 transition-colors">
-            Welcome back, {firstName}! 🏀
-          </h1>
-              <p className="text-white/70 group-hover:text-white/90 transition-colors">
-                You're officially part of the HoopGang Creator Squad
-              </p>
+              {creator.status === 'pending' ? (
+                <>
+                  <h1 className="text-2xl md:text-3xl font-bold text-white mb-2 group-hover:text-orange-100 transition-colors">
+                    Welcome, {firstName}! 🏀
+                  </h1>
+                  <p className="text-white/70 group-hover:text-white/90 transition-colors">
+                    Thanks for applying to join HoopGang
+                  </p>
+                </>
+              ) : creator.status === 'denied' ? (
+                <>
+                  <h1 className="text-2xl md:text-3xl font-bold text-white mb-2 group-hover:text-orange-100 transition-colors">
+                    Hey, {firstName} 🏀
+                  </h1>
+                  <p className="text-white/70 group-hover:text-white/90 transition-colors">
+                    Thanks for your interest in HoopGang
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h1 className="text-2xl md:text-3xl font-bold text-white mb-2 group-hover:text-orange-100 transition-colors">
+                    Congrats, {firstName}! 🎉
+                  </h1>
+                  <p className="text-white/70 group-hover:text-white/90 transition-colors">
+                    You're officially part of the HoopGang Creator Squad
+                  </p>
+                </>
+              )}
             </div>
         </div>
 

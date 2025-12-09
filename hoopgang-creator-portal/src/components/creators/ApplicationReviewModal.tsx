@@ -14,22 +14,12 @@ interface ApplicationReviewModalProps {
   loading?: boolean;
 }
 
-/**
- * Formats follower count for display
- */
 function formatFollowers(count: number): string {
-  if (count < 1000) {
-    return count.toString();
-  }
-  if (count < 1000000) {
-    return `${(count / 1000).toFixed(1)}K`.replace('.0', '');
-  }
+  if (count < 1000) return count.toString();
+  if (count < 1000000) return `${(count / 1000).toFixed(1)}K`.replace('.0', '');
   return `${(count / 1000000).toFixed(1)}M`.replace('.0', '');
 }
 
-/**
- * Formats a date to a readable string
- */
 function formatDate(date: Date): string {
   return date.toLocaleDateString('en-US', {
     year: 'numeric',
@@ -57,180 +47,213 @@ export default function ApplicationReviewModal({
     .filter(Boolean)
     .join(', ');
 
+  // Calculate total followers
+  const totalFollowers = creator.instagramFollowers + creator.tiktokFollowers;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+      <div
+        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
         onClick={onClose}
       />
-      
+
       {/* Modal */}
-      <div className="relative bg-zinc-900 border border-white/10 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto mx-4 shadow-2xl">
+      <div className="relative bg-zinc-900/95 backdrop-blur-md border border-white/10 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto mx-4 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
-        <div className="sticky top-0 bg-zinc-900 border-b border-white/10 px-6 py-4 flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-bold text-white">Review Application</h2>
-            <p className="text-white/50 text-sm mt-0.5">
-              Applied: {formatDate(creator.createdAt)} • ID: {creator.creatorId}
-            </p>
+        <div className="sticky top-0 bg-zinc-900/95 backdrop-blur-md border-b border-white/10 px-6 py-4 z-10">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-4">
+              {/* Avatar */}
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500/20 to-purple-500/20 border border-white/10 flex items-center justify-center text-xl font-bold text-white/70">
+                {creator.fullName.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-white">{creator.fullName}</h2>
+                <p className="text-white/50 text-sm">
+                  Applied {formatDate(creator.createdAt)} • <span className="font-mono">{creator.creatorId}</span>
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="text-white/40 hover:text-white hover:bg-white/10 transition-all p-2 rounded-lg"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="text-white/50 hover:text-white transition-colors p-2"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+
+          {/* Quick Stats Bar */}
+          <div className="flex items-center gap-4 mt-4 pt-4 border-t border-white/10">
+            <div className="flex items-center gap-2">
+              <StatusBadge status={creator.status} size="sm" />
+            </div>
+            <div className="h-4 w-px bg-white/10" />
+            <div className="flex items-center gap-1.5 text-sm">
+              <span className="text-white/50">Total Reach:</span>
+              <span className="text-white font-semibold">{formatFollowers(totalFollowers)}</span>
+            </div>
+            {(creator.height || creator.weight) && (
+              <>
+                <div className="h-4 w-px bg-white/10" />
+                <div className="flex items-center gap-1.5 text-sm text-white/50">
+                  <span>📏</span>
+                  {creator.height && <span>{creator.height}</span>}
+                  {creator.height && creator.weight && <span>•</span>}
+                  {creator.weight && <span>{creator.weight}</span>}
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Content */}
-        <div className="px-6 py-6 space-y-6">
-          {/* Creator Info */}
+        <div className="px-6 py-6 space-y-5">
+          {/* Contact Info */}
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <h3 className="text-white/50 text-xs uppercase tracking-wider mb-1">Full Name</h3>
-              <p className="text-white font-medium">{creator.fullName}</p>
+            <div className="bg-white/[0.03] border border-white/5 rounded-xl p-4 hover:bg-white/[0.05] hover:border-white/10 transition-all">
+              <h3 className="text-white/40 text-xs uppercase tracking-wider mb-1">Email</h3>
+              <p className="text-white font-medium truncate">{creator.email}</p>
             </div>
-            <div>
-              <h3 className="text-white/50 text-xs uppercase tracking-wider mb-1">Email</h3>
-              <p className="text-white">{creator.email}</p>
-            </div>
-            <div>
-              <h3 className="text-white/50 text-xs uppercase tracking-wider mb-1">Phone</h3>
-              <p className="text-white">{creator.phone}</p>
-            </div>
-            <div>
-              <h3 className="text-white/50 text-xs uppercase tracking-wider mb-1">Status</h3>
-              <StatusBadge status={creator.status} size="sm" />
+            <div className="bg-white/[0.03] border border-white/5 rounded-xl p-4 hover:bg-white/[0.05] hover:border-white/10 transition-all">
+              <h3 className="text-white/40 text-xs uppercase tracking-wider mb-1">Product Request</h3>
+              <p className="text-white font-medium">
+                {creator.product} <span className="text-white/50">• Size {creator.size}</span>
+              </p>
             </div>
           </div>
 
           {/* Social Stats */}
-          <div className="bg-white/5 rounded-xl p-4">
-            <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
+          <div className="bg-white/[0.03] border border-white/5 rounded-xl p-5 hover:border-white/10 transition-all">
+            <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
               <span>📱</span> Social Presence
             </h3>
             <div className="grid grid-cols-2 gap-4">
-              <div className="bg-white/5 rounded-lg p-3">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-pink-400">📸</span>
+              <a
+                href={`https://instagram.com/${creator.instagramHandle.replace('@', '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group bg-gradient-to-br from-pink-500/10 to-purple-500/10 border border-white/5 rounded-xl p-4 hover:border-pink-500/30 hover:shadow-lg hover:shadow-pink-500/10 transition-all"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-pink-400 text-lg">📸</span>
                   <span className="text-white/70 text-sm">Instagram</span>
                 </div>
-                <a 
-                  href={`https://instagram.com/${creator.instagramHandle.replace('@', '')}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-orange-400 hover:text-orange-300 text-sm"
-                >
+                <p className="text-orange-400 group-hover:text-orange-300 text-sm font-medium transition-colors">
                   @{creator.instagramHandle.replace('@', '')}
-                </a>
-                <p className="text-white font-bold text-lg">
-                  {formatFollowers(creator.instagramFollowers)} followers
                 </p>
-              </div>
-              <div className="bg-white/5 rounded-lg p-3">
-                <div className="flex items-center gap-2 mb-1">
-                  <span>🎵</span>
+                <p className="text-white font-bold text-xl mt-1">
+                  {formatFollowers(creator.instagramFollowers)}
+                  <span className="text-white/50 text-sm font-normal ml-1">followers</span>
+                </p>
+              </a>
+              <a
+                href={`https://tiktok.com/@${creator.tiktokHandle.replace('@', '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-white/5 rounded-xl p-4 hover:border-cyan-500/30 hover:shadow-lg hover:shadow-cyan-500/10 transition-all"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-cyan-400 text-lg">🎵</span>
                   <span className="text-white/70 text-sm">TikTok</span>
                 </div>
-                <a 
-                  href={`https://tiktok.com/@${creator.tiktokHandle.replace('@', '')}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-orange-400 hover:text-orange-300 text-sm"
-                >
+                <p className="text-orange-400 group-hover:text-orange-300 text-sm font-medium transition-colors">
                   @{creator.tiktokHandle.replace('@', '')}
-                </a>
-                <p className="text-white font-bold text-lg">
-                  {formatFollowers(creator.tiktokFollowers)} followers
                 </p>
-              </div>
+                <p className="text-white font-bold text-xl mt-1">
+                  {formatFollowers(creator.tiktokFollowers)}
+                  <span className="text-white/50 text-sm font-normal ml-1">followers</span>
+                </p>
+              </a>
             </div>
-            <div className="mt-3">
-              <h4 className="text-white/50 text-xs uppercase tracking-wider mb-1">Best Content Sample</h4>
-              <a 
+
+            {/* Best Content */}
+            <div className="mt-4 pt-4 border-t border-white/5">
+              <h4 className="text-white/40 text-xs uppercase tracking-wider mb-2">Best Content Sample</h4>
+              <a
                 href={creator.bestContentUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-orange-400 hover:text-orange-300 text-sm break-all"
+                className="inline-flex items-center gap-2 text-orange-400 hover:text-orange-300 text-sm transition-colors group"
               >
-                {creator.bestContentUrl}
+                <span className="truncate max-w-md">{creator.bestContentUrl}</span>
+                <svg className="w-4 h-4 flex-shrink-0 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
               </a>
             </div>
           </div>
 
-          {/* Product Selection */}
-          <div className="bg-white/5 rounded-xl p-4">
-            <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
-              <span>📦</span> Product Selection
-            </h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <h4 className="text-white/50 text-xs uppercase tracking-wider mb-1">Product</h4>
-                <p className="text-white">{creator.product}</p>
+          {/* Fit Recommendation (if height/weight provided) */}
+          {(creator.height || creator.weight) && (
+            <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4">
+              <h3 className="text-blue-400 font-semibold mb-2 flex items-center gap-2">
+                <span>📏</span> Fit Information
+              </h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <h4 className="text-white/40 text-xs uppercase tracking-wider mb-1">Height</h4>
+                  <p className="text-white">{creator.height || '—'}</p>
+                </div>
+                <div>
+                  <h4 className="text-white/40 text-xs uppercase tracking-wider mb-1">Weight</h4>
+                  <p className="text-white">{creator.weight || '—'}</p>
+                </div>
               </div>
-              <div>
-                <h4 className="text-white/50 text-xs uppercase tracking-wider mb-1">Size</h4>
-                <p className="text-white">{creator.size}</p>
-              </div>
+              <p className="text-blue-300/70 text-xs mt-3">
+                Use this info to recommend the best size if needed.
+              </p>
             </div>
-          </div>
+          )}
 
           {/* Shipping Address */}
-          <div className="bg-white/5 rounded-xl p-4">
+          <div className="bg-white/[0.03] border border-white/5 rounded-xl p-5 hover:border-white/10 transition-all">
             <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
-              <span>🏠</span> Shipping Address
+              <span>📍</span> Shipping Address
             </h3>
-            <p className="text-white">{formattedAddress}</p>
+            <p className="text-white/80">{formattedAddress}</p>
           </div>
 
-          {/* Application Questions */}
-          <div className="bg-white/5 rounded-xl p-4">
-            <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
-              <span>💬</span> Application Details
+          {/* Application Details */}
+          <div className="bg-white/[0.03] border border-white/5 rounded-xl p-5 hover:border-white/10 transition-all">
+            <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
+              <span>💬</span> Why They Want to Collab
             </h3>
-            <div className="space-y-4">
-              <div>
-                <h4 className="text-white/50 text-xs uppercase tracking-wider mb-1">
-                  Why do they want to collab?
-                </h4>
-                <p className="text-white/90 text-sm leading-relaxed bg-white/5 rounded-lg p-3">
-                  {creator.whyCollab}
-                </p>
-              </div>
-              <div>
-                <h4 className="text-white/50 text-xs uppercase tracking-wider mb-1">
-                  Previous Brand Experience
-                </h4>
-                <p className="text-white">
-                  {creator.previousBrands ? (
-                    <span className="text-green-400">✓ Yes, has worked with brands before</span>
-                  ) : (
-                    <span className="text-white/70">No previous brand collaborations</span>
-                  )}
-                </p>
+            <p className="text-white/80 text-sm leading-relaxed bg-white/[0.03] rounded-lg p-4 border border-white/5">
+              "{creator.whyCollab}"
+            </p>
+            <div className="mt-4 pt-4 border-t border-white/5">
+              <div className="flex items-center gap-2">
+                <span className="text-white/40 text-xs uppercase tracking-wider">Previous Brand Experience:</span>
+                {creator.previousBrands ? (
+                  <span className="text-green-400 text-sm font-medium flex items-center gap-1">
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    Yes
+                  </span>
+                ) : (
+                  <span className="text-white/50 text-sm">No</span>
+                )}
               </div>
             </div>
           </div>
         </div>
 
         {/* Footer Actions */}
-        <div className="sticky bottom-0 bg-zinc-900 border-t border-white/10 px-6 py-4 flex justify-between items-center">
-          <Button
-            variant="ghost"
-            onClick={onClose}
-          >
+        <div className="sticky bottom-0 bg-zinc-900/95 backdrop-blur-md border-t border-white/10 px-6 py-4 flex justify-between items-center">
+          <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          
+
           <div className="flex gap-3">
             <Button
               variant="ghost"
               onClick={() => onDeny(creator.id)}
               disabled={loading}
-              className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+              className="text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-transparent hover:border-red-500/20"
             >
               Deny Application
             </Button>
@@ -239,6 +262,7 @@ export default function ApplicationReviewModal({
               onClick={() => onApprove(creator.id)}
               disabled={loading}
               loading={loading}
+              className="shadow-lg shadow-orange-500/20"
             >
               Approve Application
             </Button>

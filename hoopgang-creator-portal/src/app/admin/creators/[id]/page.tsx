@@ -223,7 +223,9 @@ export default function CreatorDetailPage() {
             </div>
 
             {/* Quick Stats Row */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 pt-6 border-t border-white/10">
+            <div className={`grid grid-cols-2 gap-4 mt-6 pt-6 border-t border-white/10 ${
+              creator.height || creator.weight ? 'sm:grid-cols-5' : 'sm:grid-cols-4'
+            }`}>
               <div className="text-center">
                 <div className="text-white/40 text-xs uppercase tracking-wider mb-1">TikTok</div>
                 <div className="text-white font-semibold">
@@ -248,6 +250,15 @@ export default function CreatorDetailPage() {
                   {creator.rating ? `${creator.rating}/5` : '—'}
                 </div>
               </div>
+              {/* Fit Info */}
+              {(creator.height || creator.weight) && (
+                <div className="text-center">
+                  <div className="text-white/40 text-xs uppercase tracking-wider mb-1">Fit</div>
+                  <div className="text-white font-semibold text-sm">
+                    {creator.height || '—'} / {creator.weight || '—'}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -263,7 +274,6 @@ export default function CreatorDetailPage() {
                 </div>
                 <div className="space-y-1">
                   <DetailRow label="Email" value={creator.email} />
-                  <DetailRow label="Phone" value={creator.phone} />
                   <DetailRow
                     label="TikTok"
                     value={
@@ -313,6 +323,23 @@ export default function CreatorDetailPage() {
                     }
                   />
                 </div>
+                
+                {/* Fit Info (if provided) */}
+                {(creator.height || creator.weight) && (
+                  <div className="mt-4 pt-4 border-t border-white/10">
+                    <h3 className="text-white/50 text-xs uppercase tracking-wider mb-3">Fit Information</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <span className="text-white/40 text-xs">Height</span>
+                        <p className="text-white font-medium">{creator.height || '—'}</p>
+                      </div>
+                      <div>
+                        <span className="text-white/40 text-xs">Weight</span>
+                        <p className="text-white font-medium">{creator.weight || '—'}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Application Details */}

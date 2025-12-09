@@ -47,7 +47,6 @@ export interface Creator {
   // --- Application Data (from /apply form) ---
   fullName: string;
   email: string;
-  phone: string;
   
   // Social profiles
   instagramHandle: string;
@@ -57,8 +56,10 @@ export interface Creator {
   bestContentUrl: string;
   
   // Product selection
-  product: ProductType;
+  product: string;
   size: Size;
+  height?: string;
+  weight?: string;
   
   // Shipping
   shippingAddress: ShippingAddress;
