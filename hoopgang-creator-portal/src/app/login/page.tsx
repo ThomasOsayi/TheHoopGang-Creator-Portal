@@ -50,12 +50,12 @@ export default function LoginPage() {
       await signIn(email, password);
       // Mark that login was attempted - useEffect will handle redirect
       setLoginAttempted(true);
+      setLoading(false); // Clear loading state to show success before redirect
     } catch (err) {
       console.error('Login error:', err);
       setError('Invalid email or password');
       setLoading(false);
     }
-    // Note: Don't setLoading(false) on success - let the redirect happen
   };
 
   // Show loading state while checking auth

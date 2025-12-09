@@ -193,6 +193,7 @@ export default function ApplyPage() {
 
       // 4. Show success state (don't redirect immediately)
       setSuccess(true);
+      setLoading(false); // Clear loading state to show success UI
       showToast('Application submitted! Welcome to HoopGang!', 'success');
 
       // 5. Small delay to ensure Firestore propagates the data
