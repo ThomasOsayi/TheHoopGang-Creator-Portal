@@ -9,6 +9,7 @@ interface CreatorTableProps {
   onViewCreator: (id: string) => void;
   onApprove?: (id: string) => void;
   onDeny?: (id: string) => void;
+  onReview?: (creator: Creator) => void;
   loading?: boolean;
 }
 
@@ -31,6 +32,7 @@ export default function CreatorTable({
   onViewCreator,
   onApprove,
   onDeny,
+  onReview,
   loading = false,
 }: CreatorTableProps) {
   if (loading) {
@@ -143,8 +145,17 @@ export default function CreatorTable({
                   )}
                 </td>
                 <td className="px-6 py-4 text-sm">
-                  {creator.status === 'pending' && (onApprove || onDeny) ? (
+                  {creator.status === 'pending' ? (
                     <div className="flex gap-2">
+                      {onReview && (
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={() => onReview(creator)}
+                        >
+                          Review
+                        </Button>
+                      )}
                       {onApprove && (
                         <Button
                           variant="secondary"

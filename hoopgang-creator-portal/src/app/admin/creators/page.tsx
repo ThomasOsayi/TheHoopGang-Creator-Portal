@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { Creator, CreatorStatus, DashboardStats } from '@/types';
 import { getAllCreators, getDashboardStats, updateCreator } from '@/lib/firestore';
 import { StatCard, useToast, Pagination } from '@/components/ui';
-import { FilterBar, CreatorTable } from '@/components/creators';
+import { FilterBar, CreatorTable, ApplicationReviewModal } from '@/components/creators';
 import { ProtectedRoute } from '@/components/auth';
 
 export default function AdminCreatorsPage() {
@@ -22,6 +22,8 @@ export default function AdminCreatorsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [lastDocs, setLastDocs] = useState<any[]>([]); // Stack of last docs for each page
   const [hasMore, setHasMore] = useState(false);
+  const [reviewingCreator, setReviewingCreator] = useState<Creator | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
   const PAGE_SIZE = 10;
 
   // Fetch stats on mount
@@ -117,29 +119,45 @@ export default function AdminCreatorsPage() {
     router.push(`/admin/creators/${id}`);
   };
 
+  const handleReview = (creator: Creator) => {
+    setReviewingCreator(creator);
+  };
+
+  const handleCloseReview = () => {
+    setReviewingCreator(null);
+  };
+
   const handleApprove = async (id: string) => {
+    setActionLoading(true);
     try {
       await updateCreator(id, { status: 'approved' as CreatorStatus });
       // Refetch creators to update UI
       const lastDoc = currentPage > 1 ? lastDocs[currentPage - 2] : undefined;
       await fetchCreators(lastDoc);
       showToast('Creator approved!', 'success');
+      setReviewingCreator(null);  // Close modal after action
     } catch (error) {
       console.error('Error approving creator:', error);
       showToast('Failed to approve creator', 'error');
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const handleDeny = async (id: string) => {
+    setActionLoading(true);
     try {
       await updateCreator(id, { status: 'denied' as CreatorStatus });
       // Refetch creators to update UI
       const lastDoc = currentPage > 1 ? lastDocs[currentPage - 2] : undefined;
       await fetchCreators(lastDoc);
       showToast('Creator denied', 'success');
+      setReviewingCreator(null);  // Close modal after action
     } catch (error) {
       console.error('Error denying creator:', error);
       showToast('Failed to deny creator', 'error');
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -244,7 +262,18 @@ export default function AdminCreatorsPage() {
             onViewCreator={handleViewCreator}
             onApprove={handleApprove}
             onDeny={handleDeny}
+            onReview={handleReview}
             loading={loading}
+          />
+
+          {/* Application Review Modal */}
+          <ApplicationReviewModal
+            creator={reviewingCreator}
+            isOpen={!!reviewingCreator}
+            onClose={handleCloseReview}
+            onApprove={handleApprove}
+            onDeny={handleDeny}
+            loading={actionLoading}
           />
 
           {/* Pagination */}
