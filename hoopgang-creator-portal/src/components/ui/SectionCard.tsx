@@ -1,3 +1,5 @@
+// src/components/ui/SectionCard.tsx
+
 import { cn } from '@/lib/utils';
 
 interface SectionCardProps {

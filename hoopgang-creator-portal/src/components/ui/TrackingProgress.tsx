@@ -1,3 +1,5 @@
+// src/components/ui/TrackingProgress.tsx
+
 'use client';
 
 import { ShippingStatus, Carrier } from '@/types';
