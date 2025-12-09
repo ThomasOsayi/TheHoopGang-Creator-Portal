@@ -212,9 +212,9 @@ export default function CreatorDashboardPage() {
             <p className="text-white/60 mb-8">
               You haven't applied to join the HoopGang Creator Squad yet.
             </p>
-            <Link href="/apply">
+              <Link href="/apply">
               <Button variant="primary" size="lg">Apply Now</Button>
-            </Link>
+              </Link>
           </div>
         </div>
       </ProtectedRoute>
@@ -237,14 +237,14 @@ export default function CreatorDashboardPage() {
         </div>
 
         <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-8">
-          {/* Error Display */}
-          {error && (
-            <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl mb-6">
-              {error}
-            </div>
-          )}
+        {/* Error Display */}
+        {error && (
+          <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl mb-6">
+            {error}
+          </div>
+        )}
 
-          {/* Welcome Banner */}
+        {/* Welcome Banner */}
           <div className="group relative bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl p-8 text-center mb-6 overflow-hidden hover:bg-white/[0.08] hover:border-orange-500/30 hover:shadow-xl hover:shadow-orange-500/10 transition-all duration-300 cursor-default">
             {/* Decorative elements */}
             <div className="absolute top-0 right-0 w-40 h-40 bg-orange-500/10 rounded-full blur-2xl group-hover:bg-orange-500/20 transition-all duration-300" />
@@ -254,13 +254,13 @@ export default function CreatorDashboardPage() {
             
             <div className="relative">
               <h1 className="text-2xl md:text-3xl font-bold text-white mb-2 group-hover:text-orange-100 transition-colors">
-                Welcome back, {firstName}! 🏀
-              </h1>
+            Welcome back, {firstName}! 🏀
+          </h1>
               <p className="text-white/70 group-hover:text-white/90 transition-colors">
                 You're officially part of the HoopGang Creator Squad
               </p>
             </div>
-          </div>
+        </div>
 
           {/* Quick Stats Bar */}
           {!['pending', 'denied'].includes(creator.status) && (
@@ -304,7 +304,7 @@ export default function CreatorDashboardPage() {
                   </p>
                 </div>
               </div>
-            </div>
+          </div>
           )}
 
           {/* Already Completed Banner */}
@@ -313,7 +313,7 @@ export default function CreatorDashboardPage() {
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
                   <div className="text-4xl">🏆</div>
-                  <div>
+            <div>
                     <h2 className="text-lg font-bold text-cyan-400">Collaboration Complete!</h2>
                     <p className="text-white/60 text-sm">You crushed it! Thanks for being part of HoopGang.</p>
                   </div>
@@ -332,7 +332,7 @@ export default function CreatorDashboardPage() {
             <div className="bg-gradient-to-r from-yellow-500/20 to-amber-500/20 border border-yellow-500/30 rounded-2xl p-6 mb-6">
               <div className="flex items-center gap-4">
                 <div className="text-4xl animate-pulse">⏳</div>
-                <div>
+            <div>
                   <h2 className="text-lg font-bold text-yellow-400">Application Under Review</h2>
                   <p className="text-white/60 text-sm">
                     We'll notify you once your application has been approved. Usually takes 1-3 business days.
@@ -348,13 +348,13 @@ export default function CreatorDashboardPage() {
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
                   <div className="text-4xl">😔</div>
-                  <div>
+            <div>
                     <h2 className="text-lg font-bold text-red-400">Application Not Approved</h2>
                     <p className="text-white/60 text-sm">
                       Unfortunately, your application wasn't approved this time. Feel free to apply again!
                     </p>
                   </div>
-                </div>
+            </div>
                 <Link href="/apply">
                   <Button variant="primary">Apply Again</Button>
                 </Link>
@@ -362,10 +362,11 @@ export default function CreatorDashboardPage() {
             </div>
           )}
 
-          {/* Main Two-Column Grid */}
-          <div className="grid lg:grid-cols-5 gap-6">
-            {/* Left Column - Timeline (2/5 width on desktop) */}
-            <div className="lg:col-span-2">
+          {/* Main Two-Column Grid - Only show for active/shipped/delivered/completed/ghosted */}
+          {!['pending', 'denied'].includes(creator.status) && (
+            <div className="grid lg:grid-cols-5 gap-6">
+              {/* Left Column - Timeline (2/5 width on desktop) */}
+              <div className="lg:col-span-2">
               <SectionCard title="Your Journey" icon="📋" className="h-full hover:border-white/20 transition-all duration-300">
                 <div className="relative">
                   {/* Vertical progress line */}
@@ -398,7 +399,7 @@ export default function CreatorDashboardPage() {
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>
                         )}
-                      </div>
+          </div>
 
                       {/* Content */}
                       <div>
@@ -470,10 +471,10 @@ export default function CreatorDashboardPage() {
                       </p>
                     </div>
                   ) : null}
-                </div>
-              )}
+            </div>
+          )}
 
-              {/* Content Submission Card */}
+        {/* Content Submission Card */}
               {!['pending', 'denied'].includes(creator.status) && (
                 <SectionCard title="Submit Your Content" icon="🎥" className="hover:border-white/20 transition-all duration-300">
                   {/* Progress indicator */}
@@ -495,18 +496,18 @@ export default function CreatorDashboardPage() {
                     )}
                   </div>
 
-                  {[0, 1, 2].map((index) => {
-                    const submission = creator.contentSubmissions[index];
-                    const isNextToSubmit = index === creator.contentSubmissions.length;
-                    const isPending = index > creator.contentSubmissions.length;
+          {[0, 1, 2].map((index) => {
+            const submission = creator.contentSubmissions[index];
+            const isNextToSubmit = index === creator.contentSubmissions.length;
+            const isPending = index > creator.contentSubmissions.length;
 
-                    return (
-                      <div
-                        key={index}
+            return (
+              <div
+                key={index}
                         className={`flex items-center gap-4 py-4 ${
-                          index < 2 ? 'border-b border-white/10' : ''
-                        }`}
-                      >
+                  index < 2 ? 'border-b border-white/10' : ''
+                }`}
+              >
                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg font-bold ${
                           submission ? 'bg-green-500/20 text-green-400' :
                           isNextToSubmit ? 'bg-orange-500/20 text-orange-400' :
@@ -515,8 +516,8 @@ export default function CreatorDashboardPage() {
                           {submission ? '✓' : index + 1}
                         </div>
 
-                        {submission ? (
-                          <>
+                {submission ? (
+                  <>
                             <div className="flex-1 min-w-0">
                               <a 
                                 href={submission.url}
@@ -533,42 +534,43 @@ export default function CreatorDashboardPage() {
                             <span className="text-green-400 text-xs font-medium px-2 py-1 bg-green-500/10 rounded-lg">
                               ✓ Done
                             </span>
-                          </>
-                        ) : isNextToSubmit ? (
-                          <>
-                            <input
-                              type="url"
-                              value={newContentUrl}
-                              onChange={(e) => setNewContentUrl(e.target.value)}
+                  </>
+                ) : isNextToSubmit ? (
+                  <>
+                    <input
+                      type="url"
+                      value={newContentUrl}
+                      onChange={(e) => setNewContentUrl(e.target.value)}
                               placeholder="Paste your TikTok URL..."
                               className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
-                              disabled={submitting}
-                            />
-                            <Button
-                              variant="primary"
-                              size="sm"
-                              onClick={handleSubmitContent}
-                              disabled={submitting || !newContentUrl.trim()}
-                              loading={submitting}
-                            >
-                              Submit
-                            </Button>
-                          </>
-                        ) : (
-                          <>
+                      disabled={submitting}
+                    />
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={handleSubmitContent}
+                      disabled={submitting || !newContentUrl.trim()}
+                      loading={submitting}
+                    >
+                      Submit
+                    </Button>
+                  </>
+                ) : (
+                  <>
                             <div className="flex-1 text-white/30 text-sm">Waiting...</div>
                             <span className="text-white/30 text-xs font-medium px-2 py-1 bg-white/5 rounded-lg">
-                              Pending
+                      Pending
                             </span>
-                          </>
-                        )}
-                      </div>
-                    );
-                  })}
-                </SectionCard>
+                  </>
+                )}
+              </div>
+            );
+          })}
+        </SectionCard>
               )}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Bottom Section - Agreement & Perks (Full Width) */}
           {!['pending', 'denied'].includes(creator.status) && (
@@ -602,9 +604,9 @@ export default function CreatorDashboardPage() {
                     </div>
                   </div>
                 )}
-              </div>
+          </div>
 
-              {/* Perks Card */}
+        {/* Perks Card */}
               <div className="bg-white/[0.03] backdrop-blur-sm border border-white/10 rounded-2xl p-6 hover:border-white/15 transition-all duration-300">
                 <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                   <span>🎁</span> Unlock Perks
@@ -616,7 +618,7 @@ export default function CreatorDashboardPage() {
                     { icon: '🎁', text: 'Early drops', unlocked: creator.status === 'completed' },
                     { icon: '💰', text: 'Paid collabs', unlocked: creator.status === 'completed' },
                     { icon: '🏀', text: 'Creator Squad', unlocked: videosSubmitted >= 1 },
-                  ].map((perk, index) => (
+            ].map((perk, index) => (
                     <div 
                       key={index} 
                       className={`flex items-center gap-2 p-3 rounded-xl transition-all ${
@@ -681,13 +683,13 @@ export default function CreatorDashboardPage() {
                         <div className="text-sm text-white/50 mt-0.5">{step.date}</div>
                       )}
                     </div>
-                  </div>
-                ))}
               </div>
-            </SectionCard>
+            ))}
+          </div>
+        </SectionCard>
           )}
-        </div>
       </div>
+    </div>
     </ProtectedRoute>
   );
 }
