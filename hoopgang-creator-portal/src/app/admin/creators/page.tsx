@@ -20,7 +20,7 @@ export default function AdminCreatorsPage() {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [minFollowers, setMinFollowers] = useState<string>('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [lastDocs, setLastDocs] = useState<any[]>([]); // Stack of last docs for each page
+  const [lastDocs, setLastDocs] = useState<any[]>([]);
   const [hasMore, setHasMore] = useState(false);
   const [reviewingCreator, setReviewingCreator] = useState<Creator | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
@@ -54,12 +54,10 @@ export default function AdminCreatorsPage() {
       setCreators(result.creators);
       setHasMore(result.hasMore);
 
-      // If new filter, reset pagination
       if (isNewFilter) {
         setLastDocs([]);
         setCurrentPage(1);
       } else {
-        // Store last doc for the page we just fetched
         const pageIndex = (pageNum ?? currentPage) - 1;
         if (result.lastDoc && pageIndex >= 0) {
           setLastDocs((prev) => {
@@ -77,17 +75,13 @@ export default function AdminCreatorsPage() {
     }
   }, [statusFilter, minFollowers, searchQuery, currentPage, showToast]);
 
-  // Fetch creators on mount and when filters change
   useEffect(() => {
     fetchCreators(undefined, true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter, minFollowers, searchQuery]);
 
-  // Filter creators based on filters (client-side for search and minFollowers)
   const filteredCreators = useMemo(() => {
     let filtered = [...creators];
 
-    // Apply search query (client-side since Firestore doesn't support full-text search)
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
@@ -100,7 +94,6 @@ export default function AdminCreatorsPage() {
       );
     }
 
-    // Apply min followers filter (client-side)
     if (minFollowers) {
       const min = parseInt(minFollowers, 10);
       if (!isNaN(min)) {
@@ -131,11 +124,10 @@ export default function AdminCreatorsPage() {
     setActionLoading(true);
     try {
       await updateCreator(id, { status: 'approved' as CreatorStatus });
-      // Refetch creators to update UI
       const lastDoc = currentPage > 1 ? lastDocs[currentPage - 2] : undefined;
       await fetchCreators(lastDoc);
       showToast('Creator approved!', 'success');
-      setReviewingCreator(null);  // Close modal after action
+      setReviewingCreator(null);
     } catch (error) {
       console.error('Error approving creator:', error);
       showToast('Failed to approve creator', 'error');
@@ -148,11 +140,10 @@ export default function AdminCreatorsPage() {
     setActionLoading(true);
     try {
       await updateCreator(id, { status: 'denied' as CreatorStatus });
-      // Refetch creators to update UI
       const lastDoc = currentPage > 1 ? lastDocs[currentPage - 2] : undefined;
       await fetchCreators(lastDoc);
       showToast('Creator denied', 'success');
-      setReviewingCreator(null);  // Close modal after action
+      setReviewingCreator(null);
     } catch (error) {
       console.error('Error denying creator:', error);
       showToast('Failed to deny creator', 'error');
@@ -174,8 +165,6 @@ export default function AdminCreatorsPage() {
     if (currentPage > 1) {
       const newPage = currentPage - 1;
       setCurrentPage(newPage);
-
-      // Get the lastDoc for the page before the one we're going to
       const lastDoc = newPage > 1 ? lastDocs[newPage - 2] : undefined;
       fetchCreators(lastDoc, false, newPage);
     }
@@ -183,78 +172,99 @@ export default function AdminCreatorsPage() {
 
   return (
     <ProtectedRoute allowedRoles={['admin']}>
-      <div className="min-h-screen bg-gradient-to-b from-zinc-950 via-zinc-900 to-zinc-950 py-8 px-4">
-        <div className="max-w-7xl mx-auto">
+      <div className="min-h-screen bg-zinc-950 relative overflow-hidden">
+        {/* Background Gradient Orbs */}
+        <div className="fixed inset-0 pointer-events-none overflow-hidden">
+          <div className="absolute -top-40 -right-40 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl" />
+          <div className="absolute top-1/3 -left-40 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl" />
+          <div className="absolute -bottom-40 right-1/4 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl" />
+        </div>
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-8">
           {/* Header Section */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-white mb-2">Admin Dashboard</h1>
-            <p className="text-white/60">Manage all creator collaborations</p>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+                  <span className="text-3xl">👑</span>
+                  Admin Dashboard
+                </h1>
+                <p className="text-white/60 mt-1">Manage all creator collaborations</p>
+              </div>
+              
+              {/* Quick action - could add refresh button here */}
+              <div className="flex items-center gap-2 text-sm text-white/40">
+                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                Live data
+              </div>
+            </div>
           </div>
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
             {stats ? (
               <>
                 <StatCard
                   label="Total Applications"
                   value={stats.totalApplications}
                   icon="📊"
-                  change="↑ this week"
+                  trend="up"
+                  trendLabel="this week"
                 />
                 <StatCard
                   label="Pending Review"
                   value={stats.pendingReview}
                   icon="⏳"
-                  change="Needs attention"
+                  highlight={stats.pendingReview > 0}
+                  trendLabel="needs attention"
                 />
                 <StatCard
                   label="Active Collabs"
                   value={stats.activeCollabs}
                   icon="🚀"
-                  change="In progress"
+                  trendLabel="in progress"
                 />
                 <StatCard
                   label="Completed"
                   value={stats.completed}
                   icon="✅"
-                  change={
+                  trend="up"
+                  trendLabel={
                     stats.totalApplications > 0
-                      ? `${((stats.completed / stats.totalApplications) * 100).toFixed(0)}%`
-                      : '0%'
+                      ? `${((stats.completed / stats.totalApplications) * 100).toFixed(0)}% rate`
+                      : '0% rate'
                   }
                 />
                 <StatCard
                   label="Ghost Rate"
                   value={`${stats.ghostRate.toFixed(0)}%`}
                   icon="👻"
-                  change="↓ improving"
+                  trend={stats.ghostRate < 20 ? 'down' : 'up'}
+                  trendLabel={stats.ghostRate < 20 ? 'healthy' : 'needs work'}
                 />
               </>
             ) : (
-              // Loading state for stats
               Array.from({ length: 5 }).map((_, i) => (
                 <div
                   key={i}
-                  className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6"
+                  className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-5 animate-pulse"
                 >
-                  <div className="text-white/60 text-sm mb-1">Loading...</div>
-                  <div className="text-3xl font-bold text-white/30">—</div>
+                  <div className="h-4 bg-white/10 rounded w-24 mb-3" />
+                  <div className="h-8 bg-white/10 rounded w-16" />
                 </div>
               ))
             )}
           </div>
 
           {/* Filter Bar */}
-          <div className="mb-6">
-            <FilterBar
-              statusFilter={statusFilter}
-              searchQuery={searchQuery}
-              minFollowers={minFollowers}
-              onStatusChange={setStatusFilter}
-              onSearchChange={setSearchQuery}
-              onMinFollowersChange={setMinFollowers}
-            />
-          </div>
+          <FilterBar
+            statusFilter={statusFilter}
+            searchQuery={searchQuery}
+            minFollowers={minFollowers}
+            onStatusChange={setStatusFilter}
+            onSearchChange={setSearchQuery}
+            onMinFollowersChange={setMinFollowers}
+          />
 
           {/* Creators Table */}
           <CreatorTable
@@ -289,4 +299,3 @@ export default function AdminCreatorsPage() {
     </ProtectedRoute>
   );
 }
-
