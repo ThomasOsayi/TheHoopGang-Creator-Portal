@@ -386,7 +386,15 @@ export default function HomePage() {
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl" />
             
             <div className="relative">
-              <div className="text-5xl mb-6">🏀</div>
+              <div className="mb-6">
+                <Image
+                  src="/images/THG_logo_orange.png"
+                  alt="HoopGang"
+                  width={56}
+                  height={56}
+                  className="mx-auto"
+                />
+              </div>
               <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
                 Ready to Join the Squad?
               </h2>
@@ -413,7 +421,12 @@ export default function HomePage() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             {/* Logo */}
             <div className="flex items-center gap-2">
-              <span className="text-2xl">🏀</span>
+              <Image
+                src="/images/THG_logo_orange.png"
+                alt="HoopGang"
+                width={28}
+                height={28}
+              />
               <span className="text-lg font-bold bg-gradient-to-r from-orange-500 to-orange-400 bg-clip-text text-transparent">
                 HoopGang
               </span>
