@@ -55,8 +55,13 @@ export default function AdminCreatorsPage() {
       setHasMore(result.hasMore);
 
       if (isNewFilter) {
-        setLastDocs([]);
+        // Reset pagination but still store the first page's lastDoc
         setCurrentPage(1);
+        if (result.lastDoc) {
+          setLastDocs([result.lastDoc]);
+        } else {
+          setLastDocs([]);
+        }
       } else {
         const pageIndex = (pageNum ?? currentPage) - 1;
         if (result.lastDoc && pageIndex >= 0) {
@@ -207,27 +212,43 @@ export default function AdminCreatorsPage() {
                 <StatCard
                   label="Total Applications"
                   value={stats.totalApplications}
-                  icon="📊"
+                  icon={
+                    <svg className="w-6 h-6 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                  }
                   trend="up"
                   trendLabel="this week"
                 />
                 <StatCard
                   label="Pending Review"
                   value={stats.pendingReview}
-                  icon="⏳"
+                  icon={
+                    <svg className="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  }
                   highlight={stats.pendingReview > 0}
                   trendLabel="needs attention"
                 />
                 <StatCard
                   label="Active Collabs"
                   value={stats.activeCollabs}
-                  icon="🚀"
+                  icon={
+                    <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                  }
                   trendLabel="in progress"
                 />
                 <StatCard
                   label="Completed"
                   value={stats.completed}
-                  icon="✅"
+                  icon={
+                    <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  }
                   trend="up"
                   trendLabel={
                     stats.totalApplications > 0
@@ -238,7 +259,11 @@ export default function AdminCreatorsPage() {
                 <StatCard
                   label="Ghost Rate"
                   value={`${stats.ghostRate.toFixed(0)}%`}
-                  icon="👻"
+                  icon={
+                    <svg className="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M12 2C6.477 2 2 6.477 2 12c0 2.5.9 4.8 2.4 6.5.3.4.3 1-.1 1.4l-1.1 1.1c-.4.4-.1 1 .4 1h8.8c.5 0 .8-.6.4-1l-1.1-1.1c-.4-.4-.4-1-.1-1.4 1.5-1.7 2.4-4 2.4-6.5 0-5.523-4.477-10-10-10z" />
+                    </svg>
+                  }
                   trend={stats.ghostRate < 20 ? 'down' : 'up'}
                   trendLabel={stats.ghostRate < 20 ? 'healthy' : 'needs work'}
                 />

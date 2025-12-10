@@ -1,6 +1,8 @@
+// src/components/ui/TrackingStatus.tsx
+
 'use client';
 
-import { useState } from 'react';
+import { useState, ReactNode } from 'react';
 import { ShipmentTracking, ShippingStatus, Carrier, TrackingEvent } from '@/types';
 import { getTrackingUrl } from '@/lib/tracking';
 import { Button } from './Button';
@@ -20,51 +22,90 @@ interface AddTrackingFormProps {
   onSuccess?: () => void;
 }
 
+// Icon components for each status
+const StatusIcons = {
+  pending: (
+    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  ),
+  transit: (
+    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+    </svg>
+  ),
+  pickup: (
+    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+    </svg>
+  ),
+  delivered: (
+    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  ),
+  undelivered: (
+    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  ),
+  exception: (
+    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+    </svg>
+  ),
+  expired: (
+    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  ),
+};
+
 // Status configuration mapping
 const STATUS_CONFIG: Record<
   ShippingStatus,
-  { color: string; bgColor: string; icon: string; label: string }
+  { color: string; bgColor: string; icon: ReactNode; label: string }
 > = {
   pending: {
     color: 'text-yellow-400',
     bgColor: 'bg-yellow-500/20',
-    icon: '⏳',
+    icon: StatusIcons.pending,
     label: 'Pending',
   },
   transit: {
     color: 'text-blue-400',
     bgColor: 'bg-blue-500/20',
-    icon: '🚚',
+    icon: StatusIcons.transit,
     label: 'In Transit',
   },
   pickup: {
     color: 'text-purple-400',
     bgColor: 'bg-purple-500/20',
-    icon: '📦',
+    icon: StatusIcons.pickup,
     label: 'Available for Pickup',
   },
   delivered: {
     color: 'text-green-400',
     bgColor: 'bg-green-500/20',
-    icon: '✅',
+    icon: StatusIcons.delivered,
     label: 'Delivered',
   },
   undelivered: {
     color: 'text-red-400',
     bgColor: 'bg-red-500/20',
-    icon: '❌',
+    icon: StatusIcons.undelivered,
     label: 'Undelivered',
   },
   exception: {
     color: 'text-orange-400',
     bgColor: 'bg-orange-500/20',
-    icon: '⚠️',
+    icon: StatusIcons.exception,
     label: 'Exception',
   },
   expired: {
     color: 'text-gray-400',
     bgColor: 'bg-gray-500/20',
-    icon: '⏰',
+    icon: StatusIcons.expired,
     label: 'Expired',
   },
 };
@@ -180,7 +221,9 @@ export default function TrackingStatus({
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-2">
-            <span className="text-2xl">{statusConfig.icon}</span>
+            <span className={cn("flex items-center justify-center", statusConfig.color)}>
+              {statusConfig.icon}
+            </span>
             <div>
               <div className="flex items-center gap-2">
                 <span className={cn('text-sm font-medium px-2.5 py-1 rounded-full', statusConfig.bgColor, statusConfig.color)}>

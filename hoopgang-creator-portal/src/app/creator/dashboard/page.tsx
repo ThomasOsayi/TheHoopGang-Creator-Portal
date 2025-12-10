@@ -207,7 +207,11 @@ export default function CreatorDashboardPage() {
       <ProtectedRoute allowedRoles={['creator']}>
         <div className="min-h-screen bg-zinc-950 flex items-center justify-center px-4">
           <div className="text-center max-w-md">
-            <div className="text-6xl mb-6">🏀</div>
+            <div className="mb-6">
+              <svg className="w-16 h-16 mx-auto text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
             <h1 className="text-2xl font-bold text-white mb-4">No Application Found</h1>
             <p className="text-white/60 mb-8">
               You haven't applied to join the HoopGang Creator Squad yet.
@@ -249,8 +253,24 @@ export default function CreatorDashboardPage() {
             {/* Decorative elements */}
             <div className="absolute top-0 right-0 w-40 h-40 bg-orange-500/10 rounded-full blur-2xl group-hover:bg-orange-500/20 transition-all duration-300" />
             <div className="absolute bottom-0 left-0 w-32 h-32 bg-purple-500/10 rounded-full blur-xl group-hover:bg-purple-500/15 transition-all duration-300" />
-            <div className="absolute top-4 left-4 text-6xl opacity-10 group-hover:opacity-20 transition-opacity">🏀</div>
-            <div className="absolute bottom-4 right-4 text-6xl opacity-10 group-hover:opacity-20 transition-opacity">🏀</div>
+            <div className="absolute top-4 left-4 opacity-10 group-hover:opacity-20 transition-opacity">
+              <svg className="w-16 h-16 text-orange-500" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+                <path d="M12 2C12 2 12 22 12 22" stroke="currentColor" strokeWidth="1.5"/>
+                <path d="M2 12C2 12 22 12 22 12" stroke="currentColor" strokeWidth="1.5"/>
+                <path d="M4.93 4.93C4.93 4.93 19.07 19.07 19.07 19.07" stroke="currentColor" strokeWidth="1.5"/>
+                <path d="M19.07 4.93C19.07 4.93 4.93 19.07 4.93 19.07" stroke="currentColor" strokeWidth="1.5"/>
+              </svg>
+            </div>
+            <div className="absolute bottom-4 right-4 opacity-10 group-hover:opacity-20 transition-opacity">
+              <svg className="w-16 h-16 text-orange-500" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+                <path d="M12 2C12 2 12 22 12 22" stroke="currentColor" strokeWidth="1.5"/>
+                <path d="M2 12C2 12 22 12 22 12" stroke="currentColor" strokeWidth="1.5"/>
+                <path d="M4.93 4.93C4.93 4.93 19.07 19.07 19.07 19.07" stroke="currentColor" strokeWidth="1.5"/>
+                <path d="M19.07 4.93C19.07 4.93 4.93 19.07 4.93 19.07" stroke="currentColor" strokeWidth="1.5"/>
+              </svg>
+            </div>
             
             <div className="relative">
               {creator.status === 'pending' ? (
@@ -288,17 +308,30 @@ export default function CreatorDashboardPage() {
           {!['pending', 'denied'].includes(creator.status) && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
               <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-xl p-4 text-center hover:bg-white/[0.08] hover:border-orange-500/30 hover:shadow-lg hover:shadow-orange-500/10 transition-all duration-300">
-                <div className="text-2xl mb-1">📍</div>
+                <div className="flex justify-center mb-1">
+                  <svg className="w-6 h-6 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </div>
                 <div className="text-white font-semibold text-sm">{getStatusLabel(creator.status)}</div>
                 <div className="text-white/50 text-xs">Current Status</div>
               </div>
               <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-xl p-4 text-center hover:bg-white/[0.08] hover:border-orange-500/30 hover:shadow-lg hover:shadow-orange-500/10 transition-all duration-300">
-                <div className="text-2xl mb-1">🎥</div>
+                <div className="flex justify-center mb-1">
+                  <svg className="w-6 h-6 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                </div>
                 <div className="text-white font-semibold text-sm">{videosSubmitted}/3</div>
                 <div className="text-white/50 text-xs">Videos Posted</div>
               </div>
               <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-xl p-4 text-center hover:bg-white/[0.08] hover:border-orange-500/30 hover:shadow-lg hover:shadow-orange-500/10 transition-all duration-300">
-                <div className="text-2xl mb-1">⏰</div>
+                <div className="flex justify-center mb-1">
+                  <svg className={`w-6 h-6 ${daysRemaining.days !== null && daysRemaining.days <= 3 ? 'text-red-400' : 'text-orange-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
                 <div className={`font-semibold text-sm ${
                   daysRemaining.days !== null && daysRemaining.days <= 3 ? 'text-red-400' : 'text-white'
                 }`}>
@@ -307,7 +340,11 @@ export default function CreatorDashboardPage() {
                 <div className="text-white/50 text-xs">Time Left</div>
               </div>
               <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-xl p-4 text-center hover:bg-white/[0.08] hover:border-orange-500/30 hover:shadow-lg hover:shadow-orange-500/10 transition-all duration-300">
-                <div className="text-2xl mb-1">👕</div>
+                <div className="flex justify-center mb-1">
+                  <svg className="w-6 h-6 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                  </svg>
+                </div>
                 <div className="text-white font-semibold text-sm truncate">{creator.product}</div>
                 <div className="text-white/50 text-xs">Size {creator.size}</div>
               </div>

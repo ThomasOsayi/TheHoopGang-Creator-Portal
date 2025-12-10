@@ -1,9 +1,11 @@
 // src/components/ui/StatCard.tsx
 
+import { ReactNode } from 'react';
+
 interface StatCardProps {
   label: string;
   value: string | number;
-  icon?: string;
+  icon?: ReactNode;  // Changed from string to ReactNode
   trend?: 'up' | 'down';
   trendLabel?: string;
   highlight?: boolean;
@@ -27,7 +29,7 @@ export default function StatCard({
     >
       {/* Icon */}
       {icon && (
-        <div className="absolute top-4 right-4 text-2xl opacity-80 group-hover:scale-110 group-hover:opacity-100 transition-all duration-300">
+        <div className="absolute top-4 right-4 text-2xl opacity-80 group-hover:scale-110 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center">
           {icon}
         </div>
       )}
