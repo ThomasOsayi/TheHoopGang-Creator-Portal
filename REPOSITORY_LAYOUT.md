@@ -23,15 +23,21 @@ hoopgang-creator-portal/
 
 #### Root & Layout
 - `page.tsx` - Home page
+  - Hero section with product image and floating stats cards
+  - Stats section with real numbers (30K+ Hoopers, 25+ Countries, 4.9★ Rating, 100% Free Gear)
+  - Creator gallery with masonry layout and real creator images
+  - Creator avatars with real images in hero section
 - `layout.tsx` - Root layout component
-- `globals.css` - Global styles
+- `globals.css` - Global styles with animations and custom scrollbar
 - `favicon.ico` - Site favicon
 
 #### Authentication
 - `login/page.tsx` - Login page
+  - THG logo image instead of emoji
 
 #### Application Flow
 - `apply/page.tsx` - Creator application page
+  - THG logo image instead of emoji
   - Product selection with text input (links to store)
   - Optional height/weight fields for fit recommendations
   - Re-application support for completed/denied/ghosted creators
@@ -95,7 +101,7 @@ creator/
 #### UI Components (`ui/`)
 - `Button.tsx` - Reusable button component
 - `DetailRow.tsx` - Detail row display component
-- `Navbar.tsx` - Navigation bar component
+- `Navbar.tsx` - Navigation bar component with THG logo image
 - `Pagination.tsx` - Pagination component
 - `ProgressDots.tsx` - Progress indicator component
 - `SectionCard.tsx` - Section card container component
@@ -151,6 +157,17 @@ creator/
 - `next.svg` - Next.js logo
 - `vercel.svg` - Vercel logo
 - `window.svg` - Window icon
+- `images/` - Image assets directory
+  - `THG_logo_orange.png` - HoopGang orange logo
+  - `THG_logo_white.png` - HoopGang white logo
+  - `products/` - Product images
+    - `hero_product.jpg` - Hero section product image
+  - `creators/` - Creator photos and content
+    - `creator_stretch.jpg`
+    - `striped_duo.jpg`
+    - `outdoor_crew.jpg`
+    - `team_photo.jpg`
+    - `purple_crew.jpg`
 
 ---
 
@@ -283,6 +300,13 @@ creator/
    - Responsive two-column layouts
    - Re-application support for completed/denied creators
 
+8. **Brand Identity & Visual Design**
+   - Consistent THG logo usage across all pages
+   - Professional product imagery in hero section
+   - Real creator photos and content gallery
+   - Enhanced visual hierarchy with floating cards and badges
+   - Real-world statistics and social proof
+
 ---
 
 ## API Integration Details
@@ -315,7 +339,32 @@ creator/
 
 ## Recent Implementations
 
-### Application & Form Enhancements (Latest)
+### Brand Identity & Visual Updates (Latest)
+- **Logo Implementation**:
+  - Replaced basketball emoji with THG logo image across all pages
+  - Navbar: THG logo with hover scale effect
+  - Login page: THG logo in rounded container with glassmorphic styling
+  - Apply page: THG logo in rounded container matching login page design
+- **Home Page Enhancements**:
+  - Hero Section: Replaced phone mockup with product image and floating cards
+    - Main product image with gradient overlay
+    - Floating THG logo badge (top right)
+    - Floating stats card showing "30K+ Global Hoopers"
+    - Floating "FREE GEAR" badge (bottom)
+  - Stats Section: Updated with real numbers
+    - 30K+ Global Hoopers
+    - 25+ Countries Served
+    - 4.9★ Customer Rating
+    - 100% Free Gear
+  - Creator Gallery: Replaced placeholders with real images
+    - Masonry-style grid layout
+    - Real creator photos with hover effects
+    - Team photo, crew photos, and individual creator images
+  - Creator Avatars: Replaced emoji avatars with real creator images
+    - Overlapping avatar circles in hero section
+    - Real photos with border styling
+
+### Application & Form Enhancements
 - **Application Form Updates**:
   - Removed phone number field
   - Changed product selection from dropdown to text input
@@ -378,6 +427,7 @@ creator/
 - Fixed missing opening tags in links (CreatorTable, ApplicationReviewModal, admin detail page)
 - Updated redirect logic to allow re-application for completed/denied creators
 - Fixed ESLint configuration for ESLint 9 flat config
+- Removed `@theme inline` block from globals.css to fix linter warnings
 
 ### Tracking System
 - Complete TrackingMore API integration
