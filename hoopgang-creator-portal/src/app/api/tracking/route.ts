@@ -2,22 +2,12 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getCreatorById, updateCreator } from '@/lib/firestore';
-import { createTracking, getTrackingStatus, isValidTrackingNumber } from '@/lib/tracking';
-import { Carrier, ShipmentTracking } from '@/types';
-
-/**
- * Helper function to remove undefined values from an object
- * Firestore doesn't allow undefined field values
- */
-function removeUndefined(obj: Record<string, any>): Record<string, any> {
-  return Object.fromEntries(
-    Object.entries(obj).filter(([_, v]) => v !== undefined)
-  );
-}
+import { sendShippedEmail } from '@/lib/email/send-email';
+import { Carrier } from '@/types';
 
 /**
  * POST /api/tracking
- * Creates a new tracking entry and updates creator
+ * Saves tracking info and sends shipped email (no external API calls)
  */
 export async function POST(request: NextRequest) {
   try {
@@ -49,13 +39,6 @@ export async function POST(request: NextRequest) {
     // Clean tracking number: uppercase, no spaces
     const cleanedTrackingNumber = trackingNumber.trim().toUpperCase().replace(/\s+/g, '');
 
-    if (!isValidTrackingNumber(cleanedTrackingNumber)) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid tracking number format' },
-        { status: 400 }
-      );
-    }
-
     // Get creator
     const creator = await getCreatorById(creatorId);
     if (!creator) {
@@ -65,40 +48,32 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create tracking in TrackingMore API
-    console.log('[POST /api/tracking] Registering tracking with TrackingMore:', { trackingNumber: cleanedTrackingNumber, carrier });
-    const trackingResponse = await createTracking(cleanedTrackingNumber, carrier as Carrier);
-    console.log('[POST /api/tracking] createTracking response:', JSON.stringify(trackingResponse));
-
-    // Get initial tracking status
-    const shipment = await getTrackingStatus(cleanedTrackingNumber, carrier as Carrier);
-
-    // Set trackingMoreId from createTracking response
-    shipment.trackingMoreId = trackingResponse.id;
-
-    // Build shipment object, excluding undefined values
-    const shipmentData: ShipmentTracking = {
+    // Update creator in Firestore (simple - no TrackingMore API)
+    await updateCreator(creatorId, {
       trackingNumber: cleanedTrackingNumber,
       carrier: carrier as Carrier,
-      shippingStatus: shipment.shippingStatus,
-      lastUpdate: shipment.lastUpdate,
-      events: shipment.events,
-      ...(shipment.trackingMoreId && { trackingMoreId: shipment.trackingMoreId }),
-      ...(shipment.estimatedDelivery && { estimatedDelivery: shipment.estimatedDelivery }),
-    };
-
-    // Update creator in Firestore (remove undefined values)
-    await updateCreator(creatorId, removeUndefined({
-      trackingNumber: cleanedTrackingNumber,
-      carrier: carrier as Carrier,
-      shipment: shipmentData,
       status: 'shipped',
       shippedAt: new Date(),
-    }));
+    });
+
+    // Send shipped email to creator
+    try {
+      const firstName = creator.fullName?.split(' ')[0] || creator.instagramHandle;
+      await sendShippedEmail({
+        to: creator.email,
+        creatorName: firstName,
+        trackingNumber: cleanedTrackingNumber,
+        carrier: carrier as Carrier,
+      });
+      console.log('[POST /api/tracking] Shipped email sent to:', creator.email);
+    } catch (emailError) {
+      console.error('[POST /api/tracking] Failed to send shipped email:', emailError);
+    }
 
     return NextResponse.json({
       success: true,
-      shipment,
+      trackingNumber: cleanedTrackingNumber,
+      carrier,
     });
   } catch (error: any) {
     console.error('Error creating tracking:', error);
@@ -111,13 +86,9 @@ export async function POST(request: NextRequest) {
 
 /**
  * GET /api/tracking?creatorId=xxx
- * Refreshes tracking status and updates creator
+ * Returns tracking information for a creator
  */
 export async function GET(request: NextRequest) {
-  // Temporary debugging
-  console.log('API KEY exists:', !!process.env.TRACKINGMORE_API_KEY);
-  console.log('API KEY value:', process.env.TRACKINGMORE_API_KEY?.slice(0, 8) + '...');
-
   try {
     const searchParams = request.nextUrl.searchParams;
     const creatorId = searchParams.get('creatorId');
@@ -138,7 +109,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Validate tracking info exists
+    // Return tracking info if it exists
     if (!creator.trackingNumber || !creator.carrier) {
       return NextResponse.json(
         { success: false, error: 'No tracking information found for this creator' },
@@ -146,50 +117,16 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Refresh tracking status from TrackingMore API
-    console.log('[GET /api/tracking] Fetching status for:', { trackingNumber: creator.trackingNumber, carrier: creator.carrier });
-    const shipment = await getTrackingStatus(creator.trackingNumber, creator.carrier);
-    console.log('[GET /api/tracking] TrackingMore response:', JSON.stringify(shipment));
-
-    // Build shipment object, excluding undefined values
-    const shipmentData: ShipmentTracking = {
-      trackingNumber: shipment.trackingNumber,
-      carrier: shipment.carrier,
-      shippingStatus: shipment.shippingStatus,
-      lastUpdate: shipment.lastUpdate,
-      events: shipment.events,
-      ...(shipment.trackingMoreId && { trackingMoreId: shipment.trackingMoreId }),
-      ...(shipment.estimatedDelivery && { estimatedDelivery: shipment.estimatedDelivery }),
-    };
-
-    // Update creator with new tracking data
-    const updateData: any = {
-      shipment: shipmentData,
-    };
-
-    // If status is delivered and creator was shipped, auto-update status
-    if (shipment.shippingStatus === 'delivered' && creator.status === 'shipped') {
-      const deliveredAt = new Date();
-      const contentDeadline = new Date();
-      contentDeadline.setDate(contentDeadline.getDate() + 14); // 14 days from now
-
-      updateData.status = 'delivered';
-      updateData.deliveredAt = deliveredAt;
-      updateData.contentDeadline = contentDeadline;
-    }
-
-    // Remove undefined values before updating Firestore
-    await updateCreator(creatorId, removeUndefined(updateData));
-
     return NextResponse.json({
       success: true,
-      status: shipment.shippingStatus,
-      events: shipment.events,
+      trackingNumber: creator.trackingNumber,
+      carrier: creator.carrier,
+      status: creator.status,
     });
   } catch (error: any) {
-    console.error('Error refreshing tracking:', error);
+    console.error('Error fetching tracking:', error);
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to refresh tracking' },
+      { success: false, error: error.message || 'Failed to fetch tracking' },
       { status: 500 }
     );
   }
@@ -224,7 +161,6 @@ export async function DELETE(request: NextRequest) {
     await updateCreator(creatorId, {
       trackingNumber: null as any,
       carrier: null as any,
-      shipment: null as any,
     });
 
     return NextResponse.json({

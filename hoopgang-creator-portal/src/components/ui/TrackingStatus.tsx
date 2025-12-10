@@ -14,7 +14,7 @@ interface TrackingStatusProps {
   trackingNumber?: string;
   carrier?: Carrier;
   creatorId: string;
-  onRefresh?: () => void;
+  onRefresh?: () => void; // Kept for backward compatibility with handleDelete callback
 }
 
 interface AddTrackingFormProps {
@@ -141,7 +141,6 @@ export default function TrackingStatus({
 }: TrackingStatusProps) {
   const { showToast } = useToast();
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Determine current status
@@ -151,28 +150,6 @@ export default function TrackingStatus({
   const displayCarrier = shipment?.carrier || carrier;
   const events = shipment?.events || [];
   const lastUpdate = shipment?.lastUpdate || new Date();
-
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    try {
-      const response = await fetch(`/api/tracking?creatorId=${creatorId}`);
-      const data = await response.json();
-
-      if (data.success) {
-        showToast('Tracking information updated', 'success');
-        if (onRefresh) {
-          onRefresh();
-        }
-      } else {
-        showToast(data.error || 'Failed to refresh tracking', 'error');
-      }
-    } catch (error) {
-      console.error('Error refreshing tracking:', error);
-      showToast('Failed to refresh tracking', 'error');
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
 
   const handleDelete = async () => {
     if (!confirm('Are you sure you want to remove tracking information? This cannot be undone.')) {
@@ -258,15 +235,6 @@ export default function TrackingStatus({
               View on Carrier
             </Button>
           )}
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={handleRefresh}
-            loading={isRefreshing}
-            className="flex-1 sm:flex-none"
-          >
-            Refresh
-          </Button>
           <Button
             variant="secondary"
             size="sm"

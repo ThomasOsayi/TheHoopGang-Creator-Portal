@@ -128,7 +128,31 @@ export default function AdminCreatorsPage() {
   const handleApprove = async (id: string) => {
     setActionLoading(true);
     try {
+      // Get creator data before updating
+      const creator = creators.find(c => c.id === id);
+      
       await updateCreator(id, { status: 'approved' as CreatorStatus });
+      
+      // Send approval email
+      if (creator) {
+        try {
+          const firstName = creator.fullName.split(' ')[0];
+          await fetch('/api/email/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'approved',
+              to: creator.email,
+              creatorName: firstName || creator.instagramHandle,
+              instagramHandle: creator.instagramHandle.replace('@', ''),
+            }),
+          });
+        } catch (emailError) {
+          console.error('Error sending approval email:', emailError);
+          // Don't fail the whole operation if email fails
+        }
+      }
+      
       const lastDoc = currentPage > 1 ? lastDocs[currentPage - 2] : undefined;
       await fetchCreators(lastDoc);
       showToast('Creator approved!', 'success');

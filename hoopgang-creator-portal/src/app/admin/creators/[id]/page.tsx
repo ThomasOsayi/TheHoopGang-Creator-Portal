@@ -7,6 +7,8 @@ import { useRouter, useParams } from 'next/navigation';
 import { Creator, CreatorStatus } from '@/types';
 import { getCreatorById, updateCreator } from '@/lib/firestore';
 import { CREATOR_STATUSES } from '@/lib/constants';
+import { updateDoc, doc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import {
   SectionCard,
   StatusBadge,
@@ -52,6 +54,7 @@ export default function CreatorDetailPage() {
   const [creator, setCreator] = useState<Creator | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [isMarkingDelivered, setIsMarkingDelivered] = useState(false);
   const [editedStatus, setEditedStatus] = useState<CreatorStatus | ''>('');
   const [editedRating, setEditedRating] = useState<number>(0);
   const [editedNotes, setEditedNotes] = useState<string>('');
@@ -83,9 +86,11 @@ export default function CreatorDetailPage() {
     setSaving(true);
     try {
       const updateData: Partial<Creator> = {};
+      const statusChanged = editedStatus && editedStatus !== creator.status;
+      const newStatus = statusChanged ? editedStatus as CreatorStatus : null;
 
-      if (editedStatus && editedStatus !== creator.status) {
-        updateData.status = editedStatus as CreatorStatus;
+      if (statusChanged) {
+        updateData.status = newStatus!;
       }
       if (editedRating !== (creator.rating || 0)) {
         updateData.rating = editedRating || undefined;
@@ -96,6 +101,31 @@ export default function CreatorDetailPage() {
 
       if (Object.keys(updateData).length > 0) {
         await updateCreator(creator.id, updateData);
+        
+        // Send emails for status changes
+        if (statusChanged && newStatus) {
+          try {
+            const firstName = creator.fullName.split(' ')[0];
+            
+            if (newStatus === 'approved') {
+              await fetch('/api/email/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  type: 'approved',
+                  to: creator.email,
+                  creatorName: firstName || creator.instagramHandle,
+                  instagramHandle: creator.instagramHandle.replace('@', ''),
+                }),
+              });
+            }
+            // Note: Shipped emails are now sent automatically by the tracking API
+          } catch (emailError) {
+            console.error('Error sending status change email:', emailError);
+            // Don't fail the whole operation if email fails
+          }
+        }
+        
         await fetchCreator();
         showToast('Changes saved!', 'success');
       }
@@ -109,6 +139,65 @@ export default function CreatorDetailPage() {
 
   const handleBack = () => {
     router.push('/admin/creators');
+  };
+
+  const handleMarkDelivered = async () => {
+    if (!creator || creator.status !== 'shipped') return;
+
+    const confirmed = window.confirm(
+      'Mark this package as delivered? This will start the 14-day content deadline countdown.'
+    );
+
+    if (!confirmed) return;
+
+    setIsMarkingDelivered(true);
+
+    try {
+      const now = new Date();
+      const contentDeadline = new Date(now);
+      contentDeadline.setDate(contentDeadline.getDate() + 14);
+
+      await updateDoc(doc(db, 'creators', creator.id), {
+        status: 'delivered',
+        deliveredAt: now,
+        contentDeadline: contentDeadline,
+        updatedAt: now,
+      });
+
+      // Send delivery email
+      try {
+        const firstName = creator.fullName.split(' ')[0];
+        await fetch('/api/email/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'delivered',
+            to: creator.email,
+            creatorName: firstName || creator.instagramHandle,
+            contentDeadline: contentDeadline,
+          }),
+        });
+      } catch (emailError) {
+        console.error('Error sending delivery email:', emailError);
+        // Don't fail the whole operation if email fails
+      }
+
+      // Refresh creator data
+      setCreator({
+        ...creator,
+        status: 'delivered',
+        deliveredAt: now,
+        contentDeadline: contentDeadline,
+      });
+
+      setEditedStatus('delivered');
+      showToast('Package marked as delivered!', 'success');
+    } catch (error) {
+      console.error('Error marking as delivered:', error);
+      showToast('Failed to mark as delivered. Please try again.', 'error');
+    } finally {
+      setIsMarkingDelivered(false);
+    }
   };
 
   const inputClasses =
@@ -202,8 +291,8 @@ export default function CreatorDetailPage() {
                 <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-500/20 to-purple-500/20 border border-white/10 flex items-center justify-center text-2xl font-bold text-white/70">
                   {creator.fullName.charAt(0).toUpperCase()}
                 </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-white">{creator.fullName}</h1>
+            <div>
+              <h1 className="text-2xl font-bold text-white">{creator.fullName}</h1>
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
                     <span className="text-white/40 text-sm font-mono">{creator.creatorId}</span>
                     <span className="text-white/20">•</span>
@@ -262,18 +351,18 @@ export default function CreatorDetailPage() {
             </div>
           </div>
 
-          {/* Content Grid */}
+        {/* Content Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mt-6">
             {/* Left Column - 3/5 */}
             <div className="lg:col-span-3 space-y-6">
-              {/* Creator Profile */}
+            {/* Creator Profile */}
               <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 hover:border-white/20 transition-all duration-300">
                 <div className="flex items-center gap-2 mb-5">
                   <span className="text-xl">👤</span>
                   <h2 className="text-lg font-semibold text-white">Creator Profile</h2>
                 </div>
                 <div className="space-y-1">
-                  <DetailRow label="Email" value={creator.email} />
+              <DetailRow label="Email" value={creator.email} />
                   <DetailRow
                     label="TikTok"
                     value={
@@ -290,38 +379,38 @@ export default function CreatorDetailPage() {
                       </a>
                     }
                   />
-                  <DetailRow
-                    label="Instagram"
-                    value={
-                      <a
-                        href={`https://instagram.com/${creator.instagramHandle.replace('@', '')}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
+              <DetailRow
+                label="Instagram"
+                value={
+                  <a
+                    href={`https://instagram.com/${creator.instagramHandle.replace('@', '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
                         className="text-orange-400 hover:text-orange-300 transition-colors inline-flex items-center gap-2"
                       >
                         @{creator.instagramHandle.replace('@', '')}
                         <span className="text-white/40 text-sm">
                           ({formatFollowers(creator.instagramFollowers)} followers)
                         </span>
-                      </a>
-                    }
-                  />
-                  <DetailRow
-                    label="Best Content"
-                    value={
-                      <a
-                        href={creator.bestContentUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                  </a>
+                }
+              />
+              <DetailRow
+                label="Best Content"
+                value={
+                  <a
+                    href={creator.bestContentUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
                         className="text-orange-400 hover:text-orange-300 transition-colors inline-flex items-center gap-1"
-                      >
-                        View Content
+                  >
+                    View Content
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                         </svg>
-                      </a>
-                    }
-                  />
+                  </a>
+                }
+              />
                 </div>
                 
                 {/* Fit Info (if provided) */}
@@ -342,7 +431,7 @@ export default function CreatorDetailPage() {
                 )}
               </div>
 
-              {/* Application Details */}
+            {/* Application Details */}
               <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 hover:border-white/20 transition-all duration-300">
                 <div className="flex items-center gap-2 mb-5">
                   <span className="text-xl">📦</span>
@@ -464,43 +553,48 @@ export default function CreatorDetailPage() {
                 <div className="flex items-center gap-2 mb-5">
                   <span className="text-xl">⚙️</span>
                   <h2 className="text-lg font-semibold text-white">Status & Actions</h2>
-                </div>
+          </div>
 
-                <div className="space-y-4">
+              <div className="space-y-4">
                   {/* Status Dropdown */}
-                  <div>
+                <div>
                     <label className="block text-white/50 text-xs uppercase tracking-wider mb-2">
                       Status
                     </label>
                     <div className="relative">
-                      <select
-                        value={editedStatus}
-                        onChange={(e) => setEditedStatus(e.target.value as CreatorStatus | '')}
-                        className={inputClasses}
-                      >
-                        {CREATOR_STATUSES.map((status) => (
-                          <option key={status.value} value={status.value} className="bg-zinc-900">
-                            {status.label}
-                          </option>
-                        ))}
-                      </select>
+                  <select
+                    value={editedStatus}
+                    onChange={(e) => setEditedStatus(e.target.value as CreatorStatus | '')}
+                    className={inputClasses}
+                  >
+                    {CREATOR_STATUSES.map((status) => (
+                          <option 
+                            key={status.value} 
+                            value={status.value} 
+                            className="bg-zinc-900"
+                            disabled={status.value === 'delivered'} // Use Mark Delivered button instead
+                          >
+                            {status.label} {status.value === 'delivered' ? '(Use Mark Delivered button)' : ''}
+                      </option>
+                    ))}
+                  </select>
                       <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-white/40">
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                         </svg>
-                      </div>
-                    </div>
-                  </div>
+                </div>
+                </div>
+                </div>
 
-                  <Button
-                    variant="primary"
-                    onClick={handleSaveChanges}
-                    disabled={saving}
-                    loading={saving}
-                    className="w-full"
-                  >
-                    {saving ? 'Saving...' : 'Save Changes'}
-                  </Button>
+                <Button
+                  variant="primary"
+                  onClick={handleSaveChanges}
+                  disabled={saving}
+                  loading={saving}
+                  className="w-full"
+                >
+                  {saving ? 'Saving...' : 'Save Changes'}
+                </Button>
                 </div>
               </div>
 
@@ -523,73 +617,123 @@ export default function CreatorDetailPage() {
                   <AddTrackingForm creatorId={creator.id} onSuccess={fetchCreator} />
                 )}
 
-                {/* Delivery Info */}
-                {creator.deliveredAt && (
-                  <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 mt-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-green-400">✅</span>
-                      <span className="text-green-400 text-sm font-medium">Package Delivered</span>
-                    </div>
-                    <p className="text-green-300/80 text-sm">
-                      {formatDateTime(creator.deliveredAt)}
-                    </p>
-                    {creator.contentDeadline && (
-                      <p className="text-green-300/60 text-xs mt-2">
-                        Content deadline: {formatDateTime(creator.contentDeadline)}
-                      </p>
+                {/* Mark Delivered Button - only show when status is 'shipped' */}
+                {creator.status === 'shipped' && (
+                  <button
+                    onClick={handleMarkDelivered}
+                    disabled={isMarkingDelivered}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 disabled:bg-green-500/50 disabled:cursor-not-allowed text-white font-medium rounded-xl transition-colors mt-4"
+                  >
+                    {isMarkingDelivered ? (
+                      <>
+                        <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        Marking...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        Mark as Delivered
+                      </>
                     )}
+                  </button>
+                )}
+
+                {/* Delivery Info - show when delivered */}
+                {['delivered', 'completed', 'ghosted'].includes(creator.status) && creator.deliveredAt && (
+                  <div className="mt-4 p-4 bg-green-500/10 border border-green-500/20 rounded-xl">
+                    <div className="flex items-center gap-2 text-green-400 mb-2">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span className="font-medium">Package Delivered</span>
+                    </div>
+                    <div className="text-sm text-gray-400 space-y-1">
+                      <p>
+                        Delivered on:{' '}
+                        <span className="text-white">
+                          {new Date(creator.deliveredAt).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                          })}
+                        </span>
+                      </p>
+                      {creator.contentDeadline && creator.status === 'delivered' && (
+                        <p>
+                          Content deadline:{' '}
+                          <span className={`font-medium ${
+                            new Date(creator.contentDeadline) < new Date() 
+                              ? 'text-red-400' 
+                              : 'text-orange-400'
+                          }`}>
+                            {new Date(creator.contentDeadline).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                            })}
+                            {' '}
+                            ({Math.ceil((new Date(creator.contentDeadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} days remaining)
+                          </span>
+                        </p>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
 
-              {/* Review */}
+            {/* Review */}
               <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 hover:border-white/20 transition-all duration-300">
                 <div className="flex items-center gap-2 mb-5">
                   <span className="text-xl">⭐</span>
                   <h2 className="text-lg font-semibold text-white">Review</h2>
                 </div>
 
-                <div className="space-y-4">
+              <div className="space-y-4">
                   {/* Rating */}
-                  <div>
+                <div>
                     <label className="block text-white/50 text-xs uppercase tracking-wider mb-3">
                       Creator Rating
                     </label>
-                    <StarRating
-                      rating={editedRating}
-                      editable={true}
-                      onChange={setEditedRating}
-                      size="lg"
-                    />
-                  </div>
+                  <StarRating
+                    rating={editedRating}
+                    editable={true}
+                    onChange={setEditedRating}
+                    size="lg"
+                  />
+                </div>
 
                   {/* Notes */}
-                  <div>
+                <div>
                     <label className="block text-white/50 text-xs uppercase tracking-wider mb-2">
                       Internal Notes
                     </label>
-                    <textarea
-                      value={editedNotes}
-                      onChange={(e) => setEditedNotes(e.target.value)}
-                      placeholder="Leave notes about this creator's performance..."
-                      rows={4}
-                      className={textareaClasses}
-                    />
-                  </div>
+                  <textarea
+                    value={editedNotes}
+                    onChange={(e) => setEditedNotes(e.target.value)}
+                    placeholder="Leave notes about this creator's performance..."
+                    rows={4}
+                    className={textareaClasses}
+                  />
+                </div>
 
-                  <Button
-                    variant="primary"
-                    onClick={handleSaveChanges}
-                    disabled={saving}
-                    loading={saving}
-                    className="w-full"
-                  >
+                <Button
+                  variant="primary"
+                  onClick={handleSaveChanges}
+                  disabled={saving}
+                  loading={saving}
+                  className="w-full"
+                >
                     {saving ? 'Saving...' : 'Save Review'}
-                  </Button>
+                </Button>
                 </div>
               </div>
             </div>
-          </div>
+        </div>
         </div>
       </div>
     </ProtectedRoute>
