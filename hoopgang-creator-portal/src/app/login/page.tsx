@@ -5,6 +5,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui';
 
@@ -89,8 +90,16 @@ export default function LoginPage() {
         {/* Header */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-block">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-500/20 to-orange-600/10 border border-orange-500/20 mb-6 hover:scale-105 transition-transform">
-              <span className="text-4xl">🏀</span>
+            <div className="relative w-16 h-16 mx-auto mb-6">
+              <div className="w-full h-full bg-zinc-800/50 rounded-2xl border border-white/10 flex items-center justify-center p-3">
+                <Image
+                  src="/images/THG_logo_orange.png"
+                  alt="HoopGang"
+                  width={48}
+                  height={48}
+                  className="w-full h-full object-contain"
+                />
+              </div>
             </div>
           </Link>
           <h1 className="text-2xl font-bold text-white">Welcome Back</h1>

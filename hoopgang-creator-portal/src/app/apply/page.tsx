@@ -5,6 +5,7 @@
 import { useState, FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { CreatorApplicationInput, Size } from '@/types';
 import { SIZES } from '@/lib/constants';
 import { createCreator, updateCreator, getCreatorByUserId } from '@/lib/firestore';
@@ -226,8 +227,16 @@ export default function ApplyPage() {
       <div className="max-w-2xl mx-auto relative z-10">
         {/* Header */}
         <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-orange-500/20 to-orange-600/10 border border-orange-500/20 mb-6">
-            <span className="text-5xl">🏀</span>
+          <div className="relative w-20 h-20 mx-auto mb-6">
+            <div className="w-full h-full bg-zinc-800/50 rounded-2xl border border-white/10 flex items-center justify-center p-4">
+              <Image
+                src="/images/THG_logo_orange.png"
+                alt="HoopGang"
+                width={56}
+                height={56}
+                className="w-full h-full object-contain"
+              />
+            </div>
           </div>
           <h1 className="text-4xl font-black text-white mb-3">
             Join the HoopGang Creator Squad

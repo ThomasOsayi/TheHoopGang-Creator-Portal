@@ -32,15 +32,22 @@ hoopgang-creator-portal/
 
 #### Application Flow
 - `apply/page.tsx` - Creator application page
+  - Product selection with text input (links to store)
+  - Optional height/weight fields for fit recommendations
+  - Re-application support for completed/denied/ghosted creators
 
 #### Admin Routes
 ```
 admin/
 └── creators/
     ├── page.tsx                # Admin creators list page
+    │                           # - Approve/Deny/Review actions for pending creators
+    │                           # - Application review modal integration
     └── [id]/
         └── page.tsx            # Individual creator detail page (dynamic route)
-                                # Includes tracking management section
+                                # - Tracking management section
+                                # - Height/weight display in profile
+                                # - Fit information in stats bar
 ```
 
 #### API Routes (`api/`)
@@ -63,6 +70,12 @@ api/
 creator/
 └── dashboard/
     └── page.tsx                # Creator dashboard page
+                                # - Status-based content visibility
+                                # - Two-column layout (timeline + content)
+                                # - Quick stats bar with status/videos/time/product
+                                # - Completion banners and countdown timers
+                                # - Enhanced timeline with checkmarks and progress
+                                # - Glassmorphic design with hover effects
 ```
 
 ---
@@ -74,8 +87,9 @@ creator/
 - `index.ts` - Component exports
 
 #### Creator Management Components (`creators/`)
-- `CreatorTable.tsx` - Table component for displaying creators
+- `CreatorTable.tsx` - Table component for displaying creators with approve/deny/review actions
 - `FilterBar.tsx` - Filtering component for creators
+- `ApplicationReviewModal.tsx` - Modal component for reviewing creator applications
 - `index.ts` - Component exports
 
 #### UI Components (`ui/`)
@@ -114,13 +128,18 @@ creator/
 ### Type Definitions (`src/types/`)
 
 - `index.ts` - TypeScript type definitions and interfaces
-  - Creator, CreatorStatus, User, UserRole
-  - ProductType, Size, Carrier
+  - Creator, CreatorStatus (includes 'denied'), User, UserRole
+  - ProductType, Size, Carrier (Yanwen only)
+  - Creator interface includes:
+    - `product: string` (text input, not enum)
+    - `height?: string` (optional)
+    - `weight?: string` (optional)
+    - Removed `phone` field
   - Shipping tracking types:
     - `ShippingStatus` - Tracking status enumeration
     - `TrackingEvent` - Individual tracking event
     - `ShipmentTracking` - Complete shipment tracking data
-  - Application input types
+  - Application input types (CreatorApplicationInput)
   - Dashboard statistics types
 
 ---
@@ -147,9 +166,9 @@ creator/
 - Tracking API: POST, GET, DELETE handlers
 - Webhooks: TrackingMore push notification handler
 
-### Components (19 files)
+### Components (20 files)
 - Auth: 2 components
-- Creators: 3 components  
+- Creators: 4 components (including ApplicationReviewModal)
 - UI: 13 components (including TrackingStatus, TrackingProgress)
 
 ### Libraries (6 files)
@@ -221,12 +240,15 @@ creator/
 3. **Creator Management**
    - Creator listing and filtering
    - Detailed creator profiles
-   - Application review system
+   - Application review system with modal
+   - Approve/Deny/Review actions for pending creators
    - Status tracking and history
+   - Height/weight display for fit recommendations
+   - Product selection as text input (links to store)
 
 4. **Shipping & Tracking System**
    - TrackingMore API integration
-   - Multi-carrier support (Yanwen, USPS, UPS, FedEx)
+   - Carrier support: Yanwen (via 17TRACK)
    - Real-time tracking status updates
    - Webhook support for push notifications
    - Visual tracking progress stepper
@@ -249,6 +271,17 @@ creator/
    - Accessible components
    - Tracking-specific components (TrackingStatus, TrackingProgress)
    - Toast notification system
+   - Application review modal with full creator details
+
+7. **Enhanced User Experience**
+   - Status-based content visibility (pending/denied creators see different UI)
+   - Dynamic welcome messages based on creator status
+   - Completion recognition banners
+   - Enhanced countdown timers with start/end dates
+   - Quick stats bars with hover glow effects
+   - Smooth animations and transitions
+   - Responsive two-column layouts
+   - Re-application support for completed/denied creators
 
 ---
 
@@ -264,10 +297,7 @@ creator/
 - Webhook endpoint: `/api/webhooks/tracking` - Receive push notifications
 
 **Supported Carriers**:
-- Yanwen (mapped to `yanwen-unified-api` in API)
-- USPS
-- UPS
-- FedEx
+- Yanwen (mapped to `yanwen-unified-api` in API, uses 17TRACK for tracking URLs)
 
 **Status Mapping**:
 - Tracks 7 shipping statuses: pending, transit, pickup, delivered, undelivered, exception, expired
@@ -285,19 +315,84 @@ creator/
 
 ## Recent Implementations
 
-### Tracking System (Latest)
+### Application & Form Enhancements (Latest)
+- **Application Form Updates**:
+  - Removed phone number field
+  - Changed product selection from dropdown to text input
+  - Added optional height/weight fields for fit recommendations
+  - Added store link to TheHoopGang website in product section
+  - Re-application support: completed/denied/ghosted creators can apply again
+- **Creator Type Updates**:
+  - Added 'denied' status to CreatorStatus enum
+  - Updated Creator interface: removed phone, product as string, added height/weight
+  - Updated CreatorApplicationInput to match form changes
+
+### Admin Dashboard Enhancements
+- **Application Review System**:
+  - Added ApplicationReviewModal component for detailed application review
+  - Review button in CreatorTable for pending creators
+  - Approve/Deny actions from modal with loading states
+  - Modal displays full creator profile, social stats, fit info, and application details
+- **Creator Detail Page**:
+  - Removed phone field from profile
+  - Added height/weight display in profile section
+  - Added fit information to quick stats bar (5-column grid when available)
+  - Enhanced social media links with follower counts
+
+### Creator Dashboard Enhancements
+- **Status-Based UI**:
+  - Content sections hidden for pending/denied creators
+  - Status-specific welcome messages and banners
+  - Pending/denied status banners with appropriate messaging
+- **Layout Improvements**:
+  - Two-column grid layout (timeline + content) for active creators
+  - Quick stats bar showing status, videos posted, time remaining, product
+  - Enhanced timeline with checkmarks, progress lines, and status colors
+  - Completion banners for all 3 videos submitted
+- **Visual Enhancements**:
+  - Glassmorphic welcome banner with hover effects
+  - Background gradient orbs for depth
+  - Stats cards with orange glow on hover
+  - Enhanced countdown with start/end dates
+  - Progress bars for video submissions
+  - Perks grid with unlock states
+
+### UI/UX Improvements
+- **Animations & Effects**:
+  - Toast slide-in animations
+  - Logo glow effect
+  - Floating animations for decorative elements
+  - Shimmer effects for gradient text
+  - Pulse glow for CTAs
+  - Custom scrollbar styling
+  - Selection color theming
+- **Design System**:
+  - Consistent glassmorphism theme throughout
+  - Hover effects on cards and interactive elements
+  - Smooth transitions and duration controls
+  - Enhanced focus states for inputs
+
+### Bug Fixes & Optimizations
+- Fixed race condition in apply page (setTimeout delay before redirect)
+- Fixed loading state bugs in apply and login pages
+- Fixed missing opening tags in links (CreatorTable, ApplicationReviewModal, admin detail page)
+- Updated redirect logic to allow re-application for completed/denied creators
+- Fixed ESLint configuration for ESLint 9 flat config
+
+### Tracking System
 - Complete TrackingMore API integration
 - Real-time tracking status updates via webhooks
 - Visual tracking progress components
 - Admin tracking management interface
 - Creator package tracking view with countdown
-- Multi-carrier support with proper code mapping
+- Yanwen carrier support with 17TRACK integration
 - Debug logging throughout tracking flow
 
 ### Component Enhancements
 - TrackingStatus component with refresh and delete functionality
 - TrackingProgress component with 5-stage visual stepper
 - AddTrackingForm component for adding tracking information
+- ApplicationReviewModal for comprehensive application review
 - Enhanced error handling and user feedback
 
 ### API Enhancements

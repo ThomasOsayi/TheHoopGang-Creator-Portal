@@ -4,6 +4,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { getCreatorByUserId } from '@/lib/firestore';
@@ -87,14 +88,17 @@ export function Navbar() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <Link 
-              href="/" 
-              className="flex items-center gap-2.5 group"
-            >
-              <span className="text-2xl transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12">
-                🏀
-              </span>
-              <span className="text-lg font-bold bg-gradient-to-r from-orange-500 to-orange-400 bg-clip-text text-transparent group-hover:from-orange-400 group-hover:to-yellow-400 transition-all duration-300">
+            <Link href="/" className="flex items-center gap-2.5 group">
+              <div className="relative w-9 h-9 transition-transform duration-300 group-hover:scale-110">
+                <Image
+                  src="/images/THG_logo_orange.png"
+                  alt="HoopGang"
+                  width={36}
+                  height={36}
+                  className="w-full h-full object-contain"
+                />
+              </div>
+              <span className="text-orange-400 font-bold text-xl tracking-tight">
                 HoopGang
               </span>
             </Link>

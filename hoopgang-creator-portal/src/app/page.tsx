@@ -75,58 +75,65 @@ export default function HomePage() {
 
               {/* Social Proof */}
               <div className="flex items-center gap-6 mt-10 justify-center lg:justify-start">
-                <div className="flex -space-x-3">
-                  {/* Creator avatars - replace with actual images later */}
-                  {['🏀', '⭐', '🔥', '💯'].map((emoji, i) => (
-                    <div
-                      key={i}
-                      className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-500 to-purple-600 border-2 border-zinc-950 flex items-center justify-center text-lg"
-                    >
-                      {emoji}
-                    </div>
-                  ))}
+                <div className="flex -space-x-2">
+                  {/* Overlapping creator images */}
+                  <div className="w-8 h-8 rounded-full border-2 border-zinc-900 overflow-hidden">
+                    <Image src="/images/creators/creator_stretch.jpg" alt="" width={32} height={32} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="w-8 h-8 rounded-full border-2 border-zinc-900 overflow-hidden">
+                    <Image src="/images/creators/striped_duo.jpg" alt="" width={32} height={32} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="w-8 h-8 rounded-full border-2 border-zinc-900 overflow-hidden">
+                    <Image src="/images/creators/outdoor_crew.jpg" alt="" width={32} height={32} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="w-8 h-8 rounded-full bg-orange-500 border-2 border-zinc-900 flex items-center justify-center">
+                    <span className="text-xs font-bold text-white">+</span>
+                  </div>
                 </div>
                 <div className="text-left">
-                  <div className="text-white font-semibold">50+ Creators</div>
-                  <div className="text-white/50 text-sm">Already in the squad</div>
+                  <p className="text-white font-semibold">30K+ Hoopers</p>
+                  <p className="text-white/50 text-sm">Worldwide community</p>
                 </div>
               </div>
             </div>
 
-            {/* Right Column - Image Grid */}
+            {/* Right Column - Hero Image Card */}
             <div className="order-1 lg:order-2 relative">
-              <div className="relative aspect-square max-w-lg mx-auto">
-                {/* Main hero image */}
-                <div className="absolute inset-4 rounded-3xl overflow-hidden border border-white/10 shadow-2xl shadow-orange-500/10 bg-zinc-800">
-                  {/* Replace with actual image */}
-                  <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center">
-                    <span className="text-8xl">🏀</span>
-                    {/* Uncomment when image is added:
-                    <Image
-                      src="/images/hero-team.jpg"
-                      alt="HoopGang creators"
-                      fill
-                      className="object-cover"
-                      priority
-                    />
-                    */}
-                  </div>
+              <div className="relative">
+                {/* Main Product Image */}
+                <div className="relative bg-zinc-900/80 backdrop-blur-sm rounded-3xl border border-white/10 overflow-hidden shadow-2xl">
+                  <Image
+                    src="/images/products/hero_product.jpg"
+                    alt="HoopGang Creator"
+                    width={450}
+                    height={563}
+                    className="w-full h-auto"
+                    priority
+                  />
+                  {/* Gradient overlay at bottom */}
+                  <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-zinc-900/90 to-transparent" />
                 </div>
                 
-                {/* Floating accent cards */}
-                <div className="absolute -top-4 -right-4 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl p-4 shadow-xl animate-float">
-                  <div className="text-3xl">🔥</div>
+                {/* Floating Stats Card - Top Right */}
+                <div className="absolute -top-4 -right-4 bg-orange-500 rounded-xl p-3 shadow-lg shadow-orange-500/30">
+                  <Image
+                    src="/images/THG_logo_white.png"
+                    alt="THG"
+                    width={40}
+                    height={40}
+                  />
                 </div>
                 
-                <div className="absolute -bottom-4 -left-4 bg-zinc-900 border border-white/10 rounded-2xl p-4 shadow-xl animate-float delay-500">
-                  <div className="text-white font-bold">FREE GEAR</div>
-                  <div className="text-white/50 text-sm">No strings attached</div>
+                {/* Floating Stats Card - Right Side */}
+                <div className="absolute top-1/4 -right-8 bg-zinc-800/90 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/10">
+                  <p className="text-orange-400 font-bold text-xl">30K+</p>
+                  <p className="text-white/60 text-xs">Global Hoopers</p>
                 </div>
                 
-                {/* Stats card */}
-                <div className="absolute top-1/2 -right-8 transform -translate-y-1/2 bg-zinc-900/90 backdrop-blur border border-white/10 rounded-2xl p-4 shadow-xl hidden lg:block">
-                  <div className="text-orange-500 text-2xl font-bold">500K+</div>
-                  <div className="text-white/50 text-sm">Total Views</div>
+                {/* Floating Card - Bottom */}
+                <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-zinc-800/90 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/10">
+                  <p className="text-white font-semibold text-sm">FREE GEAR</p>
+                  <p className="text-white/60 text-xs">No strings attached</p>
                 </div>
               </div>
             </div>
@@ -210,21 +217,26 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Stats Banner */}
-      <section className="py-16 px-4 sm:px-6 bg-gradient-to-r from-orange-500/10 via-purple-500/10 to-orange-500/10 border-y border-white/10">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 text-center">
-            {[
-              { value: '50+', label: 'Active Creators' },
-              { value: '500+', label: 'Products Shipped' },
-              { value: '1M+', label: 'Total Views' },
-              { value: '95%', label: 'Completion Rate' },
-            ].map((stat, index) => (
-              <div key={index}>
-                <div className="text-3xl sm:text-4xl font-black text-white mb-1">{stat.value}</div>
-                <div className="text-white/60 text-sm">{stat.label}</div>
-              </div>
-            ))}
+      {/* Stats Section */}
+      <section className="py-12 border-y border-white/10">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            <div className="text-center">
+              <p className="text-3xl md:text-4xl font-bold text-orange-400">30K+</p>
+              <p className="text-white/60 text-sm mt-1">Global Hoopers</p>
+            </div>
+            <div className="text-center">
+              <p className="text-3xl md:text-4xl font-bold text-white">25+</p>
+              <p className="text-white/60 text-sm mt-1">Countries Served</p>
+            </div>
+            <div className="text-center">
+              <p className="text-3xl md:text-4xl font-bold text-purple-400">4.9★</p>
+              <p className="text-white/60 text-sm mt-1">Customer Rating</p>
+            </div>
+            <div className="text-center">
+              <p className="text-3xl md:text-4xl font-bold text-white">100%</p>
+              <p className="text-white/60 text-sm mt-1">Free Gear</p>
+            </div>
           </div>
         </div>
       </section>
@@ -291,48 +303,76 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Creator Gallery Section */}
-      <section className="py-24 px-4 sm:px-6 bg-gradient-to-b from-transparent via-white/5 to-transparent">
+      {/* Creator Gallery */}
+      <section className="py-20 px-4">
         <div className="max-w-7xl mx-auto">
-          {/* Section Header */}
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
-              The Squad
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+              The <span className="text-orange-400">Squad</span>
             </h2>
-            <p className="text-white/60 text-lg max-w-2xl mx-auto">
-              Real creators. Real content. Real results.
+            <p className="text-white/60 max-w-2xl mx-auto">
+              Real creators. Real hoopers. Real community.
             </p>
           </div>
-
-          {/* Image Grid - Replace emojis with actual images */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[1, 2, 3, 4].map((_, index) => (
-              <div
-                key={index}
-                className="aspect-square rounded-2xl overflow-hidden border border-white/10 bg-zinc-800 relative group"
-              >
-                {/* Placeholder - replace with actual images */}
-                <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center">
-                  <span className="text-4xl">🏀</span>
-                  {/* Uncomment when images are added:
-                  <Image
-                    src={`/images/creators-${index + 1}.jpg`}
-                    alt={`HoopGang creator ${index + 1}`}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  */}
-                </div>
-                
-                {/* Hover overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
-                  <div>
-                    <div className="text-white font-semibold">@creator</div>
-                    <div className="text-white/60 text-sm">50K followers</div>
-                  </div>
-                </div>
-              </div>
-            ))}
+          
+          {/* Masonry-style Gallery */}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {/* Large feature image */}
+            <div className="col-span-2 md:col-span-1 md:row-span-2 relative group overflow-hidden rounded-2xl">
+              <Image
+                src="/images/creators/team_photo.jpg"
+                alt="HoopGang Team"
+                width={408}
+                height={512}
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            </div>
+            
+            {/* Grid images */}
+            <div className="relative group overflow-hidden rounded-2xl aspect-square">
+              <Image
+                src="/images/creators/purple_crew.jpg"
+                alt="HoopGang Crew"
+                width={406}
+                height={406}
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            </div>
+            
+            <div className="relative group overflow-hidden rounded-2xl aspect-square">
+              <Image
+                src="/images/creators/outdoor_crew.jpg"
+                alt="HoopGang Outdoor"
+                width={405}
+                height={405}
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            </div>
+            
+            <div className="relative group overflow-hidden rounded-2xl aspect-[3/4]">
+              <Image
+                src="/images/creators/striped_duo.jpg"
+                alt="HoopGang Duo"
+                width={642}
+                height={800}
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            </div>
+            
+            <div className="relative group overflow-hidden rounded-2xl aspect-square">
+              <Image
+                src="/images/creators/creator_stretch.jpg"
+                alt="HoopGang Creator"
+                width={225}
+                height={239}
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            </div>
           </div>
         </div>
       </section>
