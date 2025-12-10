@@ -4,9 +4,10 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Creator, ShippingStatus } from '@/types';
+import { Creator } from '@/types';
 import { getCreatorByUserId, addContentSubmission } from '@/lib/firestore';
-import { SectionCard, Button, useToast, TrackingProgress } from '@/components/ui';
+import { SectionCard, Button, useToast } from '@/components/ui';
+import PackageStatusCard from '@/components/ui/PackageStatusCard';
 import { CONTENT_DEADLINE_DAYS } from '@/lib/constants';
 import { useAuth } from '@/lib/auth-context';
 import { ProtectedRoute } from '@/components/auth';
@@ -485,55 +486,18 @@ export default function CreatorDashboardPage() {
 
             {/* Right Column - Package & Content (3/5 width on desktop) */}
             <div className="lg:col-span-3 space-y-6">
-              {/* Package Tracking Card */}
-              {creator.status !== 'pending' && creator.status !== 'denied' && (
-                <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 hover:border-white/20 transition-all duration-300">
-                  <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                    <span>📦</span> Your Package
-                  </h2>
+              {/* Package Status Card */}
+              {['approved', 'shipped', 'delivered', 'completed', 'ghosted'].includes(creator.status) && (
+                <PackageStatusCard
+                  collaborationStatus={creator.status as 'approved' | 'shipped' | 'delivered' | 'completed' | 'ghosted'}
+                  trackingNumber={creator.trackingNumber}
+                  carrier={creator.carrier}
+                  shippedAt={creator.shippedAt}
+                  deliveredAt={creator.deliveredAt}
+                />
+              )}
 
-                  {creator.trackingNumber ? (
-                    <div className="space-y-6">
-                      {(() => {
-                        let currentStatus: ShippingStatus;
-                        
-                        if (creator.shipment?.shippingStatus) {
-                          currentStatus = creator.shipment.shippingStatus;
-                        } else {
-                          if (creator.status === 'shipped') {
-                            currentStatus = 'transit';
-                          } else if (creator.status === 'delivered') {
-                            currentStatus = 'delivered';
-                          } else {
-                            currentStatus = 'pending';
-                          }
-                        }
-                        
-                        return (
-                          <TrackingProgress
-                            currentStatus={currentStatus}
-                            trackingNumber={creator.trackingNumber}
-                            carrier={creator.carrier}
-                            lastUpdate={creator.shipment?.lastUpdate}
-                          />
-                        );
-                      })()}
-                    </div>
-                  ) : creator.status === 'approved' ? (
-                    <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-6 text-center">
-                      <div className="text-3xl mb-3">📬</div>
-                      <p className="text-blue-400 text-lg font-medium">
-                        Your package will ship soon!
-                      </p>
-                      <p className="text-white/50 text-sm mt-1">
-                        We'll update you when it's on the way.
-                      </p>
-                    </div>
-                  ) : null}
-            </div>
-          )}
-
-        {/* Content Submission Card */}
+              {/* Content Submission Card */}
               {!['pending', 'denied'].includes(creator.status) && (
                 <SectionCard title="Submit Your Content" icon="🎥" className="hover:border-white/20 transition-all duration-300">
                   {/* Progress indicator */}
@@ -627,7 +591,7 @@ export default function CreatorDashboardPage() {
           })}
         </SectionCard>
               )}
-              </div>
+            </div>
             </div>
           )}
 
