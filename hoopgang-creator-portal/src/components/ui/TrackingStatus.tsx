@@ -218,41 +218,42 @@ export default function TrackingStatus({
   return (
     <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 space-y-4">
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex-1">
-          <div className="flex items-center gap-3 mb-2">
-            <span className={cn("flex items-center justify-center", statusConfig.color)}>
-              {statusConfig.icon}
-            </span>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className={cn('text-sm font-medium px-2.5 py-1 rounded-full', statusConfig.bgColor, statusConfig.color)}>
-                  {statusConfig.label}
-                </span>
-              </div>
-              {displayTrackingNumber && (
-                <p className="text-white/60 text-xs mt-1">
-                  Tracking: {displayTrackingNumber}
-                </p>
-              )}
-              {displayCarrier && (
-                <p className="text-white/60 text-xs">
-                  Carrier: {CARRIER_LABELS[displayCarrier]}
-                </p>
-              )}
+      <div className="flex flex-col gap-4">
+        {/* Status Info */}
+        <div className="flex items-start gap-3">
+          <span className={cn("flex-shrink-0 flex items-center justify-center", statusConfig.color)}>
+            {statusConfig.icon}
+          </span>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className={cn('text-sm font-medium px-2.5 py-1 rounded-full', statusConfig.bgColor, statusConfig.color)}>
+                {statusConfig.label}
+              </span>
             </div>
+            {displayTrackingNumber && (
+              <p className="text-white/60 text-xs mt-1 break-all">
+                Tracking: {displayTrackingNumber}
+              </p>
+            )}
+            {displayCarrier && (
+              <p className="text-white/60 text-xs">
+                Carrier: {CARRIER_LABELS[displayCarrier]}
+              </p>
+            )}
+            <p className="text-white/40 text-xs mt-1">
+              Last updated: {formatDate(lastUpdate)}
+            </p>
           </div>
-          <p className="text-white/40 text-xs">
-            Last updated: {formatDate(lastUpdate)}
-          </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* Action Buttons - Wrap on mobile */}
+        <div className="flex flex-wrap gap-2">
           {trackingUrl && (
             <Button
               variant="secondary"
               size="sm"
               onClick={() => window.open(trackingUrl, '_blank')}
+              className="flex-1 sm:flex-none min-w-[100px]"
             >
               View on Carrier
             </Button>
@@ -262,6 +263,7 @@ export default function TrackingStatus({
             size="sm"
             onClick={handleRefresh}
             loading={isRefreshing}
+            className="flex-1 sm:flex-none"
           >
             Refresh
           </Button>
@@ -270,7 +272,7 @@ export default function TrackingStatus({
             size="sm"
             onClick={handleDelete}
             loading={isDeleting}
-            className="text-red-400 hover:text-red-300"
+            className="text-red-400 hover:text-red-300 flex-1 sm:flex-none"
           >
             Remove
           </Button>
