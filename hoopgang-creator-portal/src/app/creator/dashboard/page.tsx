@@ -232,7 +232,7 @@ export default function CreatorDashboardPage() {
   const videosSubmitted = creator.contentSubmissions.length;
 
   return (
-    <ProtectedRoute allowedRoles={['creator']}>
+    <ProtectedRoute allowedRoles={['creator']} requireApplication>
       <div className="min-h-screen bg-zinc-950 relative overflow-hidden">
         {/* Background Gradient Orbs */}
         <div className="fixed inset-0 pointer-events-none overflow-hidden">

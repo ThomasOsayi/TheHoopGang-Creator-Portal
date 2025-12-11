@@ -41,6 +41,9 @@ hoopgang-creator-portal/
   - Product selection with text input (links to store)
   - Optional height/weight fields for fit recommendations
   - Re-application support for completed/denied/ghosted creators
+  - Multi-step email verification flow (account creation → verification → full application)
+  - Firebase Authentication integration for user creation and email verification
+  - Branded verification email with resend capability
 
 #### Admin Routes
 ```
@@ -59,11 +62,18 @@ admin/
 #### API Routes (`api/`)
 ```
 api/
+├── auth/
+│   └── send-verification/
+│       └── route.ts            # Email verification API endpoint
+│                               # - POST: Send branded verification email
+│                               # - Uses Firebase Admin SDK to generate verification links
+│                               # - Renders React email templates to HTML via Resend
 ├── tracking/
 │   └── route.ts                # Tracking API endpoints (GET, POST, DELETE)
-│                               # - POST: Create/register tracking
-│                               # - GET: Refresh tracking status
+│                               # - POST: Save tracking info to Firestore and send shipped email
+│                               # - GET: Fetch existing tracking information
 │                               # - DELETE: Remove tracking information
+│                               # (Simplified - no external TrackingMore API calls)
 └── webhooks/
     └── tracking/
         └── route.ts            # TrackingMore webhook handler
@@ -109,7 +119,7 @@ creator/
 - `StatCard.tsx` - Statistics card component
 - `StatusBadge.tsx` - Status badge component
 - `Toast.tsx` - Toast notification component
-- `TrackingStatus.tsx` - Tracking status display component with events, refresh, and delete
+- `TrackingStatus.tsx` - Tracking status display component with events and delete (refresh removed)
 - `TrackingProgress.tsx` - Horizontal visual stepper for shipping progress
 - `index.ts` - Component exports
 
@@ -119,14 +129,24 @@ creator/
 
 - `auth-context.tsx` - Authentication context provider
 - `constants.ts` - Application constants (statuses, products, sizes, carriers)
-- `firebase.ts` - Firebase initialization and configuration
+- `firebase.ts` - Firebase client-side initialization and configuration
+- `firebase-admin.ts` - Firebase Admin SDK initialization for server-side operations
+  - Email verification link generation
+  - Service account configuration (supports base64 encoded or individual env vars)
 - `firestore.ts` - Firestore database operations and utilities
-- `tracking.ts` - TrackingMore API integration
+- `tracking.ts` - Tracking utility functions
   - Carrier code mapping
   - Status normalization
-  - API request handling
   - Tracking event parsing
-  - External tracking URL generation
+  - External tracking URL generation (17TRACK for Yanwen)
+- `email/` - Email template system
+  - `email-layout.tsx` - Base email layout component for branded emails
+  - `send-email.ts` - Email sending utility using Resend API
+  - `templates/` - React email templates
+    - `verify-email.tsx` - Branded email verification template
+    - `approved.tsx` - Application approval email template
+    - `shipped.tsx` - Package shipped email template
+    - `delivered.tsx` - Package delivered email template
 - `utils.ts` - General utility functions (cn helper for className merging)
 
 ---
@@ -174,13 +194,14 @@ creator/
 ## File Statistics
 
 ### Application Pages (7 files)
-- Root page, login, apply
+- Root page, login, apply (with email verification flow)
 - Admin: creators list, creator detail (with tracking management)
 - Creator: dashboard (with package tracking and countdown)
 - Root layout
 
-### API Routes (2 files)
-- Tracking API: POST, GET, DELETE handlers
+### API Routes (3 files)
+- Auth: Email verification endpoint
+- Tracking API: POST, GET, DELETE handlers (simplified - no external API)
 - Webhooks: TrackingMore push notification handler
 
 ### Components (20 files)
@@ -188,10 +209,13 @@ creator/
 - Creators: 4 components (including ApplicationReviewModal)
 - UI: 13 components (including TrackingStatus, TrackingProgress)
 
-### Libraries (6 files)
+### Libraries (10+ files)
 - Authentication context
-- Firebase/Firestore integration
-- TrackingMore API integration
+- Firebase client/Firestore integration
+- Firebase Admin SDK (server-side)
+- Email template system (layout + 4 templates)
+- Email sending utilities (Resend integration)
+- Tracking utility functions
 - Constants and utilities
 
 ### Types (1 file)
@@ -211,7 +235,13 @@ creator/
 ### Required Environment Variables
 
 **Server-side (API Routes):**
-- `TRACKINGMORE_API_KEY` - TrackingMore API key for shipping tracking
+- `RESEND_API_KEY` - Resend API key for sending branded emails
+- `EMAIL_FROM` - Email sender address (e.g., "HoopGang <team@thehoopgang.xyz>")
+- `FIREBASE_PROJECT_ID` - Firebase project ID for Admin SDK
+- `FIREBASE_CLIENT_EMAIL` - Firebase service account client email
+- `FIREBASE_PRIVATE_KEY` - Firebase service account private key (or use base64 encoded option below)
+- `FIREBASE_SERVICE_ACCOUNT_BASE64` - Base64 encoded Firebase service account JSON (alternative to individual vars above)
+- `NEXT_PUBLIC_APP_URL` - Public application URL for verification links (defaults to https://thehoopgang.xyz)
 
 **Client-side (NEXT_PUBLIC_ prefix):**
 - `NEXT_PUBLIC_FIREBASE_API_KEY` - Firebase API key
@@ -236,8 +266,10 @@ creator/
 - **UI Library**: React 19.2.0
 - **Styling**: Tailwind CSS 4
 - **Backend**: Firebase/Firestore
-- **Authentication**: Firebase Auth
-- **Tracking API**: TrackingMore API v4
+- **Authentication**: Firebase Auth (client) + Firebase Admin SDK (server)
+- **Email**: Resend API with React Email templates
+- **Email Templates**: @react-email/components, @react-email/render
+- **Tracking**: Internal tracking management (simplified, no external API dependency)
 - **Build Tool**: Next.js built-in
 
 ---
@@ -252,7 +284,10 @@ creator/
 2. **Authentication & Authorization**
    - Protected routes
    - Role-based access control
-   - Firebase authentication integration
+   - Firebase authentication integration (client-side)
+   - Email verification system with branded emails
+   - Multi-step application flow (account creation → verification → application)
+   - Firebase Admin SDK for server-side email verification link generation
 
 3. **Creator Management**
    - Creator listing and filtering
@@ -264,23 +299,22 @@ creator/
    - Product selection as text input (links to store)
 
 4. **Shipping & Tracking System**
-   - TrackingMore API integration
-   - Carrier support: Yanwen (via 17TRACK)
-   - Real-time tracking status updates
-   - Webhook support for push notifications
+   - Internal tracking management (simplified system)
+   - Carrier support: Yanwen (tracking URLs via 17TRACK)
    - Visual tracking progress stepper
    - External tracking URL generation (17TRACK for Yanwen)
-   - Automatic status transitions (shipped → delivered)
+   - Automatic status management (shipped status updates)
    - Content deadline management (14 days after delivery)
+   - Email notifications on package shipped
 
 5. **Tracking Features**
    - Add/remove tracking information
-   - Refresh tracking status manually
    - Display tracking events timeline
    - Status badge with icons and colors
    - Delivery countdown timer
    - Admin tracking management interface
    - Creator package tracking view
+   - Automatic shipped email notifications
 
 6. **Reusable UI Components**
    - Comprehensive component library
@@ -300,7 +334,14 @@ creator/
    - Responsive two-column layouts
    - Re-application support for completed/denied creators
 
-8. **Brand Identity & Visual Design**
+8. **Email System**
+   - Branded email templates using React Email
+   - Resend API integration for reliable email delivery
+   - Email verification flow with secure Firebase Admin links
+   - Application status emails (approved, shipped, delivered)
+   - Professional email layout with consistent branding
+
+9. **Brand Identity & Visual Design**
    - Consistent THG logo usage across all pages
    - Professional product imagery in hero section
    - Real creator photos and content gallery
@@ -311,29 +352,45 @@ creator/
 
 ## API Integration Details
 
-### TrackingMore API Integration
+### Email Verification System
 
-**Base URL**: `https://api.trackingmore.com/v4`
+**Service**: Firebase Admin SDK + Resend API
 
-**Endpoints Used**:
-- `POST /trackings/create` - Register new tracking number
-- `GET /trackings/{courier_code}/{tracking_number}` - Get tracking status
-- Webhook endpoint: `/api/webhooks/tracking` - Receive push notifications
+**Flow**:
+1. User creates account with email/password via Firebase Auth
+2. Server generates secure verification link using Firebase Admin SDK
+3. Branded verification email sent via Resend with React Email template
+4. User clicks link to verify email
+5. Application can proceed after verification
 
-**Supported Carriers**:
-- Yanwen (mapped to `yanwen-unified-api` in API, uses 17TRACK for tracking URLs)
-
-**Status Mapping**:
-- Tracks 7 shipping statuses: pending, transit, pickup, delivered, undelivered, exception, expired
-- Automatically normalizes TrackingMore status codes to internal status types
-- Handles both lowercase and mixed-case status values from API
+**Email Templates**:
+- Verification email (`verify-email.tsx`)
+- Application approved (`approved.tsx`)
+- Package shipped (`shipped.tsx`)
+- Package delivered (`delivered.tsx`)
 
 **Features**:
-- Automatic tracking registration when admin adds tracking number
-- Manual refresh capability
-- Webhook support for real-time updates
-- Event parsing from origin and destination tracking info
-- External tracking URL generation for carrier websites
+- Secure verification links with expiration
+- Branded email design with consistent layout
+- Resend verification capability
+- React Email templates rendered to HTML
+
+### Tracking System (Simplified)
+
+**Implementation**: Internal Firestore-based tracking management
+
+**Features**:
+- Tracking number and carrier stored in Firestore
+- Status updates (shipped, delivered)
+- External tracking URL generation (17TRACK for Yanwen)
+- Automatic shipped email notifications
+- Manual tracking management by admins
+
+**Supported Carriers**:
+- Yanwen (tracking URLs via 17TRACK)
+
+**Status Types**:
+- Tracks shipping statuses: pending, transit, pickup, delivered, undelivered, exception, expired
 
 ---
 
@@ -365,6 +422,14 @@ creator/
     - Real photos with border styling
 
 ### Application & Form Enhancements
+- **Email Verification System**:
+  - Multi-step application flow: account creation → email verification → full application
+  - Firebase Authentication integration for user account creation
+  - Branded verification emails via Resend API
+  - Firebase Admin SDK for secure verification link generation
+  - Email verification required before application submission
+  - Resend verification email capability
+  - Automatic verification status checking
 - **Application Form Updates**:
   - Removed phone number field
   - Changed product selection from dropdown to text input
@@ -428,27 +493,35 @@ creator/
 - Updated redirect logic to allow re-application for completed/denied creators
 - Fixed ESLint configuration for ESLint 9 flat config
 - Removed `@theme inline` block from globals.css to fix linter warnings
+- Removed redundant shipped email sending from admin detail page (now handled by tracking API)
+- Simplified tracking API (removed external TrackingMore dependency)
+- Removed refresh button from TrackingStatus component
 
 ### Tracking System
-- Complete TrackingMore API integration
-- Real-time tracking status updates via webhooks
+- Simplified internal tracking management (Firestore-based)
 - Visual tracking progress components
 - Admin tracking management interface
 - Creator package tracking view with countdown
-- Yanwen carrier support with 17TRACK integration
-- Debug logging throughout tracking flow
+- Yanwen carrier support with 17TRACK tracking URLs
+- Automatic shipped email notifications
+- Manual tracking status management
 
 ### Component Enhancements
-- TrackingStatus component with refresh and delete functionality
+- TrackingStatus component with delete functionality (refresh removed)
 - TrackingProgress component with 5-stage visual stepper
 - AddTrackingForm component for adding tracking information
 - ApplicationReviewModal for comprehensive application review
 - Enhanced error handling and user feedback
+- Email verification UI with multi-step flow
 
 ### API Enhancements
+- Email verification API route with Firebase Admin SDK integration
+- Branded email sending via Resend API
+- React Email template rendering to HTML
 - Comprehensive logging for debugging
 - Proper error handling with detailed messages
 - Firestore undefined value cleanup
 - Status auto-updates (shipped → delivered)
 - Content deadline automation (14 days post-delivery)
+- Simplified tracking API (removed external dependency)
 

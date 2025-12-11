@@ -91,7 +91,7 @@ export function Navbar() {
   const navLinks = [
     { href: '/apply', label: 'Apply', icon: '📝', show: true },
     { href: '/admin/creators', label: 'Admin', icon: '👑', show: isAdmin },
-    { href: '/creator/dashboard', label: 'Dashboard', icon: '🎯', show: user && !isAdmin },
+    { href: '/creator/dashboard', label: 'Dashboard', icon: '🎯', show: user && !isAdmin && userData?.creatorId },
   ].filter(link => link.show);
 
   return (
@@ -122,7 +122,7 @@ export function Navbar() {
             </Link>
 
             {/* Desktop Nav Links + Auth */}
-            <div className="hidden md:flex items-center gap-1">
+            <div className="hidden items-center gap-1">
               {navLinks.map((link) => {
                 const isActive = pathname === link.href || pathname.startsWith(link.href + '/');
                 const isApplyLink = link.href === '/apply';
@@ -191,7 +191,7 @@ export function Navbar() {
             {/* Mobile Hamburger Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden relative w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all duration-200"
+              className="relative w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all duration-200"
               aria-label="Toggle menu"
             >
               <div className="w-5 h-4 flex flex-col justify-between">
@@ -225,7 +225,7 @@ export function Navbar() {
 
       {/* Mobile Menu Overlay */}
       <div
-        className={`fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity duration-300 md:hidden ${
+        className={`fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${
           mobileMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
         onClick={() => setMobileMenuOpen(false)}
@@ -233,7 +233,7 @@ export function Navbar() {
 
       {/* Mobile Menu Drawer */}
       <div
-        className={`fixed top-0 right-0 z-50 h-full w-72 bg-zinc-900/95 backdrop-blur-xl border-l border-white/10 shadow-2xl transform transition-transform duration-300 ease-out md:hidden ${
+        className={`fixed top-0 right-0 z-50 h-full w-72 bg-zinc-900/95 backdrop-blur-xl border-l border-white/10 shadow-2xl transform transition-transform duration-300 ease-out ${
           mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >

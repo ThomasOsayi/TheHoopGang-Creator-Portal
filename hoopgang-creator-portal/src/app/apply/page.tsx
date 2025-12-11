@@ -26,12 +26,12 @@ export default function ApplyPage() {
   // Redirect if user has an active collaboration
   useEffect(() => {
     const checkExistingApplication = async () => {
-      if (user) {
+    if (user) {
         try {
           const existingCreator = await getCreatorByUserId(user.uid);
           if (existingCreator && !['completed', 'denied', 'ghosted'].includes(existingCreator.status)) {
-            router.push('/creator/dashboard');
-          }
+      router.push('/creator/dashboard');
+    }
         } catch (err) {
           console.log('No existing application found, allowing new application');
         }
@@ -84,7 +84,7 @@ export default function ApplyPage() {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value, type } = e.target;
-
+    
     if (name.startsWith('shippingAddress.')) {
       const field = name.split('.')[1];
       setFormData((prev) => ({
@@ -211,6 +211,16 @@ export default function ApplyPage() {
       // Create the Firebase auth user
       const { createUserWithEmailAndPassword } = await import('firebase/auth');
       const userCredential = await createUserWithEmailAndPassword(auth, formData.email, password);
+      
+      // Create user document in Firestore (without creatorId - they haven't submitted app yet)
+      const { doc, setDoc } = await import('firebase/firestore');
+      const { db } = await import('@/lib/firebase');
+      await setDoc(doc(db, 'users', userCredential.user.uid), {
+        uid: userCredential.user.uid,
+        email: formData.email,
+        role: 'creator',
+        // creatorId intentionally omitted - will be added after application submission
+      });
       
       // Send branded verification email via our API (not Firebase's default)
       const response = await fetch('/api/auth/send-verification', {
@@ -339,7 +349,7 @@ export default function ApplyPage() {
       showToast('Application submitted! Welcome to HoopGang!', 'success');
 
       setTimeout(() => {
-        router.push('/creator/dashboard');
+      router.push('/creator/dashboard');
       }, 1500);
     } catch (err) {
       console.error('Application error:', err);
@@ -425,68 +435,68 @@ export default function ApplyPage() {
                       <h2 className="text-lg font-semibold text-white">Account Info</h2>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label htmlFor="fullName" className={labelClasses}>
-                          Full Name <span className="text-orange-500">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          id="fullName"
-                          name="fullName"
-                          value={formData.fullName}
-                          onChange={handleInputChange}
-                          placeholder="Jordan Smith"
-                          required
-                          className={inputClasses}
-                        />
-                      </div>
-                      <div>
-                        <label htmlFor="email" className={labelClasses}>
-                          Email <span className="text-orange-500">*</span>
-                        </label>
-                        <input
-                          type="email"
-                          id="email"
-                          name="email"
-                          value={formData.email}
-                          onChange={handleInputChange}
-                          placeholder="jordan@email.com"
-                          required
-                          className={inputClasses}
-                        />
-                      </div>
-                    </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="fullName" className={labelClasses}>
+                    Full Name <span className="text-orange-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="fullName"
+                    name="fullName"
+                    value={formData.fullName}
+                    onChange={handleInputChange}
+                    placeholder="Jordan Smith"
+                    required
+                    className={inputClasses}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="email" className={labelClasses}>
+                    Email <span className="text-orange-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    placeholder="jordan@email.com"
+                    required
+                    className={inputClasses}
+                  />
+                </div>
+              </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label htmlFor="password" className={labelClasses}>
-                          Password <span className="text-orange-500">*</span>
-                        </label>
-                        <input
-                          type="password"
-                          id="password"
-                          name="password"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          required
-                          minLength={6}
-                          className={inputClasses}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="password" className={labelClasses}>
+                          Create Password <span className="text-orange-500">*</span>
+                  </label>
+                  <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    minLength={6}
+                    className={inputClasses}
                           placeholder="Min 6 characters"
-                        />
-                      </div>
-                      <div>
-                        <label htmlFor="confirmPassword" className={labelClasses}>
-                          Confirm Password <span className="text-orange-500">*</span>
-                        </label>
-                        <input
-                          type="password"
-                          id="confirmPassword"
-                          name="confirmPassword"
-                          value={confirmPassword}
-                          onChange={(e) => setConfirmPassword(e.target.value)}
-                          required
-                          className={inputClasses}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="confirmPassword" className={labelClasses}>
+                    Confirm Password <span className="text-orange-500">*</span>
+                  </label>
+                  <input
+                    type="password"
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    className={inputClasses}
                           placeholder="Confirm password"
                         />
                       </div>
@@ -604,8 +614,8 @@ export default function ApplyPage() {
                     <div>
                       <p className="text-green-400 font-medium">Email Verified</p>
                       <p className="text-white/50 text-sm">{auth.currentUser?.email}</p>
-                    </div>
-                  </div>
+                </div>
+              </div>
 
                   {/* Section 2: Social Media */}
                   <div className="space-y-4">
@@ -614,102 +624,102 @@ export default function ApplyPage() {
                         1
                       </div>
                       <h2 className="text-lg font-semibold text-white">Social Media</h2>
-                    </div>
+              </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="instagramHandle" className={labelClasses}>
-                      Instagram Handle <span className="text-orange-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30">@</span>
-                      <input
-                        type="text"
-                        id="instagramHandle"
-                        name="instagramHandle"
-                        value={formData.instagramHandle}
-                        onChange={handleInputChange}
-                        placeholder="jordanhoops"
-                        required
-                        className={`${inputClasses} pl-8`}
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label htmlFor="instagramFollowers" className={labelClasses}>
-                      Instagram Followers <span className="text-orange-500">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      id="instagramFollowers"
-                      name="instagramFollowers"
-                      value={formData.instagramFollowers || ''}
-                      onChange={handleInputChange}
-                      placeholder="12500"
-                      required
-                      min="1"
-                      className={inputClasses}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="tiktokHandle" className={labelClasses}>
-                      TikTok Handle <span className="text-orange-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30">@</span>
-                      <input
-                        type="text"
-                        id="tiktokHandle"
-                        name="tiktokHandle"
-                        value={formData.tiktokHandle}
-                        onChange={handleInputChange}
-                        placeholder="jordanhoops"
-                        required
-                        className={`${inputClasses} pl-8`}
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label htmlFor="tiktokFollowers" className={labelClasses}>
-                      TikTok Followers <span className="text-orange-500">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      id="tiktokFollowers"
-                      name="tiktokFollowers"
-                      value={formData.tiktokFollowers || ''}
-                      onChange={handleInputChange}
-                      placeholder="8300"
-                      required
-                      min="1"
-                      className={inputClasses}
-                    />
-                  </div>
-                </div>
-
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="bestContentUrl" className={labelClasses}>
-                    Link to Your Best Content <span className="text-orange-500">*</span>
+                  <label htmlFor="instagramHandle" className={labelClasses}>
+                    Instagram Handle <span className="text-orange-500">*</span>
                   </label>
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30">@</span>
+                  <input
+                    type="text"
+                    id="instagramHandle"
+                    name="instagramHandle"
+                    value={formData.instagramHandle}
+                    onChange={handleInputChange}
+                        placeholder="jordanhoops"
+                    required
+                        className={`${inputClasses} pl-8`}
+                  />
+                    </div>
+                </div>
+                <div>
+                  <label htmlFor="instagramFollowers" className={labelClasses}>
+                    Instagram Followers <span className="text-orange-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    id="instagramFollowers"
+                    name="instagramFollowers"
+                    value={formData.instagramFollowers || ''}
+                    onChange={handleInputChange}
+                    placeholder="12500"
+                    required
+                    min="1"
+                    className={inputClasses}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="tiktokHandle" className={labelClasses}>
+                    TikTok Handle <span className="text-orange-500">*</span>
+                  </label>
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30">@</span>
+                  <input
+                    type="text"
+                    id="tiktokHandle"
+                    name="tiktokHandle"
+                    value={formData.tiktokHandle}
+                    onChange={handleInputChange}
+                        placeholder="jordanhoops"
+                    required
+                        className={`${inputClasses} pl-8`}
+                  />
+                    </div>
+                </div>
+                <div>
+                  <label htmlFor="tiktokFollowers" className={labelClasses}>
+                    TikTok Followers <span className="text-orange-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    id="tiktokFollowers"
+                    name="tiktokFollowers"
+                    value={formData.tiktokFollowers || ''}
+                    onChange={handleInputChange}
+                    placeholder="8300"
+                    required
+                    min="1"
+                    className={inputClasses}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="bestContentUrl" className={labelClasses}>
+                  Link to Your Best Content <span className="text-orange-500">*</span>
+                </label>
                   <div className="relative">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30">
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                       </svg>
                     </span>
-                    <input
-                      type="url"
-                      id="bestContentUrl"
-                      name="bestContentUrl"
-                      value={formData.bestContentUrl}
-                      onChange={handleInputChange}
+                <input
+                  type="url"
+                  id="bestContentUrl"
+                  name="bestContentUrl"
+                  value={formData.bestContentUrl}
+                  onChange={handleInputChange}
                       placeholder="https://tiktok.com/@you/video/123456"
-                      required
+                  required
                       className={`${inputClasses} pl-10`}
-                    />
+                />
                   </div>
                 </div>
               </div>
@@ -744,44 +754,44 @@ export default function ApplyPage() {
                       </a>
                     </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="product" className={labelClasses}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="product" className={labelClasses}>
                       Product Name <span className="text-orange-500">*</span>
-                    </label>
+                  </label>
                     <input
                       type="text"
-                      id="product"
-                      name="product"
-                      value={formData.product}
-                      onChange={handleInputChange}
+                    id="product"
+                    name="product"
+                    value={formData.product}
+                    onChange={handleInputChange}
                       placeholder="e.g. Reversible Mesh Shorts"
-                      required
+                    required
                       className={inputClasses}
                     />
-                  </div>
-                  <div>
-                    <label htmlFor="size" className={labelClasses}>
-                      Size <span className="text-orange-500">*</span>
-                    </label>
+                </div>
+                <div>
+                  <label htmlFor="size" className={labelClasses}>
+                    Size <span className="text-orange-500">*</span>
+                  </label>
                     <div className="relative">
-                      <select
-                        id="size"
-                        name="size"
-                        value={formData.size}
-                        onChange={handleInputChange}
-                        required
-                        className={selectClasses}
-                      >
+                  <select
+                    id="size"
+                    name="size"
+                    value={formData.size}
+                    onChange={handleInputChange}
+                    required
+                    className={selectClasses}
+                  >
                         <option value="" className="bg-zinc-900">
                           Choose size
                         </option>
-                        {SIZES.map((size) => (
-                          <option key={size.value} value={size.value} className="bg-zinc-900">
-                            {size.label}
-                          </option>
-                        ))}
-                      </select>
+                    {SIZES.map((size) => (
+                      <option key={size.value} value={size.value} className="bg-zinc-900">
+                        {size.label}
+                      </option>
+                    ))}
+                  </select>
                       <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-white/40">
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -844,82 +854,82 @@ export default function ApplyPage() {
                       <h2 className="text-lg font-semibold text-white">Shipping Address</h2>
                     </div>
 
-                <div>
-                  <label htmlFor="shippingAddress.street" className={labelClasses}>
+              <div>
+                <label htmlFor="shippingAddress.street" className={labelClasses}>
                     Street Address <span className="text-orange-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="shippingAddress.street"
+                  name="shippingAddress.street"
+                  value={formData.shippingAddress.street}
+                  onChange={handleInputChange}
+                  placeholder="123 Main Street"
+                  required
+                  className={inputClasses}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="shippingAddress.unit" className={labelClasses}>
+                    Apt/Unit <span className="text-white/30">(optional)</span>
+                </label>
+                <input
+                  type="text"
+                  id="shippingAddress.unit"
+                  name="shippingAddress.unit"
+                  value={formData.shippingAddress.unit}
+                  onChange={handleInputChange}
+                    placeholder="Apt 4B"
+                  className={inputClasses}
+                />
+              </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="col-span-2">
+                  <label htmlFor="shippingAddress.city" className={labelClasses}>
+                    City <span className="text-orange-500">*</span>
                   </label>
                   <input
                     type="text"
-                    id="shippingAddress.street"
-                    name="shippingAddress.street"
-                    value={formData.shippingAddress.street}
+                    id="shippingAddress.city"
+                    name="shippingAddress.city"
+                    value={formData.shippingAddress.city}
                     onChange={handleInputChange}
-                    placeholder="123 Main Street"
+                    placeholder="Los Angeles"
                     required
                     className={inputClasses}
                   />
                 </div>
-
                 <div>
-                  <label htmlFor="shippingAddress.unit" className={labelClasses}>
-                    Apt/Unit <span className="text-white/30">(optional)</span>
+                  <label htmlFor="shippingAddress.state" className={labelClasses}>
+                    State <span className="text-orange-500">*</span>
                   </label>
                   <input
                     type="text"
-                    id="shippingAddress.unit"
-                    name="shippingAddress.unit"
-                    value={formData.shippingAddress.unit}
+                    id="shippingAddress.state"
+                    name="shippingAddress.state"
+                    value={formData.shippingAddress.state}
                     onChange={handleInputChange}
-                    placeholder="Apt 4B"
+                    placeholder="CA"
+                    required
                     className={inputClasses}
                   />
                 </div>
-
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="col-span-2">
-                    <label htmlFor="shippingAddress.city" className={labelClasses}>
-                      City <span className="text-orange-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      id="shippingAddress.city"
-                      name="shippingAddress.city"
-                      value={formData.shippingAddress.city}
-                      onChange={handleInputChange}
-                      placeholder="Los Angeles"
-                      required
-                      className={inputClasses}
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="shippingAddress.state" className={labelClasses}>
-                      State <span className="text-orange-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      id="shippingAddress.state"
-                      name="shippingAddress.state"
-                      value={formData.shippingAddress.state}
-                      onChange={handleInputChange}
-                      placeholder="CA"
-                      required
-                      className={inputClasses}
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="shippingAddress.zipCode" className={labelClasses}>
+              <div>
+                <label htmlFor="shippingAddress.zipCode" className={labelClasses}>
                       ZIP <span className="text-orange-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      id="shippingAddress.zipCode"
-                      name="shippingAddress.zipCode"
-                      value={formData.shippingAddress.zipCode}
-                      onChange={handleInputChange}
-                      placeholder="90012"
-                      required
-                      className={inputClasses}
-                    />
+                </label>
+                <input
+                  type="text"
+                  id="shippingAddress.zipCode"
+                  name="shippingAddress.zipCode"
+                  value={formData.shippingAddress.zipCode}
+                  onChange={handleInputChange}
+                  placeholder="90012"
+                  required
+                  className={inputClasses}
+                />
                   </div>
                 </div>
               </div>
@@ -934,35 +944,35 @@ export default function ApplyPage() {
                         4
                       </div>
                       <h2 className="text-lg font-semibold text-white">About You</h2>
-                    </div>
+              </div>
 
-                <div>
-                  <label htmlFor="whyCollab" className={labelClasses}>
-                    Why do you want to collab with HoopGang? <span className="text-orange-500">*</span>
-                  </label>
-                  <textarea
-                    id="whyCollab"
-                    name="whyCollab"
-                    value={formData.whyCollab}
-                    onChange={handleInputChange}
-                    placeholder="Tell us why you're excited to work with us..."
-                    required
-                    rows={4}
-                    className={`${inputClasses} resize-none`}
-                  />
-                </div>
+              <div>
+                <label htmlFor="whyCollab" className={labelClasses}>
+                  Why do you want to collab with HoopGang? <span className="text-orange-500">*</span>
+                </label>
+                <textarea
+                  id="whyCollab"
+                  name="whyCollab"
+                  value={formData.whyCollab}
+                  onChange={handleInputChange}
+                  placeholder="Tell us why you're excited to work with us..."
+                  required
+                  rows={4}
+                  className={`${inputClasses} resize-none`}
+                />
+              </div>
 
-                <div>
+              <div>
                   <label className={labelClasses}>Have you worked with other brands before?</label>
                   <div className="flex gap-4 mt-2">
                     <label className="flex items-center gap-2 cursor-pointer group">
                       <div className="relative">
-                        <input
-                          type="radio"
-                          name="previousBrands"
-                          value="true"
-                          checked={formData.previousBrands === true}
-                          onChange={handleInputChange}
+                    <input
+                      type="radio"
+                      name="previousBrands"
+                      value="true"
+                      checked={formData.previousBrands === true}
+                      onChange={handleInputChange}
                           className="sr-only peer"
                         />
                         <div className="w-5 h-5 rounded-full border-2 border-white/20 peer-checked:border-orange-500 peer-checked:bg-orange-500 transition-all flex items-center justify-center">
@@ -970,15 +980,15 @@ export default function ApplyPage() {
                         </div>
                       </div>
                       <span className="text-white/80 group-hover:text-white transition-colors">Yes</span>
-                    </label>
+                  </label>
                     <label className="flex items-center gap-2 cursor-pointer group">
                       <div className="relative">
-                        <input
-                          type="radio"
-                          name="previousBrands"
-                          value="false"
-                          checked={formData.previousBrands === false}
-                          onChange={handleInputChange}
+                    <input
+                      type="radio"
+                      name="previousBrands"
+                      value="false"
+                      checked={formData.previousBrands === false}
+                      onChange={handleInputChange}
                           className="sr-only peer"
                         />
                         <div className="w-5 h-5 rounded-full border-2 border-white/20 peer-checked:border-orange-500 peer-checked:bg-orange-500 transition-all flex items-center justify-center">
@@ -986,7 +996,7 @@ export default function ApplyPage() {
                         </div>
                       </div>
                       <span className="text-white/80 group-hover:text-white transition-colors">No</span>
-                    </label>
+                  </label>
                   </div>
                 </div>
               </div>
@@ -995,12 +1005,12 @@ export default function ApplyPage() {
                   <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-5 hover:border-orange-500/30 transition-colors">
                     <label className="flex items-start gap-3 cursor-pointer group">
                       <div className="relative mt-0.5">
-                        <input
-                          type="checkbox"
-                          name="agreedToTerms"
-                          checked={formData.agreedToTerms}
-                          onChange={handleInputChange}
-                          required
+                  <input
+                    type="checkbox"
+                    name="agreedToTerms"
+                    checked={formData.agreedToTerms}
+                    onChange={handleInputChange}
+                    required
                           className="sr-only peer"
                         />
                         <div className="w-5 h-5 rounded border-2 border-white/20 peer-checked:border-orange-500 peer-checked:bg-orange-500 transition-all flex items-center justify-center">
@@ -1017,19 +1027,19 @@ export default function ApplyPage() {
                       </div>
                       <div>
                         <span className="text-sm font-semibold text-white group-hover:text-orange-100 transition-colors">
-                          I agree to post 3 TikToks within 14 days of receiving my product
-                        </span>
-                        <p className="text-xs text-white/50 mt-1">
-                          I understand that failure to post may disqualify me from future collaborations.
-                        </p>
-                      </div>
-                    </label>
+                      I agree to post 3 TikToks within 14 days of receiving my product
+                    </span>
+                    <p className="text-xs text-white/50 mt-1">
+                      I understand that failure to post may disqualify me from future collaborations.
+                    </p>
                   </div>
+                </label>
+              </div>
 
-                  {/* Submit Button */}
-                  <button
-                    type="submit"
-                    disabled={loading}
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={loading}
                     className="w-full py-4 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold text-lg rounded-xl transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:shadow-orange-500/25 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-none flex items-center justify-center gap-2"
                   >
                     {loading ? (
@@ -1043,7 +1053,7 @@ export default function ApplyPage() {
                         <span>🔥</span>
                       </>
                     )}
-                  </button>
+              </button>
                 </>
               )}
             </form>

@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/lib/auth-context';
-import { Button } from '@/components/ui';
+import { Button, useToast } from '@/components/ui';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -18,6 +18,7 @@ export default function LoginPage() {
 
   const { signIn, userData, loading: authLoading } = useAuth();
   const router = useRouter();
+  const { showToast } = useToast();
 
   // Handle redirect after successful login
   useEffect(() => {
@@ -25,7 +26,13 @@ export default function LoginPage() {
       if (userData.role === 'admin') {
         router.push('/admin/creators');
       } else if (userData.role === 'creator') {
-        router.push('/creator/dashboard');
+        // Check if creator has submitted application
+        if (userData.creatorId) {
+          router.push('/creator/dashboard');
+        } else {
+          // Email verified but no application submitted yet
+          router.push('/apply');
+        }
       } else {
         router.push('/');
       }
@@ -38,7 +45,12 @@ export default function LoginPage() {
       if (userData.role === 'admin') {
         router.push('/admin/creators');
       } else if (userData.role === 'creator') {
-        router.push('/creator/dashboard');
+        // Check if creator has submitted application
+        if (userData.creatorId) {
+          router.push('/creator/dashboard');
+        } else {
+          router.push('/apply');
+        }
       }
     }
   }, [authLoading, userData, router]);
@@ -51,6 +63,7 @@ export default function LoginPage() {
     try {
       await signIn(email, password);
       setLoginAttempted(true);
+      showToast('Welcome back! Signing you in...', 'success');
       setLoading(false);
     } catch (err) {
       console.error('Login error:', err);
