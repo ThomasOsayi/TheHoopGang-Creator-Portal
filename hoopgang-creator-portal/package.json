@@ -13,6 +13,7 @@
     "@react-email/render": "^2.0.0",
     "clsx": "^2.1.1",
     "firebase": "^12.6.0",
+    "firebase-admin": "^13.6.0",
     "next": "16.0.7",
     "react": "19.2.0",
     "react-dom": "19.2.0",
