@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth } from '@/lib/firebase-admin';
 import { Resend } from 'resend';
+import { render } from '@react-email/render';
 import { VerifyEmailTemplate } from '@/lib/email/templates/verify-email';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -23,15 +24,20 @@ export async function POST(request: NextRequest) {
       url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://thehoopgang.xyz'}/apply`,
     });
 
+    // Render React component to HTML
+    const emailHtml = await render(
+      VerifyEmailTemplate({
+        creatorName: fullName,
+        verificationLink,
+      })
+    );
+
     // Send branded email via Resend
     const { error } = await resend.emails.send({
       from: process.env.EMAIL_FROM || 'HoopGang <team@thehoopgang.xyz>',
       to: email,
       subject: 'Verify your email for HoopGang 🏀',
-      react: VerifyEmailTemplate({
-        creatorName: fullName,
-        verificationLink,
-      }),
+      html: emailHtml,
     });
 
     if (error) {
