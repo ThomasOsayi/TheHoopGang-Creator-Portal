@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth } from '@/lib/firebase-admin';
 import { Resend } from 'resend';
 import { render } from '@react-email/render';
+import * as React from 'react';
 import { VerifyEmailTemplate } from '@/lib/email/templates/verify-email';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -24,9 +25,9 @@ export async function POST(request: NextRequest) {
       url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://thehoopgang.xyz'}/apply`,
     });
 
-    // Render React component to HTML
+    // Render React component to HTML using JSX
     const emailHtml = await render(
-      VerifyEmailTemplate({
+      React.createElement(VerifyEmailTemplate, {
         creatorName: fullName,
         verificationLink,
       })
