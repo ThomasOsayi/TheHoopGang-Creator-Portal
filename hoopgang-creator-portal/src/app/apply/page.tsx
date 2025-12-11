@@ -42,15 +42,38 @@ export default function ApplyPage() {
 
   // Check if user is already logged in and verified
   useEffect(() => {
-    if (user) {
-      if (user.emailVerified) {
-        setVerificationStep('application');
-        // Pre-fill email from auth
-        setFormData(prev => ({ ...prev, email: user.email || '' }));
-      } else {
-        setVerificationStep('verify-pending');
+    const loadUserData = async () => {
+      if (user) {
+        if (user.emailVerified) {
+          setVerificationStep('application');
+          
+          // Fetch fullName from Firestore user doc
+          try {
+            const { doc, getDoc } = await import('firebase/firestore');
+            const { db } = await import('@/lib/firebase');
+            const userDoc = await getDoc(doc(db, 'users', user.uid));
+            
+            if (userDoc.exists()) {
+              const userData = userDoc.data();
+              setFormData(prev => ({
+                ...prev,
+                email: user.email || '',
+                fullName: userData.fullName || prev.fullName || '',
+              }));
+            } else {
+              setFormData(prev => ({ ...prev, email: user.email || '' }));
+            }
+          } catch (error) {
+            console.error('Error fetching user data:', error);
+            setFormData(prev => ({ ...prev, email: user.email || '' }));
+          }
+        } else {
+          setVerificationStep('verify-pending');
+        }
       }
-    }
+    };
+    
+    loadUserData();
   }, [user]);
 
   const [formData, setFormData] = useState<CreatorApplicationInput>({
@@ -219,6 +242,7 @@ export default function ApplyPage() {
         uid: userCredential.user.uid,
         email: formData.email,
         role: 'creator',
+        fullName: formData.fullName, // Save fullName for later retrieval
         // creatorId intentionally omitted - will be added after application submission
       });
       
