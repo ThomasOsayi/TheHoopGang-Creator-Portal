@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Creator } from '@/types';
 import { getCreatorByUserId, addContentSubmission } from '@/lib/firestore';
-import { SectionCard, Button, useToast } from '@/components/ui';
+import { SectionCard, Button, useToast, EmptyStateNoTracking } from '@/components/ui';
 import PackageStatusCard from '@/components/ui/PackageStatusCard';
 import { CONTENT_DEADLINE_DAYS } from '@/lib/constants';
 import { useAuth } from '@/lib/auth-context';
@@ -488,13 +488,19 @@ export default function CreatorDashboardPage() {
             <div className="lg:col-span-3 space-y-6">
               {/* Package Status Card */}
               {['approved', 'shipped', 'delivered', 'completed', 'ghosted'].includes(creator.status) && (
-                <PackageStatusCard
-                  collaborationStatus={creator.status as 'approved' | 'shipped' | 'delivered' | 'completed' | 'ghosted'}
-                  trackingNumber={creator.trackingNumber}
-                  carrier={creator.carrier}
-                  shippedAt={creator.shippedAt}
-                  deliveredAt={creator.deliveredAt}
-                />
+                creator.trackingNumber || creator.status !== 'approved' ? (
+                  <PackageStatusCard
+                    collaborationStatus={creator.status as 'approved' | 'shipped' | 'delivered' | 'completed' | 'ghosted'}
+                    trackingNumber={creator.trackingNumber}
+                    carrier={creator.carrier}
+                    shippedAt={creator.shippedAt}
+                    deliveredAt={creator.deliveredAt}
+                  />
+                ) : (
+                  <SectionCard title="Your Package" icon="📦" className="hover:border-white/20 transition-all duration-300">
+                    <EmptyStateNoTracking />
+                  </SectionCard>
+                )
               )}
 
               {/* Content Submission Card */}

@@ -43,7 +43,10 @@ export function ProtectedRoute({
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-zinc-950 via-zinc-900 to-zinc-950 flex items-center justify-center">
-        <div className="text-white/60">Loading...</div>
+        <div className="flex items-center gap-3">
+          <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+          <span className="text-white/60">Loading...</span>
+        </div>
       </div>
     );
   }

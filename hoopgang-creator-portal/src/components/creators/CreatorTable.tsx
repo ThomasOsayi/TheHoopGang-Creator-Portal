@@ -1,7 +1,7 @@
 // src/components/creators/CreatorTable.tsx
 
 import { Creator } from '@/types';
-import { StatusBadge, ProgressDots, StarRating, Button } from '@/components/ui';
+import { StatusBadge, ProgressDots, StarRating, Button, EmptyStateNoCreators } from '@/components/ui';
 import { getTrackingUrl } from '@/lib/tracking';
 
 interface CreatorTableProps {
@@ -43,11 +43,7 @@ export default function CreatorTable({
   if (creators.length === 0) {
     return (
       <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl overflow-hidden">
-        <div className="px-6 py-16 text-center">
-          <div className="text-4xl mb-3">🔍</div>
-          <p className="text-white/60">No creators found</p>
-          <p className="text-white/40 text-sm mt-1">Try adjusting your filters</p>
-        </div>
+        <EmptyStateNoCreators />
       </div>
     );
   }
