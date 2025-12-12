@@ -15,7 +15,7 @@ import { useToast } from '@/components/ui';
 
 export default function ApplyPage() {
   const router = useRouter();
-  const { signUp, user } = useAuth();
+  const { signUp, user, refreshUserData } = useAuth(); // ✅ Add refreshUserData
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -26,19 +26,20 @@ export default function ApplyPage() {
   // Redirect if user has an active collaboration
   useEffect(() => {
     const checkExistingApplication = async () => {
-    if (user) {
+      // ✅ Don't redirect if we just submitted successfully
+      if (user && !success && !loading) {
         try {
           const existingCreator = await getCreatorByUserId(user.uid);
           if (existingCreator && !['completed', 'denied', 'ghosted'].includes(existingCreator.status)) {
-      router.push('/creator/dashboard');
-    }
+            router.push('/creator/dashboard');
+          }
         } catch (err) {
           console.log('No existing application found, allowing new application');
         }
       }
     };
     checkExistingApplication();
-  }, [user, router]);
+  }, [user, router, success, loading]); // ✅ Add success and loading to deps
 
   // Check if user is already logged in and verified
   useEffect(() => {
@@ -368,6 +369,9 @@ export default function ApplyPage() {
         creatorId: creatorDocId,
       });
 
+      // ✅ Refresh the auth context so userData has the creatorId
+      await refreshUserData();
+
       setSuccess(true);
       setLoading(false);
       showToast('Application submitted! Welcome to HoopGang!', 'success');
@@ -459,9 +463,9 @@ export default function ApplyPage() {
                       <h2 className="text-lg font-semibold text-white">Account Info</h2>
                     </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="fullName" className={labelClasses}>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="fullName" className={labelClasses}>
                     Full Name <span className="text-orange-500">*</span>
                   </label>
                   <input

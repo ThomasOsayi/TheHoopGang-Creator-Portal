@@ -27,6 +27,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, role?: UserRole, creatorDocId?: string) => Promise<string>;
   signOut: () => Promise<void>;
+  refreshUserData: () => Promise<void>; // ✅ Add this
   isAdmin: boolean;
   isCreator: boolean;
 }
@@ -93,6 +94,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUserData(null);
   };
 
+  const refreshUserData = async () => {
+    if (auth.currentUser) {
+      const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+      if (userDoc.exists()) {
+        setUserData(userDoc.data() as UserData);
+      }
+    }
+  };
+
   const value: AuthContextType = {
     user,
     userData,
@@ -100,6 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signIn,
     signUp,
     signOut,
+    refreshUserData, // ✅ Add this
     isAdmin: userData?.role === 'admin',
     isCreator: userData?.role === 'creator',
   };
