@@ -38,6 +38,12 @@ export default function CreatorDashboardPage() {
   const [submitting, setSubmitting] = useState(false);
   const [newContentUrl, setNewContentUrl] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
+  
+  // Stats modal state
+  const [showStatsModal, setShowStatsModal] = useState(false);
+  const [updatingStats, setUpdatingStats] = useState(false);
+  const [newInstagramFollowers, setNewInstagramFollowers] = useState<number>(0);
+  const [newTiktokFollowers, setNewTiktokFollowers] = useState<number>(0);
 
   // Fetch creator data
   useEffect(() => {
@@ -84,6 +90,56 @@ export default function CreatorDashboardPage() {
       showToast(errorMessage, 'error');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleUpdateStats = async () => {
+    if (!creator || !user) return;
+
+    setUpdatingStats(true);
+    setError(null);
+
+    try {
+      // Get the user's ID token
+      const idToken = await user.getIdToken();
+
+      const response = await fetch('/api/creator/stats', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({
+          instagramFollowers: newInstagramFollowers,
+          tiktokFollowers: newTiktokFollowers,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to update stats');
+      }
+
+      // Refresh creator data
+      await fetchCreator();
+      setShowStatsModal(false);
+      showToast('Stats updated successfully!', 'success');
+    } catch (err) {
+      console.error('Error updating stats:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update stats';
+      setError(errorMessage);
+      showToast(errorMessage, 'error');
+    } finally {
+      setUpdatingStats(false);
+    }
+  };
+
+  const openStatsModal = () => {
+    if (creator) {
+      setNewInstagramFollowers(creator.instagramFollowers);
+      setNewTiktokFollowers(creator.tiktokFollowers);
+      setShowStatsModal(true);
     }
   };
 
@@ -189,6 +245,44 @@ export default function CreatorDashboardPage() {
     };
     return labels[status] || status;
   };
+
+  /**
+   * Calculates follower growth since signup
+   */
+  function getFollowerGrowth(creator: Creator): {
+    instagram: { current: number; original: number; change: number; percent: string };
+    tiktok: { current: number; original: number; change: number; percent: string };
+    lastUpdated: Date | null;
+  } {
+    const history = creator.followerHistory || [];
+    const applicationEntry = history.find(h => h.source === 'application') || history[0];
+    const latestEntry = history[history.length - 1];
+
+    const originalIG = applicationEntry?.instagramFollowers || creator.instagramFollowers;
+    const originalTT = applicationEntry?.tiktokFollowers || creator.tiktokFollowers;
+
+    const igChange = creator.instagramFollowers - originalIG;
+    const ttChange = creator.tiktokFollowers - originalTT;
+
+    const igPercent = originalIG > 0 ? ((igChange / originalIG) * 100).toFixed(1) : '0';
+    const ttPercent = originalTT > 0 ? ((ttChange / originalTT) * 100).toFixed(1) : '0';
+
+    return {
+      instagram: {
+        current: creator.instagramFollowers,
+        original: originalIG,
+        change: igChange,
+        percent: igPercent,
+      },
+      tiktok: {
+        current: creator.tiktokFollowers,
+        original: originalTT,
+        change: ttChange,
+        percent: ttPercent,
+      },
+      lastUpdated: latestEntry?.date || null,
+    };
+  }
 
   if (loading) {
     return (
@@ -601,9 +695,9 @@ export default function CreatorDashboardPage() {
             </div>
           )}
 
-          {/* Bottom Section - Agreement & Perks (Full Width) */}
+          {/* Bottom Section - Agreement, Stats & Perks (Full Width) */}
           {!['pending', 'denied'].includes(creator.status) && (
-            <div className="grid md:grid-cols-2 gap-6 mt-6">
+            <div className="grid md:grid-cols-3 gap-6 mt-6">
               {/* Agreement Card */}
               <div className="bg-white/[0.03] backdrop-blur-sm border border-white/10 rounded-2xl p-6 hover:border-white/15 transition-all duration-300">
                 <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
@@ -634,6 +728,80 @@ export default function CreatorDashboardPage() {
                   </div>
                 )}
           </div>
+
+        {/* Stats Card */}
+              <div className="bg-white/[0.03] backdrop-blur-sm border border-white/10 rounded-2xl p-6 hover:border-white/15 transition-all duration-300">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                    <span>📊</span> Your Stats
+                  </h2>
+                  <button
+                    onClick={openStatsModal}
+                    className="text-xs text-orange-400 hover:text-orange-300 transition-colors flex items-center gap-1"
+                  >
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
+                    Update
+                  </button>
+                </div>
+
+                {(() => {
+                  const growth = getFollowerGrowth(creator);
+                  return (
+                    <div className="space-y-4">
+                      {/* Instagram */}
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-pink-400">
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                            </svg>
+                          </span>
+                          <span className="text-white/50 text-xs">@{creator.instagramHandle}</span>
+                        </div>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-white font-semibold">{growth.instagram.current.toLocaleString()}</span>
+                          {growth.instagram.change !== 0 && (
+                            <span className={`text-xs ${growth.instagram.change > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                              {growth.instagram.change > 0 ? '+' : ''}{growth.instagram.change.toLocaleString()} ({growth.instagram.percent}%)
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* TikTok */}
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-white">
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005 20.1a6.34 6.34 0 0010.86-4.43v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1-.1z"/>
+                            </svg>
+                          </span>
+                          <span className="text-white/50 text-xs">@{creator.tiktokHandle}</span>
+                        </div>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-white font-semibold">{growth.tiktok.current.toLocaleString()}</span>
+                          {growth.tiktok.change !== 0 && (
+                            <span className={`text-xs ${growth.tiktok.change > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                              {growth.tiktok.change > 0 ? '+' : ''}{growth.tiktok.change.toLocaleString()} ({growth.tiktok.percent}%)
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Last Updated */}
+                      {growth.lastUpdated && (
+                        <div className="pt-3 border-t border-white/10">
+                          <span className="text-white/40 text-xs">
+                            Last updated: {formatDate(growth.lastUpdated)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+              </div>
 
         {/* Perks Card */}
               <div className="bg-white/[0.03] backdrop-blur-sm border border-white/10 rounded-2xl p-6 hover:border-white/15 transition-all duration-300">
@@ -716,6 +884,98 @@ export default function CreatorDashboardPage() {
             ))}
           </div>
         </SectionCard>
+          )}
+
+          {/* Update Stats Modal */}
+          {showStatsModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              {/* Backdrop */}
+              <div 
+                className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+                onClick={() => setShowStatsModal(false)}
+              />
+              
+              {/* Modal */}
+              <div className="relative bg-zinc-900 border border-white/10 rounded-2xl p-6 w-full max-w-md">
+                <h3 className="text-xl font-bold text-white mb-2">Update Your Stats</h3>
+                <p className="text-white/50 text-sm mb-6">
+                  Keep your follower counts up to date to unlock better opportunities.
+                </p>
+
+                <div className="space-y-4">
+                  {/* Instagram Input */}
+                  <div>
+                    <label className="block text-white/50 text-xs uppercase tracking-wider mb-2">
+                      Instagram Followers
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-pink-400">
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                        </svg>
+                      </span>
+                      <input
+                        type="number"
+                        value={newInstagramFollowers}
+                        onChange={(e) => setNewInstagramFollowers(parseInt(e.target.value) || 0)}
+                        className="w-full bg-white/5 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                        min="0"
+                      />
+                    </div>
+                  </div>
+
+                  {/* TikTok Input */}
+                  <div>
+                    <label className="block text-white/50 text-xs uppercase tracking-wider mb-2">
+                      TikTok Followers
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white">
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005 20.1a6.34 6.34 0 0010.86-4.43v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1-.1z"/>
+                        </svg>
+                      </span>
+                      <input
+                        type="number"
+                        value={newTiktokFollowers}
+                        onChange={(e) => setNewTiktokFollowers(parseInt(e.target.value) || 0)}
+                        className="w-full bg-white/5 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                        min="0"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Rate limit notice */}
+                <p className="text-white/40 text-xs mt-4">
+                  You can update your stats once every 24 hours.
+                </p>
+
+                {/* Actions */}
+                <div className="flex gap-3 mt-6">
+                  <button
+                    onClick={() => setShowStatsModal(false)}
+                    className="flex-1 py-3 bg-white/10 hover:bg-white/15 text-white font-medium rounded-xl transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleUpdateStats}
+                    disabled={updatingStats}
+                    className="flex-1 py-3 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {updatingStats ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      'Save Changes'
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
       </div>
     </div>

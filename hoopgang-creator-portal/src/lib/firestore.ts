@@ -119,12 +119,23 @@ export async function createCreator(
     },
   ];
 
+  // Initialize follower history with application data
+  const initialFollowerHistory = [
+    {
+      date: now.toDate(),
+      instagramFollowers: data.instagramFollowers,
+      tiktokFollowers: data.tiktokFollowers,
+      source: 'application' as const,
+    },
+  ];
+
   const creatorData = {
     ...data,
     id: '', // Will be set after document creation
     creatorId,
     status: 'pending' as CreatorStatus,
     statusHistory: initialStatusHistory,
+    followerHistory: initialFollowerHistory, // ✅ ADD THIS LINE
     contentSubmissions: [],
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),

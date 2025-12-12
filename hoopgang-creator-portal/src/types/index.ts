@@ -25,6 +25,13 @@ export interface ContentSubmission {
   views?: number;  // Optional: manually entered or scraped later
 }
 
+export interface FollowerHistoryEntry {
+  date: Date;
+  instagramFollowers: number;
+  tiktokFollowers: number;
+  source: 'manual' | 'application';
+}
+
 export interface StatusHistoryEntry {
   status: CreatorStatus;
   timestamp: Date;
@@ -53,6 +60,7 @@ export interface Creator {
   instagramFollowers: number;
   tiktokHandle: string;
   tiktokFollowers: number;
+  followerHistory?: FollowerHistoryEntry[];  // ✅ ADD THIS LINE
   bestContentUrl: string;
   
   // Product selection

@@ -2,6 +2,7 @@
 
 import { initializeApp, getApps, cert, ServiceAccount } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
+import { getFirestore } from 'firebase-admin/firestore';  // ✅ ADD THIS
 
 function getServiceAccount(): ServiceAccount {
   // Option 1: Base64 encoded service account (recommended for Vercel)
@@ -27,3 +28,4 @@ const adminApp = getApps().length === 0
   : getApps()[0];
 
 export const adminAuth = getAuth(adminApp);
+export const adminDb = getFirestore(adminApp);  // ✅ ADD THIS
