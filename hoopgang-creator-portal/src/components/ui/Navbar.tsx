@@ -2,13 +2,13 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type MouseEvent } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { getCreatorByUserId } from '@/lib/firestore';
-import { Creator } from '@/types';
+import { getCreatorWithActiveCollab } from '@/lib/firestore';
+import { CollaborationStatus } from '@/types';
 
 export function Navbar() {
   const pathname = usePathname();
@@ -17,7 +17,8 @@ export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showActiveCollabModal, setShowActiveCollabModal] = useState(false);
-  const [creatorStatus, setCreatorStatus] = useState<Creator['status'] | null>(null);
+  // V2: Status is on Collaboration, not Creator
+  const [collabStatus, setCollabStatus] = useState<CollaborationStatus | null>(null);
 
   // Track scroll position for navbar styling
   useEffect(() => {
@@ -46,23 +47,27 @@ export function Navbar() {
     };
   }, [mobileMenuOpen]);
 
-  // Fetch creator status when user is logged in as a creator
+  // V2: Fetch creator with active collaboration to get status
   useEffect(() => {
-    const fetchCreatorStatus = async () => {
-      if (user && userData?.role === 'creator') {
+    const fetchCollabStatus = async () => {
+      if (user && userData?.role === 'creator' && userData?.creatorId) {
         try {
-          const creator = await getCreatorByUserId(user.uid);
-          if (creator) {
-            setCreatorStatus(creator.status);
+          const result = await getCreatorWithActiveCollab(userData.creatorId);
+          if (result?.collaboration) {
+            setCollabStatus(result.collaboration.status);
+          } else {
+            // No active collaboration - creator can reapply
+            setCollabStatus(null);
           }
         } catch (error) {
-          console.error('Error fetching creator status:', error);
+          console.error('Error fetching collaboration status:', error);
+          setCollabStatus(null);
         }
       } else {
-        setCreatorStatus(null);
+        setCollabStatus(null);
       }
     };
-    fetchCreatorStatus();
+    fetchCollabStatus();
   }, [user, userData]);
 
   const handleSignOut = async () => {
@@ -71,15 +76,16 @@ export function Navbar() {
     router.push('/');
   };
 
-  // Check if creator has an active collaboration (can't reapply yet)
+  // V2: Check if creator has an active collaboration (can't reapply yet)
   const hasActiveCollab = (): boolean => {
-    if (!creatorStatus) return false;
-    const canReapplyStatuses: Creator['status'][] = ['completed', 'denied', 'ghosted'];
-    return !canReapplyStatuses.includes(creatorStatus);
+    if (!collabStatus) return false;
+    // These statuses mean the collab is "done" and they can request a new one
+    const canReapplyStatuses: CollaborationStatus[] = ['completed', 'denied', 'ghosted'];
+    return !canReapplyStatuses.includes(collabStatus);
   };
 
   // Handle Apply link click - show modal if they have active collab
-  const handleApplyClick = (e: React.MouseEvent) => {
+  const handleApplyClick = (e: MouseEvent<HTMLElement>) => {
     if (userData?.role === 'creator' && hasActiveCollab()) {
       e.preventDefault();
       setMobileMenuOpen(false);
@@ -307,7 +313,7 @@ export function Navbar() {
         </div>
       </div>
 
-      {/* Active Collaboration Modal - unchanged */}
+      {/* Active Collaboration Modal - V2 updated */}
       {showActiveCollabModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
           <div 
@@ -336,7 +342,7 @@ export function Navbar() {
             </p>
             
             <p className="text-white/40 text-xs sm:text-sm text-center mb-6">
-              Current status: <span className="text-orange-400 capitalize">{creatorStatus}</span>
+              Current status: <span className="text-orange-400 capitalize">{collabStatus}</span>
             </p>
             
             <div className="flex flex-col sm:flex-row gap-3">
