@@ -2,12 +2,19 @@
 
 ## Project Structure
 
-### Root Level Configuration Files
+### Repository Root
+```
+TheHoopGang-Creator-Portal/
+├── hoopgang-creator-portal/     # Next.js app (see below)
+├── README.md                   # Repository documentation
+└── REPOSITORY_LAYOUT.md         # This file
+```
+
+### App Root (`hoopgang-creator-portal/`) Configuration Files
 ```
 hoopgang-creator-portal/
 ├── eslint.config.mjs          # ESLint configuration
 ├── next.config.ts              # Next.js configuration
-├── next-env.d.ts               # Next.js TypeScript declarations
 ├── package.json                # Project dependencies and scripts
 ├── package-lock.json           # Dependency lock file
 ├── postcss.config.mjs          # PostCSS configuration
@@ -17,9 +24,9 @@ hoopgang-creator-portal/
 
 ---
 
-## Source Code (`src/`)
+## Source Code (`hoopgang-creator-portal/src/`)
 
-### Application Routes (`src/app/`)
+### Application Routes (`hoopgang-creator-portal/src/app/`)
 
 #### Root & Layout
 - `page.tsx` - Home page
@@ -68,6 +75,9 @@ api/
 │                               # - POST: Send branded verification email
 │                               # - Uses Firebase Admin SDK to generate verification links
 │                               # - Renders React email templates to HTML via Resend
+├── email/
+│   └── send/
+│       └── route.ts            # General email sending endpoint
 ├── tracking/
 │   └── route.ts                # Tracking API endpoints (GET, POST, DELETE)
 │                               # - POST: Save tracking info to Firestore and send shipped email
@@ -96,7 +106,7 @@ creator/
 
 ---
 
-### Components (`src/components/`)
+### Components (`hoopgang-creator-portal/src/components/`)
 
 #### Authentication Components (`auth/`)
 - `ProtectedRoute.tsx` - Route protection component
@@ -125,7 +135,7 @@ creator/
 
 ---
 
-### Libraries & Utilities (`src/lib/`)
+### Libraries & Utilities (`hoopgang-creator-portal/src/lib/`)
 
 - `auth-context.tsx` - Authentication context provider
 - `constants.ts` - Application constants (statuses, products, sizes, carriers)
@@ -151,7 +161,7 @@ creator/
 
 ---
 
-### Type Definitions (`src/types/`)
+### Type Definitions (`hoopgang-creator-portal/src/types/`)
 
 - `index.ts` - TypeScript type definitions and interfaces
   - Creator, CreatorStatus (includes 'denied'), User, UserRole
@@ -170,7 +180,7 @@ creator/
 
 ---
 
-### Public Assets (`public/`)
+### Public Assets (`hoopgang-creator-portal/public/`)
 
 - `file.svg` - File icon
 - `globe.svg` - Globe icon
@@ -193,21 +203,21 @@ creator/
 
 ## File Statistics
 
-### Application Pages (7 files)
-- Root page, login, apply (with email verification flow)
+### Pages (7 `page.tsx` files)
+- Root page, login, apply, forgot-password
 - Admin: creators list, creator detail (with tracking management)
 - Creator: dashboard (with package tracking and countdown)
-- Root layout
 
-### API Routes (3 files)
+### API Routes (4 files)
 - Auth: Email verification endpoint
+- Email: Send email endpoint
 - Tracking API: POST, GET, DELETE handlers (simplified - no external API)
 - Webhooks: TrackingMore push notification handler
 
-### Components (20 files)
-- Auth: 2 components
+### Components (22 files)
+- Auth: 2 files
 - Creators: 4 components (including ApplicationReviewModal)
-- UI: 13 components (including TrackingStatus, TrackingProgress)
+- UI: 16 files (including TrackingStatus, TrackingProgress)
 
 ### Libraries (10+ files)
 - Authentication context
@@ -221,12 +231,12 @@ creator/
 ### Types (1 file)
 - Type definitions
 
-### Configuration Files (7 files)
+### Configuration Files (7 files, app root)
 - Build tools (Next.js, TypeScript, ESLint, PostCSS)
 - Package management
 
-### Public Assets (5 files)
-- SVG icons and logos
+### Public Assets
+- SVG icons, logos, and image assets (see `hoopgang-creator-portal/public/`)
 
 ---
 
