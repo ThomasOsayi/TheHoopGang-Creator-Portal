@@ -45,7 +45,7 @@ export function EmailLayout({ previewText, children }: EmailLayoutProps) {
                 <tr>
                   <td align="center" style={{ paddingBottom: '32px' }}>
                     <img 
-                      src="http://localhost:3001/api/email/test" 
+                      src="https://thehoopgang.xyz/images/THG_logo_orange.png" 
                       alt="HoopGang" 
                       width="80" 
                       height="80"

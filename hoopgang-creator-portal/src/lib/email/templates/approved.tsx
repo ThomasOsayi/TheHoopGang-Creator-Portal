@@ -9,7 +9,7 @@ interface ApprovedEmailProps {
 
 export function ApprovedEmail({ creatorName, instagramHandle }: ApprovedEmailProps) {
   return (
-    <EmailLayout previewText="You're in! Welcome to the HoopGang Creator Family 🏀">
+    <EmailLayout previewText="You're in! Welcome to the HoopGang Creator Program">
       {/* Heading */}
       <h1 style={{
         color: '#ffffff',
@@ -18,7 +18,7 @@ export function ApprovedEmail({ creatorName, instagramHandle }: ApprovedEmailPro
         margin: '0 0 8px 0',
         textAlign: 'center' as const,
       }}>
-        Welcome to the Family! 🏀
+        Welcome to the Team 🏀
       </h1>
       
       <p style={{
@@ -45,7 +45,7 @@ export function ApprovedEmail({ creatorName, instagramHandle }: ApprovedEmailPro
         lineHeight: '1.6',
         margin: '0 0 16px 0',
       }}>
-        Hey {creatorName}! 👋
+        Hey {creatorName},
       </p>
 
       <p style={{
@@ -55,7 +55,7 @@ export function ApprovedEmail({ creatorName, instagramHandle }: ApprovedEmailPro
         margin: '0 0 16px 0',
       }}>
         We loved what we saw on <span style={{ color: '#f97316' }}>@{instagramHandle}</span> and 
-        we're hyped to have you join the HoopGang creator family!
+        we're excited to have you join the HoopGang creator program.
       </p>
 
       <p style={{
@@ -65,7 +65,7 @@ export function ApprovedEmail({ creatorName, instagramHandle }: ApprovedEmailPro
         margin: '0 0 24px 0',
       }}>
         We're getting your gear ready and will send you another email with tracking 
-        info once it ships. Keep an eye on your inbox! 📦
+        info once it ships. Keep an eye on your inbox.
       </p>
 
       {/* What's Next Box */}
@@ -82,7 +82,7 @@ export function ApprovedEmail({ creatorName, instagramHandle }: ApprovedEmailPro
           fontWeight: 600,
           margin: '0 0 12px 0',
         }}>
-          WHAT'S NEXT?
+          WHAT'S NEXT
         </p>
         <ol style={{
           color: '#a3a3a3',
@@ -92,7 +92,7 @@ export function ApprovedEmail({ creatorName, instagramHandle }: ApprovedEmailPro
           paddingLeft: '20px',
         }}>
           <li>We ship your free HoopGang gear</li>
-          <li>You receive it and look fire 🔥</li>
+          <li>You receive it and try it on</li>
           <li>Create 3 TikTok videos featuring the gear</li>
           <li>Submit links through your creator dashboard</li>
         </ol>
@@ -102,8 +102,7 @@ export function ApprovedEmail({ creatorName, instagramHandle }: ApprovedEmailPro
       <table width="100%" cellPadding="0" cellSpacing="0">
         <tr>
           <td align="center">
-            
-              <a href="https://creators.hoopgang.com/creator/dashboard"
+            <a href="https://thehoopgang.xyz/creator/dashboard"
               style={{
                 backgroundColor: '#f97316',
                 borderRadius: '12px',
@@ -115,7 +114,7 @@ export function ApprovedEmail({ creatorName, instagramHandle }: ApprovedEmailPro
                 textDecoration: 'none',
               }}
             >
-              View Your Dashboard →
+              View Your Dashboard
             </a>
           </td>
         </tr>
@@ -128,7 +127,7 @@ export function ApprovedEmail({ creatorName, instagramHandle }: ApprovedEmailPro
         lineHeight: '1.6',
         margin: '32px 0 0 0',
       }}>
-        Let's get it,<br />
+        Welcome aboard,<br />
         <span style={{ color: '#ffffff', fontWeight: 600 }}>The HoopGang Team</span>
       </p>
     </EmailLayout>

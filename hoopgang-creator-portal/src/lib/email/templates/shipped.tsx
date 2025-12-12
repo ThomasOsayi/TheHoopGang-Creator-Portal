@@ -16,7 +16,7 @@ export function ShippedEmail({
   trackingUrl 
 }: ShippedEmailProps) {
   return (
-    <EmailLayout previewText="Your HoopGang gear is on the way! 📦">
+    <EmailLayout previewText="Your HoopGang gear is on the way">
       {/* Heading */}
       <h1 style={{
         color: '#ffffff',
@@ -25,7 +25,7 @@ export function ShippedEmail({
         margin: '0 0 8px 0',
         textAlign: 'center' as const,
       }}>
-        Your Gear is On The Way! 📦
+        Your Gear Has Shipped 📦
       </h1>
       
       <p style={{
@@ -52,7 +52,7 @@ export function ShippedEmail({
         lineHeight: '1.6',
         margin: '0 0 16px 0',
       }}>
-        Hey {creatorName}! 👋
+        Hey {creatorName},
       </p>
 
       <p style={{
@@ -61,7 +61,7 @@ export function ShippedEmail({
         lineHeight: '1.6',
         margin: '0 0 24px 0',
       }}>
-        Great news - your HoopGang gear just shipped! It's on its way to you now. 
+        Great news — your HoopGang gear just shipped and is on its way to you. 
         Use the tracking info below to follow your package.
       </p>
 
@@ -101,8 +101,7 @@ export function ShippedEmail({
       <table width="100%" cellPadding="0" cellSpacing="0">
         <tr>
           <td align="center">
-            
-              <a href={trackingUrl}
+            <a href={trackingUrl}
               style={{
                 backgroundColor: '#f97316',
                 borderRadius: '12px',
@@ -114,7 +113,7 @@ export function ShippedEmail({
                 textDecoration: 'none',
               }}
             >
-              Track Your Package →
+              Track Your Package
             </a>
           </td>
         </tr>
@@ -134,8 +133,8 @@ export function ShippedEmail({
           margin: 0,
           lineHeight: '1.6',
         }}>
-          ⏱️ <strong>Heads up:</strong> International shipping typically takes 2-4 weeks. 
-          Tracking may not update for the first few days - this is normal!
+          <strong>Note:</strong> International shipping typically takes 2-4 weeks. 
+          Tracking may not update for the first few days — this is normal.
         </p>
       </div>
 
@@ -146,7 +145,7 @@ export function ShippedEmail({
         lineHeight: '1.6',
         margin: '24px 0 0 0',
       }}>
-        Stay patient, it'll be worth it! 🔥<br />
+        Thanks for your patience,<br />
         <span style={{ color: '#ffffff', fontWeight: 600 }}>The HoopGang Team</span>
       </p>
     </EmailLayout>

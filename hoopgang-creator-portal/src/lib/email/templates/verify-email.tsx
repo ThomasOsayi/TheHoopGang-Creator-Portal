@@ -15,7 +15,7 @@ export const VerifyEmailTemplate: React.FC<VerifyEmailProps> = ({
   const firstName = creatorName.split(' ')[0];
 
   return (
-    <EmailLayout previewText="Verify your email to join the HoopGang Creator Squad">
+    <EmailLayout previewText="Verify your email to join the HoopGang Creator Program">
       {/* Header */}
       <h1 style={{ 
         color: '#ffffff', 
@@ -24,7 +24,7 @@ export const VerifyEmailTemplate: React.FC<VerifyEmailProps> = ({
         margin: '0 0 24px 0',
         lineHeight: '1.3'
       }}>
-        Verify Your Email ✉️
+        Verify Your Email
       </h1>
 
       {/* Greeting */}
@@ -34,7 +34,7 @@ export const VerifyEmailTemplate: React.FC<VerifyEmailProps> = ({
         margin: '0 0 16px 0',
         lineHeight: '1.6'
       }}>
-        Hey {firstName}!
+        Hey {firstName},
       </p>
 
       {/* Message */}
@@ -44,7 +44,7 @@ export const VerifyEmailTemplate: React.FC<VerifyEmailProps> = ({
         margin: '0 0 24px 0',
         lineHeight: '1.6'
       }}>
-        Thanks for starting your application to join the HoopGang Creator Squad! 
+        Thanks for starting your application to join the HoopGang Creator Program. 
         Click the button below to verify your email and continue with your application.
       </p>
 
@@ -65,7 +65,7 @@ export const VerifyEmailTemplate: React.FC<VerifyEmailProps> = ({
                 textDecoration: 'none',
               }}
             >
-              Verify My Email →
+              Verify My Email
             </a>
           </td>
         </tr>
@@ -85,7 +85,7 @@ export const VerifyEmailTemplate: React.FC<VerifyEmailProps> = ({
           margin: '0',
           lineHeight: '1.5'
         }}>
-          ⏰ This link expires in 24 hours. If you didn't request this, you can safely ignore this email.
+          This link expires in 24 hours. If you didn't request this, you can safely ignore this email.
         </p>
       </div>
 

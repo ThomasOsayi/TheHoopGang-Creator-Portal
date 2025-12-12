@@ -35,7 +35,7 @@ export async function sendApprovedEmail({
     const { data, error } = await resend.emails.send({
       from: `HoopGang <${fromEmail}>`,
       to,
-      subject: "You're in! Welcome to the HoopGang Creator Family 🏀",
+      subject: "Welcome to the HoopGang Creator Program",  // ✅ Professional
       react: ApprovedEmail({ creatorName, instagramHandle }),
     });
 
@@ -64,7 +64,7 @@ export async function sendShippedEmail({
     const { data, error } = await resend.emails.send({
       from: `HoopGang <${fromEmail}>`,
       to,
-      subject: "Your HoopGang gear is on the way! 📦",
+      subject: "Your HoopGang gear has shipped",  // ✅ Professional
       react: ShippedEmail({ creatorName, trackingNumber, carrier, trackingUrl }),
     });
 
@@ -101,7 +101,7 @@ export async function sendDeliveredEmail({
     const { data, error } = await resend.emails.send({
       from: `HoopGang <${fromEmail}>`,
       to,
-      subject: "Your gear arrived! Time to create 🔥",
+      subject: "Your gear has arrived — time to create content",  // ✅ Professional
       react: DeliveredEmail({ creatorName, contentDeadline: formattedDeadline, daysRemaining }),
     });
 

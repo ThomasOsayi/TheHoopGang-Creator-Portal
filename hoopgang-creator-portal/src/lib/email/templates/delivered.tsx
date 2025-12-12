@@ -14,7 +14,7 @@ export function DeliveredEmail({
   daysRemaining 
 }: DeliveredEmailProps) {
   return (
-    <EmailLayout previewText="Your gear arrived! Time to create 🔥 content">
+    <EmailLayout previewText="Your gear arrived — time to create content">
       {/* Heading */}
       <h1 style={{
         color: '#ffffff',
@@ -23,7 +23,7 @@ export function DeliveredEmail({
         margin: '0 0 8px 0',
         textAlign: 'center' as const,
       }}>
-        Your Gear Has Arrived! 🎉
+        Your Gear Has Arrived
       </h1>
       
       <p style={{
@@ -33,7 +33,7 @@ export function DeliveredEmail({
         margin: '0 0 24px 0',
         textAlign: 'center' as const,
       }}>
-        Time to create some fire content
+        Time to create some great content
       </p>
 
       {/* Divider */}
@@ -50,7 +50,7 @@ export function DeliveredEmail({
         lineHeight: '1.6',
         margin: '0 0 16px 0',
       }}>
-        Hey {creatorName}! 👋
+        Hey {creatorName},
       </p>
 
       <p style={{
@@ -59,8 +59,8 @@ export function DeliveredEmail({
         lineHeight: '1.6',
         margin: '0 0 24px 0',
       }}>
-        Your HoopGang gear has been delivered! We hope you love it. Now it's time 
-        for the fun part - creating content! 🎥
+        Your HoopGang gear has been delivered. We hope you love it. Now it's time 
+        for the fun part — creating content.
       </p>
 
       {/* Deadline Box */}
@@ -111,7 +111,7 @@ export function DeliveredEmail({
           fontWeight: 600,
           margin: '0 0 12px 0',
         }}>
-          📋 CONTENT REQUIREMENTS
+          CONTENT REQUIREMENTS
         </p>
         <ul style={{
           color: '#a3a3a3',
@@ -131,8 +131,7 @@ export function DeliveredEmail({
       <table width="100%" cellPadding="0" cellSpacing="0">
         <tr>
           <td align="center">
-            
-              <a href="https://creators.hoopgang.com/creator/dashboard"
+            <a href="https://thehoopgang.xyz/creator/dashboard"
               style={{
                 backgroundColor: '#f97316',
                 borderRadius: '12px',
@@ -144,7 +143,7 @@ export function DeliveredEmail({
                 textDecoration: 'none',
               }}
             >
-              Submit Your Content →
+              Submit Your Content
             </a>
           </td>
         </tr>
@@ -157,7 +156,7 @@ export function DeliveredEmail({
         lineHeight: '1.6',
         margin: '32px 0 0 0',
       }}>
-        Can't wait to see what you create! 🔥<br />
+        Looking forward to seeing what you create,<br />
         <span style={{ color: '#ffffff', fontWeight: 600 }}>The HoopGang Team</span>
       </p>
     </EmailLayout>

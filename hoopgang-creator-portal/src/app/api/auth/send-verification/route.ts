@@ -21,8 +21,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate verification link using Firebase Admin
+    // ✅ Fixed: Use correct production domain as fallback
     const verificationLink = await adminAuth.generateEmailVerificationLink(email, {
-      url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://thehoopgang.xyz'}/apply`,
+      url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://creators.hoopgang.com'}/apply`,
     });
 
     // Render React component to HTML using JSX
@@ -34,10 +35,11 @@ export async function POST(request: NextRequest) {
     );
 
     // Send branded email via Resend
+    // ✅ Fixed: Professional subject line (no emoji)
     const { error } = await resend.emails.send({
       from: process.env.EMAIL_FROM || 'HoopGang <team@thehoopgang.xyz>',
       to: email,
-      subject: 'Verify your email for HoopGang 🏀',
+      subject: 'Verify your email for HoopGang',
       html: emailHtml,
     });
 
