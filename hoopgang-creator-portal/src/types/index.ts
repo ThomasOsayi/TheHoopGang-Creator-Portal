@@ -9,6 +9,15 @@ export type CreatorStatus =
   | 'completed' 
   | 'ghosted';
 
+export type CollaborationStatus = 
+  | 'pending' 
+  | 'denied'
+  | 'approved' 
+  | 'shipped' 
+  | 'delivered' 
+  | 'completed' 
+  | 'ghosted';
+
 export type ProductType = 
   | 'Reversible Shorts' 
   | 'Hoodies' 
@@ -33,7 +42,7 @@ export interface FollowerHistoryEntry {
 }
 
 export interface StatusHistoryEntry {
-  status: CreatorStatus;
+  status: CreatorStatus | CollaborationStatus;
   timestamp: Date;
   updatedBy?: string;  // Admin user ID who made the change
 }
@@ -46,60 +55,46 @@ export interface ShippingAddress {
   zipCode: string;
 }
 
+// UPDATED: Creator (profile only)
 export interface Creator {
-  // Document ID: auto-generated
   id: string;
-  userId?: string; // Firebase Auth UID - links to users collection
+  userId?: string;
+  creatorId: string;             // "CRT-2024-047"
   
-  // --- Application Data (from /apply form) ---
+  // Profile
   fullName: string;
   email: string;
-  
-  // Social profiles
   instagramHandle: string;
   instagramFollowers: number;
   tiktokHandle: string;
   tiktokFollowers: number;
-  followerHistory?: FollowerHistoryEntry[];  // ✅ ADD THIS LINE
+  followerHistory?: FollowerHistoryEntry[];
   bestContentUrl: string;
   
-  // Product selection
-  product: string;
-  size: Size;
-  height?: string;
-  weight?: string;
-  
-  // Shipping
+  // Shipping Address (reused for all collabs)
   shippingAddress: ShippingAddress;
   
-  // Application questions
+  // Application Questions (from first application)
   whyCollab: string;
   previousBrands: boolean;
   agreedToTerms: boolean;
+  height?: string;
+  weight?: string;
   
-  // --- Status Pipeline ---
-  status: CreatorStatus;
-  statusHistory: StatusHistoryEntry[];
+  // V2 Fields
+  isBlocked: boolean;                    // True if ghosted
+  activeCollaborationId?: string;        // Current active collab ID
+  totalCollaborations: number;           // Count of all collabs
   
-  // --- Shipping/Tracking ---
-  trackingNumber?: string;
-  carrier?: Carrier;
-  shippedAt?: Date;
-  deliveredAt?: Date;
-  shipment?: ShipmentTracking;
-  
-  // --- Content Submissions (max 3 TikToks) ---
-  contentSubmissions: ContentSubmission[];
-  contentDeadline?: Date;  // 14 days after delivery
-  
-  // --- Admin Review ---
-  rating?: number;  // 1-5 stars
-  internalNotes?: string;
-  
-  // --- Metadata ---
+  // Metadata
   createdAt: Date;
   updatedAt: Date;
-  creatorId: string;  // Display ID like "CRT-2024-047"
+}
+
+// For backwards compatibility during migration
+export interface CreatorWithCollab extends Creator {
+  collaboration?: Collaboration;         // Active collab joined
+  collaborations?: Collaboration[];      // All collabs (when needed)
 }
 
 export type UserRole = 'admin' | 'creator';
@@ -164,4 +159,40 @@ export interface ShipmentTracking {
   lastUpdate: Date;
   events: TrackingEvent[];
   trackingMoreId?: string;
+}
+
+// --- Collaboration Types ---
+
+export interface Collaboration {
+  id: string;                    // Firestore doc ID
+  creatorId: string;             // Parent creator's doc ID
+  collabNumber: number;          // Sequential: 1, 2, 3...
+  collabDisplayId: string;       // "CRT-2024-047-01"
+  
+  // Product Selection
+  product: string;
+  size: Size;
+  
+  // Status Pipeline
+  status: CollaborationStatus;
+  statusHistory: StatusHistoryEntry[];
+  
+  // Shipping
+  trackingNumber?: string;
+  carrier?: Carrier;
+  shippedAt?: Date;
+  deliveredAt?: Date;
+  shipment?: ShipmentTracking;
+  
+  // Content
+  contentSubmissions: ContentSubmission[];
+  contentDeadline?: Date;
+  
+  // Review
+  rating?: number;
+  internalNotes?: string;
+  
+  // Metadata
+  createdAt: Date;
+  updatedAt: Date;
 }

@@ -4,11 +4,14 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { Creator, CreatorStatus } from '@/types';
-import { getCreatorById, updateCreator } from '@/lib/firestore';
+import { CreatorWithCollab, CollaborationStatus, Collaboration } from '@/types';
+import { 
+  getCreatorWithActiveCollab, 
+  updateCollaboration,
+  getCollaborationsByCreatorId,
+  getCreatorById
+} from '@/lib/firestore';
 import { CREATOR_STATUSES } from '@/lib/constants';
-import { updateDoc, doc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 import {
   SectionCard,
   StatusBadge,
@@ -51,13 +54,20 @@ export default function CreatorDetailPage() {
   const id = params.id as string;
   const { showToast } = useToast();
 
-  const [creator, setCreator] = useState<Creator | null>(null);
+  // V2: Use CreatorWithCollab type
+  const [creator, setCreator] = useState<CreatorWithCollab | null>(null);
+  const [allCollaborations, setAllCollaborations] = useState<Collaboration[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isMarkingDelivered, setIsMarkingDelivered] = useState(false);
-  const [editedStatus, setEditedStatus] = useState<CreatorStatus | ''>('');
+  
+  // V2: Status is now CollaborationStatus
+  const [editedStatus, setEditedStatus] = useState<CollaborationStatus | ''>('');
   const [editedRating, setEditedRating] = useState<number>(0);
   const [editedNotes, setEditedNotes] = useState<string>('');
+  
+  // V2: For switching between collaborations
+  const [selectedCollabId, setSelectedCollabId] = useState<string | null>(null);
 
   useEffect(() => {
     if (id) fetchCreator();
@@ -66,12 +76,30 @@ export default function CreatorDetailPage() {
   const fetchCreator = async () => {
     setLoading(true);
     try {
-      const creatorData = await getCreatorById(id);
+      // V2: Get creator with active collaboration
+      const creatorData = await getCreatorWithActiveCollab(id);
+      
       if (creatorData) {
         setCreator(creatorData);
-        setEditedStatus(creatorData.status);
-        setEditedRating(creatorData.rating || 0);
-        setEditedNotes(creatorData.internalNotes || '');
+        
+        // Load all collaborations for history
+        const collabs = await getCollaborationsByCreatorId(id);
+        setAllCollaborations(collabs);
+        
+        // Set initial selected collaboration (active or most recent)
+        const activeCollab = creatorData.collaboration;
+        if (activeCollab) {
+          setSelectedCollabId(activeCollab.id);
+          setEditedStatus(activeCollab.status);
+          setEditedRating(activeCollab.rating || 0);
+          setEditedNotes(activeCollab.internalNotes || '');
+        } else if (collabs.length > 0) {
+          // No active collab, show most recent
+          setSelectedCollabId(collabs[0].id);
+          setEditedStatus(collabs[0].status);
+          setEditedRating(collabs[0].rating || 0);
+          setEditedNotes(collabs[0].internalNotes || '');
+        }
       }
     } catch (error) {
       console.error('Error fetching creator:', error);
@@ -80,27 +108,45 @@ export default function CreatorDetailPage() {
     }
   };
 
+  // V2: Get the currently selected collaboration
+  const selectedCollab = selectedCollabId 
+    ? allCollaborations.find(c => c.id === selectedCollabId) || creator?.collaboration
+    : creator?.collaboration;
+
+  // V2: Handle collaboration switch
+  const handleCollabChange = (collabId: string) => {
+    const collab = allCollaborations.find(c => c.id === collabId);
+    if (collab) {
+      setSelectedCollabId(collabId);
+      setEditedStatus(collab.status);
+      setEditedRating(collab.rating || 0);
+      setEditedNotes(collab.internalNotes || '');
+    }
+  };
+
+  // V2: Save changes to COLLABORATION, not creator
   const handleSaveChanges = async () => {
-    if (!creator) return;
+    if (!creator || !selectedCollab) return;
 
     setSaving(true);
     try {
-      const updateData: Partial<Creator> = {};
-      const statusChanged = editedStatus && editedStatus !== creator.status;
-      const newStatus = statusChanged ? editedStatus as CreatorStatus : null;
+      const updateData: Partial<Collaboration> = {};
+      const statusChanged = editedStatus && editedStatus !== selectedCollab.status;
+      const newStatus = statusChanged ? editedStatus as CollaborationStatus : null;
 
       if (statusChanged) {
         updateData.status = newStatus!;
       }
-      if (editedRating !== (creator.rating || 0)) {
+      if (editedRating !== (selectedCollab.rating || 0)) {
         updateData.rating = editedRating || undefined;
       }
-      if (editedNotes !== (creator.internalNotes || '')) {
+      if (editedNotes !== (selectedCollab.internalNotes || '')) {
         updateData.internalNotes = editedNotes || undefined;
       }
 
       if (Object.keys(updateData).length > 0) {
-        await updateCreator(creator.id, updateData);
+        // V2: Update the COLLABORATION, not the creator
+        await updateCollaboration(creator.id, selectedCollab.id, updateData);
         
         // Send emails for status changes
         if (statusChanged && newStatus) {
@@ -119,10 +165,8 @@ export default function CreatorDetailPage() {
                 }),
               });
             }
-            // Note: Shipped emails are now sent automatically by the tracking API
           } catch (emailError) {
             console.error('Error sending status change email:', emailError);
-            // Don't fail the whole operation if email fails
           }
         }
         
@@ -141,8 +185,9 @@ export default function CreatorDetailPage() {
     router.push('/admin/creators');
   };
 
+  // V2: Mark delivered updates COLLABORATION
   const handleMarkDelivered = async () => {
-    if (!creator || creator.status !== 'shipped') return;
+    if (!creator || !selectedCollab || selectedCollab.status !== 'shipped') return;
 
     const confirmed = window.confirm(
       'Mark this package as delivered? This will start the 14-day content deadline countdown.'
@@ -157,11 +202,11 @@ export default function CreatorDetailPage() {
       const contentDeadline = new Date(now);
       contentDeadline.setDate(contentDeadline.getDate() + 14);
 
-      await updateDoc(doc(db, 'creators', creator.id), {
+      // V2: Update the COLLABORATION
+      await updateCollaboration(creator.id, selectedCollab.id, {
         status: 'delivered',
         deliveredAt: now,
         contentDeadline: contentDeadline,
-        updatedAt: now,
       });
 
       // Send delivery email
@@ -179,17 +224,10 @@ export default function CreatorDetailPage() {
         });
       } catch (emailError) {
         console.error('Error sending delivery email:', emailError);
-        // Don't fail the whole operation if email fails
       }
 
-      // Refresh creator data
-      setCreator({
-        ...creator,
-        status: 'delivered',
-        deliveredAt: now,
-        contentDeadline: contentDeadline,
-      });
-
+      // Refresh data
+      await fetchCreator();
       setEditedStatus('delivered');
       showToast('Package marked as delivered!', 'success');
     } catch (error) {
@@ -209,7 +247,6 @@ export default function CreatorDetailPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-zinc-950 via-zinc-900 to-zinc-950 py-8 px-4 relative overflow-hidden">
-        {/* Background Orbs */}
         <div className="fixed top-20 right-20 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="fixed bottom-40 left-10 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -229,7 +266,6 @@ export default function CreatorDetailPage() {
   if (!creator) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-zinc-950 via-zinc-900 to-zinc-950 py-8 px-4 relative overflow-hidden">
-        {/* Background Orbs */}
         <div className="fixed top-20 right-20 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="fixed bottom-40 left-10 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -291,8 +327,8 @@ export default function CreatorDetailPage() {
                 <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-500/20 to-purple-500/20 border border-white/10 flex items-center justify-center text-2xl font-bold text-white/70">
                   {creator.fullName.charAt(0).toUpperCase()}
                 </div>
-            <div>
-              <h1 className="text-2xl font-bold text-white">{creator.fullName}</h1>
+                <div>
+                  <h1 className="text-2xl font-bold text-white">{creator.fullName}</h1>
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
                     <span className="text-white/40 text-sm font-mono">{creator.creatorId}</span>
                     <span className="text-white/20">•</span>
@@ -301,19 +337,29 @@ export default function CreatorDetailPage() {
                     </span>
                     <span className="text-white/20">•</span>
                     <span className="text-white/40 text-sm">{daysSinceApply} days ago</span>
+                    {creator.isBlocked && (
+                      <>
+                        <span className="text-white/20">•</span>
+                        <span className="text-red-400 text-sm font-medium">BLOCKED</span>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
 
-              {/* Status Badge */}
+              {/* Status Badge - V2: from collaboration */}
               <div className="flex items-center gap-3">
-                <StatusBadge status={creator.status} />
+                {selectedCollab ? (
+                  <StatusBadge status={selectedCollab.status} />
+                ) : (
+                  <span className="text-white/40 text-sm">No collaboration</span>
+                )}
               </div>
             </div>
 
             {/* Quick Stats Row */}
             <div className={`grid grid-cols-2 gap-4 mt-6 pt-6 border-t border-white/10 ${
-              creator.height || creator.weight ? 'sm:grid-cols-5' : 'sm:grid-cols-4'
+              creator.height || creator.weight ? 'sm:grid-cols-6' : 'sm:grid-cols-5'
             }`}>
               <div className="text-center">
                 <div className="text-white/40 text-xs uppercase tracking-wider mb-1">TikTok</div>
@@ -330,13 +376,19 @@ export default function CreatorDetailPage() {
               <div className="text-center">
                 <div className="text-white/40 text-xs uppercase tracking-wider mb-1">Content</div>
                 <div className="text-white font-semibold">
-                  {creator.contentSubmissions.length}/3
+                  {selectedCollab?.contentSubmissions.length || 0}/3
                 </div>
               </div>
               <div className="text-center">
                 <div className="text-white/40 text-xs uppercase tracking-wider mb-1">Rating</div>
                 <div className="text-white font-semibold">
-                  {creator.rating ? `${creator.rating}/5` : '—'}
+                  {selectedCollab?.rating ? `${selectedCollab.rating}/5` : '—'}
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-white/40 text-xs uppercase tracking-wider mb-1">Collabs</div>
+                <div className="text-white font-semibold">
+                  {creator.totalCollaborations}
                 </div>
               </div>
               {/* Fit Info */}
@@ -351,389 +403,434 @@ export default function CreatorDetailPage() {
             </div>
           </div>
 
-        {/* Content Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mt-6">
-            {/* Left Column - 3/5 */}
-            <div className="lg:col-span-3 space-y-6">
-            {/* Creator Profile */}
-              <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 hover:border-white/20 transition-all duration-300">
-                <div className="flex items-center gap-2 mb-5">
-                  <span className="text-xl">👤</span>
-                  <h2 className="text-lg font-semibold text-white">Creator Profile</h2>
-                </div>
-                <div className="space-y-1">
-              <DetailRow label="Email" value={creator.email} />
-                  <DetailRow
-                    label="TikTok"
-                    value={
-                      <a
-                        href={`https://tiktok.com/@${creator.tiktokHandle.replace('@', '')}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-orange-400 hover:text-orange-300 transition-colors inline-flex items-center gap-2"
-                      >
-                        @{creator.tiktokHandle.replace('@', '')}
-                        <span className="text-white/40 text-sm">
-                          ({formatFollowers(creator.tiktokFollowers)} followers)
-                        </span>
-                      </a>
-                    }
-                  />
-              <DetailRow
-                label="Instagram"
-                value={
-                  <a
-                    href={`https://instagram.com/${creator.instagramHandle.replace('@', '')}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                        className="text-orange-400 hover:text-orange-300 transition-colors inline-flex items-center gap-2"
-                      >
-                        @{creator.instagramHandle.replace('@', '')}
-                        <span className="text-white/40 text-sm">
-                          ({formatFollowers(creator.instagramFollowers)} followers)
-                        </span>
-                  </a>
-                }
-              />
-              <DetailRow
-                label="Best Content"
-                value={
-                  <a
-                    href={creator.bestContentUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                        className="text-orange-400 hover:text-orange-300 transition-colors inline-flex items-center gap-1"
-                  >
-                    View Content
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                        </svg>
-                  </a>
-                }
-              />
-                </div>
-                
-                {/* Fit Info (if provided) */}
-                {(creator.height || creator.weight) && (
-                  <div className="mt-4 pt-4 border-t border-white/10">
-                    <h3 className="text-white/50 text-xs uppercase tracking-wider mb-3">Fit Information</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <span className="text-white/40 text-xs">Height</span>
-                        <p className="text-white font-medium">{creator.height || '—'}</p>
-                      </div>
-                      <div>
-                        <span className="text-white/40 text-xs">Weight</span>
-                        <p className="text-white font-medium">{creator.weight || '—'}</p>
+          {/* V2: Collaboration Selector - show if multiple collabs */}
+          {allCollaborations.length > 1 && (
+            <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-4 mt-6">
+              <div className="flex items-center justify-between">
+                <span className="text-white/50 text-sm">Viewing Collaboration:</span>
+                <select
+                  value={selectedCollabId || ''}
+                  onChange={(e) => handleCollabChange(e.target.value)}
+                  className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                >
+                  {allCollaborations.map((collab) => (
+                    <option key={collab.id} value={collab.id} className="bg-zinc-900">
+                      {collab.collabDisplayId} - {collab.product} ({collab.status})
+                      {collab.id === creator?.activeCollaborationId ? ' (Active)' : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
+
+          {/* No Collaboration State */}
+          {!selectedCollab && (
+            <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-2xl p-6 mt-6 text-center">
+              <div className="text-4xl mb-3">📋</div>
+              <h3 className="text-yellow-400 font-semibold mb-2">No Active Collaboration</h3>
+              <p className="text-white/60 text-sm">
+                This creator doesn't have any collaborations yet, or all collaborations have been completed/denied.
+              </p>
+            </div>
+          )}
+
+          {/* Content Grid - Only show if we have a selected collaboration */}
+          {selectedCollab && (
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mt-6">
+              {/* Left Column - 3/5 */}
+              <div className="lg:col-span-3 space-y-6">
+                {/* Creator Profile */}
+                <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 hover:border-white/20 transition-all duration-300">
+                  <div className="flex items-center gap-2 mb-5">
+                    <span className="text-xl">👤</span>
+                    <h2 className="text-lg font-semibold text-white">Creator Profile</h2>
+                  </div>
+                  <div className="space-y-1">
+                    <DetailRow label="Email" value={creator.email} />
+                    <DetailRow
+                      label="TikTok"
+                      value={
+                        <a
+                          href={`https://tiktok.com/@${creator.tiktokHandle.replace('@', '')}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-orange-400 hover:text-orange-300 transition-colors inline-flex items-center gap-2"
+                        >
+                          @{creator.tiktokHandle.replace('@', '')}
+                          <span className="text-white/40 text-sm">
+                            ({formatFollowers(creator.tiktokFollowers)} followers)
+                          </span>
+                        </a>
+                      }
+                    />
+                    <DetailRow
+                      label="Instagram"
+                      value={
+                        <a
+                          href={`https://instagram.com/${creator.instagramHandle.replace('@', '')}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-orange-400 hover:text-orange-300 transition-colors inline-flex items-center gap-2"
+                        >
+                          @{creator.instagramHandle.replace('@', '')}
+                          <span className="text-white/40 text-sm">
+                            ({formatFollowers(creator.instagramFollowers)} followers)
+                          </span>
+                        </a>
+                      }
+                    />
+                    <DetailRow
+                      label="Best Content"
+                      value={
+                        <a
+                          href={creator.bestContentUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-orange-400 hover:text-orange-300 transition-colors inline-flex items-center gap-1"
+                        >
+                          View Content
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                        </a>
+                      }
+                    />
+                  </div>
+                  
+                  {/* Fit Info (if provided) */}
+                  {(creator.height || creator.weight) && (
+                    <div className="mt-4 pt-4 border-t border-white/10">
+                      <h3 className="text-white/50 text-xs uppercase tracking-wider mb-3">Fit Information</h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <span className="text-white/40 text-xs">Height</span>
+                          <p className="text-white font-medium">{creator.height || '—'}</p>
+                        </div>
+                        <div>
+                          <span className="text-white/40 text-xs">Weight</span>
+                          <p className="text-white font-medium">{creator.weight || '—'}</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
-              </div>
-
-            {/* Application Details */}
-              <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 hover:border-white/20 transition-all duration-300">
-                <div className="flex items-center gap-2 mb-5">
-                  <span className="text-xl">📦</span>
-                  <h2 className="text-lg font-semibold text-white">Application Details</h2>
+                  )}
                 </div>
-                <div className="space-y-1">
-                  <DetailRow
-                    label="Product"
-                    value={
-                      <span className="inline-flex items-center gap-2">
-                        {creator.product}
-                        <span className="px-2 py-0.5 bg-white/10 rounded text-xs text-white/60">
-                          Size {creator.size}
+
+                {/* V2: Collaboration Details (was Application Details) */}
+                <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 hover:border-white/20 transition-all duration-300">
+                  <div className="flex items-center gap-2 mb-5">
+                    <span className="text-xl">📦</span>
+                    <h2 className="text-lg font-semibold text-white">
+                      Collaboration #{selectedCollab.collabNumber}
+                    </h2>
+                  </div>
+                  <div className="space-y-1">
+                    <DetailRow
+                      label="Collab ID"
+                      value={
+                        <span className="font-mono text-orange-400">
+                          {selectedCollab.collabDisplayId}
                         </span>
-                      </span>
-                    }
-                  />
-                  <DetailRow label="Shipping Address" value={formattedAddress} />
-                  <DetailRow
-                    label="Why Collab?"
-                    value={
-                      <span className="text-white/70 leading-relaxed">{creator.whyCollab}</span>
-                    }
-                  />
-                  <DetailRow
-                    label="Previous Brands"
-                    value={
-                      creator.previousBrands ? (
-                        <span className="text-green-400">Yes</span>
-                      ) : (
-                        <span className="text-white/40">No</span>
-                      )
-                    }
-                  />
-                </div>
-              </div>
-
-              {/* Content Submissions */}
-              <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 hover:border-white/20 transition-all duration-300">
-                <div className="flex items-center justify-between mb-5">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl">🎥</span>
-                    <h2 className="text-lg font-semibold text-white">Content Submissions</h2>
+                      }
+                    />
+                    <DetailRow
+                      label="Product"
+                      value={
+                        <span className="inline-flex items-center gap-2">
+                          {selectedCollab.product}
+                          <span className="px-2 py-0.5 bg-white/10 rounded text-xs text-white/60">
+                            Size {selectedCollab.size}
+                          </span>
+                        </span>
+                      }
+                    />
+                    <DetailRow
+                      label="Requested"
+                      value={formatDate(selectedCollab.createdAt)}
+                    />
+                    <DetailRow label="Shipping Address" value={formattedAddress} />
+                    <DetailRow
+                      label="Why Collab?"
+                      value={
+                        <span className="text-white/70 leading-relaxed">{creator.whyCollab}</span>
+                      }
+                    />
+                    <DetailRow
+                      label="Previous Brands"
+                      value={
+                        creator.previousBrands ? (
+                          <span className="text-green-400">Yes</span>
+                        ) : (
+                          <span className="text-white/40">No</span>
+                        )
+                      }
+                    />
                   </div>
-                  <span className="text-white/40 text-sm">
-                    {creator.contentSubmissions.length}/3 submitted
-                  </span>
                 </div>
 
-                {/* Progress Bar */}
-                <div className="h-2 bg-white/10 rounded-full overflow-hidden mb-6">
-                  <div
-                    className="h-full bg-gradient-to-r from-orange-500 to-amber-500 rounded-full transition-all duration-500"
-                    style={{ width: `${(creator.contentSubmissions.length / 3) * 100}%` }}
-                  />
-                </div>
+                {/* V2: Content Submissions - from collaboration */}
+                <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 hover:border-white/20 transition-all duration-300">
+                  <div className="flex items-center justify-between mb-5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">🎥</span>
+                      <h2 className="text-lg font-semibold text-white">Content Submissions</h2>
+                    </div>
+                    <span className="text-white/40 text-sm">
+                      {selectedCollab.contentSubmissions.length}/3 submitted
+                    </span>
+                  </div>
 
-                <div className="space-y-3">
-                  {[0, 1, 2].map((index) => {
-                    const submission = creator.contentSubmissions[index];
-                    return (
-                      <div
-                        key={index}
-                        className={`flex items-center gap-4 p-4 rounded-xl border transition-all ${
-                          submission
-                            ? 'bg-green-500/5 border-green-500/20'
-                            : 'bg-white/[0.02] border-white/5'
-                        }`}
-                      >
-                        {/* Number Badge */}
+                  {/* Progress Bar */}
+                  <div className="h-2 bg-white/10 rounded-full overflow-hidden mb-6">
+                    <div
+                      className="h-full bg-gradient-to-r from-orange-500 to-amber-500 rounded-full transition-all duration-500"
+                      style={{ width: `${(selectedCollab.contentSubmissions.length / 3) * 100}%` }}
+                    />
+                  </div>
+
+                  <div className="space-y-3">
+                    {[0, 1, 2].map((index) => {
+                      const submission = selectedCollab.contentSubmissions[index];
+                      return (
                         <div
-                          className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
+                          key={index}
+                          className={`flex items-center gap-4 p-4 rounded-xl border transition-all ${
                             submission
-                              ? 'bg-green-500/20 text-green-400'
-                              : 'bg-white/10 text-white/30'
+                              ? 'bg-green-500/5 border-green-500/20'
+                              : 'bg-white/[0.02] border-white/5'
                           }`}
                         >
-                          {submission ? '✓' : index + 1}
-                        </div>
-
-                        {/* Content */}
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium text-white/80">
-                            TikTok Video {index + 1}
+                          {/* Number Badge */}
+                          <div
+                            className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
+                              submission
+                                ? 'bg-green-500/20 text-green-400'
+                                : 'bg-white/10 text-white/30'
+                            }`}
+                          >
+                            {submission ? '✓' : index + 1}
                           </div>
-                          {submission ? (
-                            <a
-                              href={submission.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-orange-400 hover:text-orange-300 text-sm truncate block transition-colors"
-                            >
-                              {submission.url}
-                            </a>
-                          ) : (
-                            <span className="text-white/30 text-sm italic">
-                              Not yet submitted
-                            </span>
+
+                          {/* Content */}
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium text-white/80">
+                              TikTok Video {index + 1}
+                            </div>
+                            {submission ? (
+                              <a
+                                href={submission.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-orange-400 hover:text-orange-300 text-sm truncate block transition-colors"
+                              >
+                                {submission.url}
+                              </a>
+                            ) : (
+                              <span className="text-white/30 text-sm italic">
+                                Not yet submitted
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Submitted Date */}
+                          {submission && (
+                            <div className="text-white/40 text-xs">
+                              {formatDate(submission.submittedAt)}
+                            </div>
                           )}
                         </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
 
-                        {/* Submitted Date */}
-                        {submission && (
-                          <div className="text-white/40 text-xs">
-                            {formatDate(submission.submittedAt)}
-                          </div>
-                        )}
+              {/* Right Column - 2/5 */}
+              <div className="lg:col-span-2 space-y-6">
+                {/* Status & Actions */}
+                <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 hover:border-white/20 transition-all duration-300">
+                  <div className="flex items-center gap-2 mb-5">
+                    <span className="text-xl">⚙️</span>
+                    <h2 className="text-lg font-semibold text-white">Status & Actions</h2>
+                  </div>
+
+                  <div className="space-y-4">
+                    {/* Status Dropdown */}
+                    <div>
+                      <label className="block text-white/50 text-xs uppercase tracking-wider mb-2">
+                        Status
+                      </label>
+                      <div className="relative">
+                        <select
+                          value={editedStatus}
+                          onChange={(e) => setEditedStatus(e.target.value as CollaborationStatus | '')}
+                          className={inputClasses}
+                        >
+                          {CREATOR_STATUSES.map((status) => (
+                            <option 
+                              key={status.value} 
+                              value={status.value} 
+                              className="bg-zinc-900"
+                              disabled={status.value === 'delivered'}
+                            >
+                              {status.label} {status.value === 'delivered' ? '(Use Mark Delivered button)' : ''}
+                            </option>
+                          ))}
+                        </select>
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-white/40">
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </div>
                       </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-
-            {/* Right Column - 2/5 */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Status & Actions */}
-              <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 hover:border-white/20 transition-all duration-300">
-                <div className="flex items-center gap-2 mb-5">
-                  <span className="text-xl">⚙️</span>
-                  <h2 className="text-lg font-semibold text-white">Status & Actions</h2>
-          </div>
-
-              <div className="space-y-4">
-                  {/* Status Dropdown */}
-                <div>
-                    <label className="block text-white/50 text-xs uppercase tracking-wider mb-2">
-                      Status
-                    </label>
-                    <div className="relative">
-                  <select
-                    value={editedStatus}
-                    onChange={(e) => setEditedStatus(e.target.value as CreatorStatus | '')}
-                    className={inputClasses}
-                  >
-                    {CREATOR_STATUSES.map((status) => (
-                          <option 
-                            key={status.value} 
-                            value={status.value} 
-                            className="bg-zinc-900"
-                            disabled={status.value === 'delivered'} // Use Mark Delivered button instead
-                          >
-                            {status.label} {status.value === 'delivered' ? '(Use Mark Delivered button)' : ''}
-                      </option>
-                    ))}
-                  </select>
-                      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-white/40">
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                </div>
-                </div>
-                </div>
-
-                <Button
-                  variant="primary"
-                  onClick={handleSaveChanges}
-                  disabled={saving}
-                  loading={saving}
-                  className="w-full"
-                >
-                  {saving ? 'Saving...' : 'Save Changes'}
-                </Button>
-                </div>
-              </div>
-
-              {/* Shipment Tracking */}
-              <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 hover:border-white/20 transition-all duration-300">
-                <div className="flex items-center gap-2 mb-5">
-                  <span className="text-xl">📦</span>
-                  <h2 className="text-lg font-semibold text-white">Shipment Tracking</h2>
-                </div>
-
-                {creator.trackingNumber ? (
-                  <TrackingStatus
-                    shipment={creator.shipment}
-                    trackingNumber={creator.trackingNumber}
-                    carrier={creator.carrier}
-                    creatorId={creator.id}
-                    onRefresh={fetchCreator}
-                  />
-                ) : (
-                  <AddTrackingForm creatorId={creator.id} onSuccess={fetchCreator} />
-                )}
-
-                {/* Mark Delivered Button - only show when status is 'shipped' */}
-                {creator.status === 'shipped' && (
-                  <button
-                    onClick={handleMarkDelivered}
-                    disabled={isMarkingDelivered}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 disabled:bg-green-500/50 disabled:cursor-not-allowed text-white font-medium rounded-xl transition-colors mt-4"
-                  >
-                    {isMarkingDelivered ? (
-                      <>
-                        <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                        </svg>
-                        Marking...
-                      </>
-                    ) : (
-                      <>
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                        Mark as Delivered
-                      </>
-                    )}
-                  </button>
-                )}
-
-                {/* Delivery Info - show when delivered */}
-                {['delivered', 'completed', 'ghosted'].includes(creator.status) && creator.deliveredAt && (
-                  <div className="mt-4 p-4 bg-green-500/10 border border-green-500/20 rounded-xl">
-                    <div className="flex items-center gap-2 text-green-400 mb-2">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span className="font-medium">Package Delivered</span>
                     </div>
-                    <div className="text-sm text-gray-400 space-y-1">
-                      <p>
-                        Delivered on:{' '}
-                        <span className="text-white">
-                          {new Date(creator.deliveredAt).toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric',
-                          })}
-                        </span>
-                      </p>
-                      {creator.contentDeadline && creator.status === 'delivered' && (
+
+                    <Button
+                      variant="primary"
+                      onClick={handleSaveChanges}
+                      disabled={saving}
+                      loading={saving}
+                      className="w-full"
+                    >
+                      {saving ? 'Saving...' : 'Save Changes'}
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Shipment Tracking - V2: Pass collaborationId */}
+                <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 hover:border-white/20 transition-all duration-300">
+                  <div className="flex items-center gap-2 mb-5">
+                    <span className="text-xl">📦</span>
+                    <h2 className="text-lg font-semibold text-white">Shipment Tracking</h2>
+                  </div>
+
+                  {selectedCollab.trackingNumber ? (
+                    <TrackingStatus
+                      shipment={selectedCollab.shipment}
+                      trackingNumber={selectedCollab.trackingNumber}
+                      carrier={selectedCollab.carrier}
+                      creatorId={creator.id}
+                      collaborationId={selectedCollab.id}
+                      onRefresh={fetchCreator}
+                    />
+                  ) : (
+                    <AddTrackingForm 
+                      creatorId={creator.id} 
+                      collaborationId={selectedCollab.id}
+                      onSuccess={fetchCreator} 
+                    />
+                  )}
+
+                  {/* Mark Delivered Button */}
+                  {selectedCollab.status === 'shipped' && (
+                    <button
+                      onClick={handleMarkDelivered}
+                      disabled={isMarkingDelivered}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 disabled:bg-green-500/50 disabled:cursor-not-allowed text-white font-medium rounded-xl transition-colors mt-4"
+                    >
+                      {isMarkingDelivered ? (
+                        <>
+                          <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                          </svg>
+                          Marking...
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          Mark as Delivered
+                        </>
+                      )}
+                    </button>
+                  )}
+
+                  {/* Delivery Info */}
+                  {['delivered', 'completed', 'ghosted'].includes(selectedCollab.status) && selectedCollab.deliveredAt && (
+                    <div className="mt-4 p-4 bg-green-500/10 border border-green-500/20 rounded-xl">
+                      <div className="flex items-center gap-2 text-green-400 mb-2">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span className="font-medium">Package Delivered</span>
+                      </div>
+                      <div className="text-sm text-gray-400 space-y-1">
                         <p>
-                          Content deadline:{' '}
-                          <span className={`font-medium ${
-                            new Date(creator.contentDeadline) < new Date() 
-                              ? 'text-red-400' 
-                              : 'text-orange-400'
-                          }`}>
-                            {new Date(creator.contentDeadline).toLocaleDateString('en-US', {
-                              month: 'short',
-                              day: 'numeric',
-                              year: 'numeric',
-                            })}
-                            {' '}
-                            ({Math.ceil((new Date(creator.contentDeadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} days remaining)
+                          Delivered on:{' '}
+                          <span className="text-white">
+                            {formatDate(selectedCollab.deliveredAt)}
                           </span>
                         </p>
-                      )}
+                        {selectedCollab.contentDeadline && selectedCollab.status === 'delivered' && (
+                          <p>
+                            Content deadline:{' '}
+                            <span className={`font-medium ${
+                              new Date(selectedCollab.contentDeadline) < new Date() 
+                                ? 'text-red-400' 
+                                : 'text-orange-400'
+                            }`}>
+                              {formatDate(selectedCollab.contentDeadline)}
+                              {' '}
+                              ({Math.ceil((new Date(selectedCollab.contentDeadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} days remaining)
+                            </span>
+                          </p>
+                        )}
+                      </div>
                     </div>
+                  )}
+                </div>
+
+                {/* Review */}
+                <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 hover:border-white/20 transition-all duration-300">
+                  <div className="flex items-center gap-2 mb-5">
+                    <span className="text-xl">⭐</span>
+                    <h2 className="text-lg font-semibold text-white">Review</h2>
                   </div>
-                )}
-              </div>
 
-            {/* Review */}
-              <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 hover:border-white/20 transition-all duration-300">
-                <div className="flex items-center gap-2 mb-5">
-                  <span className="text-xl">⭐</span>
-                  <h2 className="text-lg font-semibold text-white">Review</h2>
-                </div>
+                  <div className="space-y-4">
+                    {/* Rating */}
+                    <div>
+                      <label className="block text-white/50 text-xs uppercase tracking-wider mb-3">
+                        Creator Rating
+                      </label>
+                      <StarRating
+                        rating={editedRating}
+                        editable={true}
+                        onChange={setEditedRating}
+                        size="lg"
+                      />
+                    </div>
 
-              <div className="space-y-4">
-                  {/* Rating */}
-                <div>
-                    <label className="block text-white/50 text-xs uppercase tracking-wider mb-3">
-                      Creator Rating
-                    </label>
-                  <StarRating
-                    rating={editedRating}
-                    editable={true}
-                    onChange={setEditedRating}
-                    size="lg"
-                  />
-                </div>
+                    {/* Notes */}
+                    <div>
+                      <label className="block text-white/50 text-xs uppercase tracking-wider mb-2">
+                        Internal Notes
+                      </label>
+                      <textarea
+                        value={editedNotes}
+                        onChange={(e) => setEditedNotes(e.target.value)}
+                        placeholder="Leave notes about this creator's performance..."
+                        rows={4}
+                        className={textareaClasses}
+                      />
+                    </div>
 
-                  {/* Notes */}
-                <div>
-                    <label className="block text-white/50 text-xs uppercase tracking-wider mb-2">
-                      Internal Notes
-                    </label>
-                  <textarea
-                    value={editedNotes}
-                    onChange={(e) => setEditedNotes(e.target.value)}
-                    placeholder="Leave notes about this creator's performance..."
-                    rows={4}
-                    className={textareaClasses}
-                  />
-                </div>
-
-                <Button
-                  variant="primary"
-                  onClick={handleSaveChanges}
-                  disabled={saving}
-                  loading={saving}
-                  className="w-full"
-                >
-                    {saving ? 'Saving...' : 'Save Review'}
-                </Button>
+                    <Button
+                      variant="primary"
+                      onClick={handleSaveChanges}
+                      disabled={saving}
+                      loading={saving}
+                      className="w-full"
+                    >
+                      {saving ? 'Saving...' : 'Save Review'}
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
-        </div>
+          )}
         </div>
       </div>
     </ProtectedRoute>

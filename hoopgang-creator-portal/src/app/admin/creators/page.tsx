@@ -4,8 +4,8 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Creator, CreatorStatus, DashboardStats } from '@/types';
-import { getAllCreators, getDashboardStats, updateCreator } from '@/lib/firestore';
+import { CreatorWithCollab, CollaborationStatus, DashboardStats } from '@/types';
+import { getAllCreatorsWithCollabs, getDashboardStats, updateCollaboration } from '@/lib/firestore';
 import { StatCard, useToast, Pagination } from '@/components/ui';
 import { FilterBar, CreatorTable, ApplicationReviewModal } from '@/components/creators';
 import { ProtectedRoute } from '@/components/auth';
@@ -13,7 +13,7 @@ import { ProtectedRoute } from '@/components/auth';
 export default function AdminCreatorsPage() {
   const router = useRouter();
   const { showToast } = useToast();
-  const [creators, setCreators] = useState<Creator[]>([]);
+  const [creators, setCreators] = useState<CreatorWithCollab[]>([]);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>('');
@@ -22,7 +22,7 @@ export default function AdminCreatorsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [lastDocs, setLastDocs] = useState<any[]>([]);
   const [hasMore, setHasMore] = useState(false);
-  const [reviewingCreator, setReviewingCreator] = useState<Creator | null>(null);
+  const [reviewingCreator, setReviewingCreator] = useState<CreatorWithCollab | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const PAGE_SIZE = 10;
 
@@ -43,19 +43,44 @@ export default function AdminCreatorsPage() {
   const fetchCreators = useCallback(async (pageLastDoc?: any, isNewFilter = false, pageNum?: number) => {
     setLoading(true);
     try {
-      const result = await getAllCreators({
-        status: (statusFilter as CreatorStatus) || undefined,
-        minFollowers: minFollowers ? parseInt(minFollowers, 10) : undefined,
-        search: searchQuery || undefined,
+      // V2: Use getAllCreatorsWithCollabs instead of getAllCreators
+      const result = await getAllCreatorsWithCollabs({
+        status: (statusFilter as CollaborationStatus) || undefined,
         limit: PAGE_SIZE,
         lastDoc: pageLastDoc,
       });
 
-      setCreators(result.creators);
+      // Additional client-side filtering for search and minFollowers
+      let filteredCreators = result.creators;
+      
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        filteredCreators = filteredCreators.filter(
+          (creator) =>
+            creator.fullName.toLowerCase().includes(query) ||
+            creator.tiktokHandle.toLowerCase().includes(query) ||
+            creator.instagramHandle.toLowerCase().includes(query) ||
+            creator.email.toLowerCase().includes(query) ||
+            creator.creatorId.toLowerCase().includes(query) ||
+            creator.collaboration?.collabDisplayId?.toLowerCase().includes(query)
+        );
+      }
+
+      if (minFollowers) {
+        const min = parseInt(minFollowers, 10);
+        if (!isNaN(min)) {
+          filteredCreators = filteredCreators.filter(
+            (creator) =>
+              creator.instagramFollowers >= min ||
+              creator.tiktokFollowers >= min
+          );
+        }
+      }
+
+      setCreators(filteredCreators);
       setHasMore(result.hasMore);
 
       if (isNewFilter) {
-        // Reset pagination but still store the first page's lastDoc
         setCurrentPage(1);
         if (result.lastDoc) {
           setLastDocs([result.lastDoc]);
@@ -84,6 +109,7 @@ export default function AdminCreatorsPage() {
     fetchCreators(undefined, true);
   }, [statusFilter, minFollowers, searchQuery]);
 
+  // V2: filteredCreators is now handled in fetchCreators, but keep for additional real-time filtering
   const filteredCreators = useMemo(() => {
     let filtered = [...creators];
 
@@ -95,7 +121,8 @@ export default function AdminCreatorsPage() {
           creator.tiktokHandle.toLowerCase().includes(query) ||
           creator.instagramHandle.toLowerCase().includes(query) ||
           creator.email.toLowerCase().includes(query) ||
-          creator.creatorId.toLowerCase().includes(query)
+          creator.creatorId.toLowerCase().includes(query) ||
+          creator.collaboration?.collabDisplayId?.toLowerCase().includes(query)
       );
     }
 
@@ -117,7 +144,7 @@ export default function AdminCreatorsPage() {
     router.push(`/admin/creators/${id}`);
   };
 
-  const handleReview = (creator: Creator) => {
+  const handleReview = (creator: CreatorWithCollab) => {
     setReviewingCreator(creator);
   };
 
@@ -125,13 +152,22 @@ export default function AdminCreatorsPage() {
     setReviewingCreator(null);
   };
 
+  // V2: Update collaboration instead of creator
   const handleApprove = async (id: string) => {
     setActionLoading(true);
     try {
-      // Get creator data before updating
       const creator = creators.find(c => c.id === id);
       
-      await updateCreator(id, { status: 'approved' as CreatorStatus });
+      if (!creator?.collaboration) {
+        showToast('No active collaboration to approve', 'error');
+        setActionLoading(false);
+        return;
+      }
+
+      // V2: Update the COLLABORATION, not the creator
+      await updateCollaboration(creator.id, creator.collaboration.id, { 
+        status: 'approved' as CollaborationStatus 
+      });
       
       // Send approval email
       if (creator) {
@@ -149,9 +185,12 @@ export default function AdminCreatorsPage() {
           });
         } catch (emailError) {
           console.error('Error sending approval email:', emailError);
-          // Don't fail the whole operation if email fails
         }
       }
+      
+      // Refresh stats
+      const statsData = await getDashboardStats();
+      setStats(statsData);
       
       const lastDoc = currentPage > 1 ? lastDocs[currentPage - 2] : undefined;
       await fetchCreators(lastDoc);
@@ -165,10 +204,27 @@ export default function AdminCreatorsPage() {
     }
   };
 
+  // V2: Update collaboration instead of creator
   const handleDeny = async (id: string) => {
     setActionLoading(true);
     try {
-      await updateCreator(id, { status: 'denied' as CreatorStatus });
+      const creator = creators.find(c => c.id === id);
+      
+      if (!creator?.collaboration) {
+        showToast('No active collaboration to deny', 'error');
+        setActionLoading(false);
+        return;
+      }
+
+      // V2: Update the COLLABORATION, not the creator
+      await updateCollaboration(creator.id, creator.collaboration.id, { 
+        status: 'denied' as CollaborationStatus 
+      });
+      
+      // Refresh stats
+      const statsData = await getDashboardStats();
+      setStats(statsData);
+      
       const lastDoc = currentPage > 1 ? lastDocs[currentPage - 2] : undefined;
       await fetchCreators(lastDoc);
       showToast('Creator denied', 'success');
@@ -221,7 +277,6 @@ export default function AdminCreatorsPage() {
                 <p className="text-white/60 mt-1">Manage all creator collaborations</p>
               </div>
               
-              {/* Quick action - could add refresh button here */}
               <div className="flex items-center gap-2 text-sm text-white/40">
                 <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
                 Live data
@@ -315,7 +370,7 @@ export default function AdminCreatorsPage() {
             onMinFollowersChange={setMinFollowers}
           />
 
-          {/* Creators Table */}
+          {/* Creators Table - V2: Now receives CreatorWithCollab[] */}
           <CreatorTable
             creators={filteredCreators}
             onViewCreator={handleViewCreator}
@@ -325,7 +380,7 @@ export default function AdminCreatorsPage() {
             loading={loading}
           />
 
-          {/* Application Review Modal */}
+          {/* Application Review Modal - V2: Now receives CreatorWithCollab */}
           <ApplicationReviewModal
             creator={reviewingCreator}
             isOpen={!!reviewingCreator}

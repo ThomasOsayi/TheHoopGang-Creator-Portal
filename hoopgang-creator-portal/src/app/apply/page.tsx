@@ -9,7 +9,7 @@ import Image from 'next/image';
 import { auth } from '@/lib/firebase';
 import { CreatorApplicationInput, Size } from '@/types';
 import { SIZES } from '@/lib/constants';
-import { createCreator, updateCreator, getCreatorByUserId } from '@/lib/firestore';
+import { createCreator, getCreatorByUserId, createCollaboration } from '@/lib/firestore';
 import { useAuth } from '@/lib/auth-context';
 import { useToast } from '@/components/ui';
 
@@ -23,15 +23,32 @@ export default function ApplyPage() {
   const [verificationStep, setVerificationStep] = useState<'account' | 'verify-pending' | 'application'>('account');
   const [verifyingEmail, setVerifyingEmail] = useState(false);
 
-  // Redirect if user has an active collaboration
+  // Redirect based on creator state (V2 model)
   useEffect(() => {
     const checkExistingApplication = async () => {
-      // ✅ Don't redirect if we just submitted successfully
+      // Don't redirect if we just submitted successfully
       if (user && !success && !loading) {
         try {
           const existingCreator = await getCreatorByUserId(user.uid);
-          if (existingCreator && !['completed', 'denied', 'ghosted'].includes(existingCreator.status)) {
-            router.push('/creator/dashboard');
+          if (existingCreator) {
+            // Blocked creator (ghosted) - show error, don't redirect
+            if (existingCreator.isBlocked) {
+              setError('Your account has been blocked from future collaborations due to unfulfilled content requirements.');
+              setVerificationStep('application'); // Show the form but disabled
+              return;
+            }
+            
+            // Has active collaboration - go to dashboard
+            if (existingCreator.activeCollaborationId) {
+              router.push('/creator/dashboard');
+              return;
+            }
+            
+            // Completed previous collab, no active one - can request new product
+            if (existingCreator.totalCollaborations > 0) {
+              router.push('/creator/request-product');
+              return;
+            }
           }
         } catch (err) {
           console.log('No existing application found, allowing new application');
@@ -39,7 +56,7 @@ export default function ApplyPage() {
       }
     };
     checkExistingApplication();
-  }, [user, router, success, loading]); // ✅ Add success and loading to deps
+  }, [user, router, success, loading]);
 
   // Check if user is already logged in and verified
   useEffect(() => {
@@ -353,23 +370,46 @@ export default function ApplyPage() {
     setLoading(true);
 
     try {
-      // Create the creator document and link to existing user
+      // Check if creator already exists (edge case: user refreshed mid-flow)
+      const existingCreator = await getCreatorByUserId(auth.currentUser.uid);
+      
+      if (existingCreator) {
+        // Handle edge cases
+        if (existingCreator.isBlocked) {
+          setError('Your account has been blocked from future collaborations.');
+          setLoading(false);
+          return;
+        }
+        if (existingCreator.activeCollaborationId) {
+          router.push('/creator/dashboard');
+          return;
+        }
+        if (existingCreator.totalCollaborations > 0) {
+          router.push('/creator/request-product');
+          return;
+        }
+      }
+
+      // V2: Create creator profile (without collaboration data)
       const creatorDocId = await createCreator({
         ...formData,
-        email: auth.currentUser.email || formData.email, // Use verified email
-      });
-      
-      // Update creator with userId
-      await updateCreator(creatorDocId, { userId: auth.currentUser.uid });
+        email: auth.currentUser.email || formData.email,
+      }, auth.currentUser.uid);
 
-      // Update user document with creatorId if needed
+      // V2: Create first collaboration in subcollection
+      await createCollaboration(creatorDocId, {
+        product: formData.product,
+        size: formData.size,
+      });
+
+      // Update user document with creatorId
       const { doc, updateDoc } = await import('firebase/firestore');
       const { db } = await import('@/lib/firebase');
       await updateDoc(doc(db, 'users', auth.currentUser.uid), {
         creatorId: creatorDocId,
       });
 
-      // ✅ Refresh the auth context so userData has the creatorId
+      // Refresh the auth context so userData has the creatorId
       await refreshUserData();
 
       setSuccess(true);
@@ -377,7 +417,7 @@ export default function ApplyPage() {
       showToast('Application submitted! Welcome to HoopGang!', 'success');
 
       setTimeout(() => {
-      router.push('/creator/dashboard');
+        router.push('/creator/dashboard');
       }, 1500);
     } catch (err) {
       console.error('Application error:', err);

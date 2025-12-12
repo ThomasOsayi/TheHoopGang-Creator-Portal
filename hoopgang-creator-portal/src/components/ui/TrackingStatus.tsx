@@ -14,11 +14,13 @@ interface TrackingStatusProps {
   trackingNumber?: string;
   carrier?: Carrier;
   creatorId: string;
-  onRefresh?: () => void; // Kept for backward compatibility with handleDelete callback
+  collaborationId: string; // V2: Required for subcollection updates
+  onRefresh?: () => void;
 }
 
 interface AddTrackingFormProps {
   creatorId: string;
+  collaborationId: string; // V2: Required for subcollection updates
   onSuccess?: () => void;
 }
 
@@ -137,6 +139,7 @@ export default function TrackingStatus({
   trackingNumber,
   carrier,
   creatorId,
+  collaborationId, // V2: New required prop
   onRefresh,
 }: TrackingStatusProps) {
   const { showToast } = useToast();
@@ -151,6 +154,7 @@ export default function TrackingStatus({
   const events = shipment?.events || [];
   const lastUpdate = shipment?.lastUpdate || new Date();
 
+  // V2: Updated to include collaborationId in the API call
   const handleDelete = async () => {
     if (!confirm('Are you sure you want to remove tracking information? This cannot be undone.')) {
       return;
@@ -158,9 +162,11 @@ export default function TrackingStatus({
     
     setIsDeleting(true);
     try {
-      const response = await fetch(`/api/tracking?creatorId=${creatorId}`, {
-        method: 'DELETE',
-      });
+      // V2: Include collaborationId in query params
+      const response = await fetch(
+        `/api/tracking?creatorId=${creatorId}&collaborationId=${collaborationId}`,
+        { method: 'DELETE' }
+      );
       const data = await response.json();
 
       if (data.success) {
@@ -310,9 +316,13 @@ function TrackingEventItem({ event }: { event: TrackingEvent }) {
 
 /**
  * AddTrackingForm Component
- * Form to add tracking information to a creator
+ * Form to add tracking information to a collaboration
  */
-export function AddTrackingForm({ creatorId, onSuccess }: AddTrackingFormProps) {
+export function AddTrackingForm({ 
+  creatorId, 
+  collaborationId, // V2: New required prop
+  onSuccess 
+}: AddTrackingFormProps) {
   const { showToast } = useToast();
   const [trackingNumber, setTrackingNumber] = useState('');
   const [carrier, setCarrier] = useState<Carrier>('yanwen');
@@ -339,6 +349,7 @@ export function AddTrackingForm({ creatorId, onSuccess }: AddTrackingFormProps) 
         },
         body: JSON.stringify({
           creatorId,
+          collaborationId, // V2: Include collaborationId
           trackingNumber: trackingNumber.trim(),
           carrier,
         }),
@@ -411,4 +422,3 @@ export function AddTrackingForm({ creatorId, onSuccess }: AddTrackingFormProps) 
     </div>
   );
 }
-

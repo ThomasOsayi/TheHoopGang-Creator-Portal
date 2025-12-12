@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "migrate:collaborations": "npx tsx scripts/migrate-to-collaborations.ts"
   },
   "dependencies": {
     "@react-email/components": "^1.0.1",

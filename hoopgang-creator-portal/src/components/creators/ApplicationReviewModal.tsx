@@ -2,11 +2,11 @@
 
 'use client';
 
-import { Creator } from '@/types';
+import { CreatorWithCollab } from '@/types';
 import { Button, StatusBadge } from '@/components/ui';
 
 interface ApplicationReviewModalProps {
-  creator: Creator | null;
+  creator: CreatorWithCollab | null;
   isOpen: boolean;
   onClose: () => void;
   onApprove: (id: string) => void;
@@ -37,6 +37,34 @@ export default function ApplicationReviewModal({
   loading = false,
 }: ApplicationReviewModalProps) {
   if (!isOpen || !creator) return null;
+
+  // V2: Get collaboration data
+  const collab = creator.collaboration;
+  const status = collab?.status;
+  const product = collab?.product;
+  const size = collab?.size;
+
+  // If no active collaboration, show error state
+  if (!collab) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div
+          className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+          onClick={onClose}
+        />
+        <div className="relative bg-zinc-900/95 backdrop-blur-md border border-white/10 rounded-2xl w-full max-w-md p-6 text-center">
+          <div className="text-4xl mb-4">⚠️</div>
+          <h2 className="text-xl font-bold text-white mb-2">No Active Collaboration</h2>
+          <p className="text-white/60 mb-6">
+            This creator doesn't have an active collaboration to review.
+          </p>
+          <Button variant="secondary" onClick={onClose}>
+            Close
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   const formattedAddress = [
     creator.shippingAddress.street,
@@ -71,7 +99,7 @@ export default function ApplicationReviewModal({
               <div className="min-w-0">
                 <h2 className="text-lg sm:text-xl font-bold text-white truncate">{creator.fullName}</h2>
                 <p className="text-white/50 text-xs sm:text-sm truncate">
-                  Applied {formatDate(creator.createdAt)} • <span className="font-mono">{creator.creatorId}</span>
+                  Applied {formatDate(collab.createdAt)} • <span className="font-mono">{collab.collabDisplayId}</span>
                 </p>
               </div>
             </div>
@@ -88,12 +116,16 @@ export default function ApplicationReviewModal({
           {/* Quick Stats Bar - Scrollable on mobile */}
           <div className="flex items-center gap-3 sm:gap-4 mt-4 pt-4 border-t border-white/10 overflow-x-auto scrollbar-hide">
             <div className="flex-shrink-0">
-              <StatusBadge status={creator.status} size="sm" />
+              <StatusBadge status={status!} size="sm" />
             </div>
             <div className="h-4 w-px bg-white/10 flex-shrink-0" />
             <div className="flex items-center gap-1.5 text-sm flex-shrink-0">
               <span className="text-white/50">Reach:</span>
               <span className="text-white font-semibold">{formatFollowers(totalFollowers)}</span>
+            </div>
+            <div className="h-4 w-px bg-white/10 flex-shrink-0" />
+            <div className="flex items-center gap-1.5 text-sm text-white/50 flex-shrink-0">
+              <span>Collab #{collab.collabNumber}</span>
             </div>
             {(creator.height || creator.weight) && (
               <>
@@ -120,10 +152,22 @@ export default function ApplicationReviewModal({
             <div className="bg-white/[0.03] border border-white/5 rounded-xl p-3 sm:p-4 hover:bg-white/[0.05] hover:border-white/10 transition-all">
               <h3 className="text-white/40 text-xs uppercase tracking-wider mb-1">Product Request</h3>
               <p className="text-white font-medium text-sm sm:text-base">
-                {creator.product} <span className="text-white/50">• Size {creator.size}</span>
+                {product} <span className="text-white/50">• Size {size}</span>
               </p>
             </div>
           </div>
+
+          {/* Returning Creator Notice - V2 Feature */}
+          {creator.totalCollaborations > 1 && (
+            <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-4">
+              <h3 className="text-purple-400 font-semibold mb-2 flex items-center gap-2">
+                <span>🔄</span> Returning Creator
+              </h3>
+              <p className="text-white/70 text-sm">
+                This creator has completed {creator.totalCollaborations - 1} previous collaboration{creator.totalCollaborations > 2 ? 's' : ''} with HoopGang.
+              </p>
+            </div>
+          )}
 
           {/* Social Stats */}
           <div className="bg-white/[0.03] border border-white/5 rounded-xl p-4 sm:p-5 hover:border-white/10 transition-all">

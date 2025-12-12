@@ -4,8 +4,13 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Creator } from '@/types';
-import { getCreatorByUserId, addContentSubmission } from '@/lib/firestore';
+import { CreatorWithCollab, Collaboration } from '@/types';
+import { 
+  getCreatorWithActiveCollab, 
+  getCreatorByUserId,
+  addContentSubmission,
+  getCollaborationsByCreatorId 
+} from '@/lib/firestore';
 import { SectionCard, Button, useToast, EmptyStateNoTracking } from '@/components/ui';
 import PackageStatusCard from '@/components/ui/PackageStatusCard';
 import { CONTENT_DEADLINE_DAYS } from '@/lib/constants';
@@ -33,7 +38,7 @@ function getFirstName(fullName: string): string {
 export default function CreatorDashboardPage() {
   const { user } = useAuth();
   const { showToast } = useToast();
-  const [creator, setCreator] = useState<Creator | null>(null);
+  const [creator, setCreator] = useState<CreatorWithCollab | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [newContentUrl, setNewContentUrl] = useState<string>('');
@@ -44,6 +49,9 @@ export default function CreatorDashboardPage() {
   const [updatingStats, setUpdatingStats] = useState(false);
   const [newInstagramFollowers, setNewInstagramFollowers] = useState<number>(0);
   const [newTiktokFollowers, setNewTiktokFollowers] = useState<number>(0);
+  
+  // Past collaborations state
+  const [pastCollaborations, setPastCollaborations] = useState<Collaboration[]>([]);
 
   // Fetch creator data
   useEffect(() => {
@@ -58,8 +66,32 @@ export default function CreatorDashboardPage() {
     setLoading(true);
     setError(null);
     try {
-      const creatorData = await getCreatorByUserId(user.uid);
-      setCreator(creatorData);
+      // First get creator by user ID
+      const creatorDoc = await getCreatorByUserId(user.uid);
+      
+      if (!creatorDoc) {
+        setError('Creator profile not found');
+        setLoading(false);
+        return;
+      }
+      
+      // Get creator with active collaboration (V2 model)
+      const creatorData = await getCreatorWithActiveCollab(creatorDoc.id);
+      
+      if (creatorData) {
+        setCreator(creatorData);
+        
+        // Load all collaborations for history
+        const allCollabs = await getCollaborationsByCreatorId(creatorDoc.id);
+        // Filter out the active one to get past collabs
+        const past = allCollabs.filter(c => 
+          c.id !== creatorData.activeCollaborationId && 
+          ['completed', 'ghosted', 'denied'].includes(c.status)
+        );
+        setPastCollaborations(past);
+      } else {
+        setError('Failed to load creator data');
+      }
     } catch (err) {
       console.error('Error fetching creator:', err);
       setError('Failed to load your dashboard. Please try again.');
@@ -145,14 +177,14 @@ export default function CreatorDashboardPage() {
 
   // Calculate days remaining for content deadline
   const getDaysRemaining = (): { days: number | null; label: string } => {
-    if (!creator) return { days: null, label: 'Starts after delivery' };
+    if (!creator || !creator.collaboration) return { days: null, label: 'Starts after delivery' };
 
     let deadline: Date | null = null;
 
-    if (creator.contentDeadline) {
-      deadline = creator.contentDeadline;
-    } else if (creator.deliveredAt) {
-      deadline = new Date(creator.deliveredAt);
+    if (creator.collaboration.contentDeadline) {
+      deadline = creator.collaboration.contentDeadline;
+    } else if (creator.collaboration.deliveredAt) {
+      deadline = new Date(creator.collaboration.deliveredAt);
       deadline.setDate(deadline.getDate() + CONTENT_DEADLINE_DAYS);
     }
 
@@ -169,9 +201,9 @@ export default function CreatorDashboardPage() {
 
   // Determine timeline step states
   const getTimelineSteps = (): Array<{ label: string; status: 'completed' | 'active' | 'pending' | 'failed'; date?: string }> => {
-    if (!creator) return [];
+    if (!creator || !creator.collaboration) return [];
 
-    const status = creator.status;
+    const status = creator.collaboration.status;
     const steps: Array<{ label: string; status: 'completed' | 'active' | 'pending' | 'failed'; date?: string }> = [
       { label: 'Application Received', status: 'completed' },
       { label: 'Application Approved', status: 'pending' },
@@ -213,7 +245,7 @@ export default function CreatorDashboardPage() {
 
     // Add dates from statusHistory if available
     steps.forEach((step, index) => {
-      const statusMap: Record<number, Creator['status']> = {
+      const statusMap: Record<number, string> = {
         0: 'pending',
         1: 'approved',
         2: 'shipped',
@@ -221,8 +253,8 @@ export default function CreatorDashboardPage() {
         4: 'completed',
       };
       const targetStatus = statusMap[index];
-      if (targetStatus && creator.statusHistory) {
-        const historyEntry = creator.statusHistory.find((h) => h.status === targetStatus);
+      if (targetStatus && creator.collaboration?.statusHistory) {
+        const historyEntry = creator.collaboration.statusHistory.find((h: { status: string }) => h.status === targetStatus);
         if (historyEntry) {
           step.date = formatDate(historyEntry.timestamp);
         }
@@ -233,8 +265,8 @@ export default function CreatorDashboardPage() {
   };
 
   // Get status label for stats
-  const getStatusLabel = (status: Creator['status']): string => {
-    const labels: Record<Creator['status'], string> = {
+  const getStatusLabel = (status: string): string => {
+    const labels: Record<string, string> = {
       pending: 'Under Review',
       denied: 'Not Approved',
       approved: 'Approved',
@@ -249,7 +281,7 @@ export default function CreatorDashboardPage() {
   /**
    * Calculates follower growth since signup
    */
-  function getFollowerGrowth(creator: Creator): {
+  function getFollowerGrowth(creator: CreatorWithCollab): {
     instagram: { current: number; original: number; change: number; percent: string };
     tiktok: { current: number; original: number; change: number; percent: string };
     lastUpdated: Date | null;
@@ -323,7 +355,7 @@ export default function CreatorDashboardPage() {
   const firstName = getFirstName(creator.fullName);
   const timelineSteps = getTimelineSteps();
   const daysRemaining = getDaysRemaining();
-  const videosSubmitted = creator.contentSubmissions.length;
+  const videosSubmitted = creator.collaboration?.contentSubmissions.length || 0;
 
   return (
     <ProtectedRoute allowedRoles={['creator']} requireApplication>
@@ -368,7 +400,16 @@ export default function CreatorDashboardPage() {
             </div>
             
             <div className="relative">
-              {creator.status === 'pending' ? (
+              {!creator.collaboration ? (
+                <>
+                  <h1 className="text-2xl md:text-3xl font-bold text-white mb-2 group-hover:text-orange-100 transition-colors">
+                    Welcome, {firstName}! 🏀
+                  </h1>
+                  <p className="text-white/70 group-hover:text-white/90 transition-colors">
+                    No active collaboration
+                  </p>
+                </>
+              ) : creator.collaboration.status === 'pending' ? (
                 <>
                   <h1 className="text-2xl md:text-3xl font-bold text-white mb-2 group-hover:text-orange-100 transition-colors">
                     Welcome, {firstName}! 🏀
@@ -377,7 +418,7 @@ export default function CreatorDashboardPage() {
                     Thanks for applying to join HoopGang
                   </p>
                 </>
-              ) : creator.status === 'denied' ? (
+              ) : creator.collaboration.status === 'denied' ? (
                 <>
                   <h1 className="text-2xl md:text-3xl font-bold text-white mb-2 group-hover:text-orange-100 transition-colors">
                     Hey, {firstName} 🏀
@@ -400,7 +441,7 @@ export default function CreatorDashboardPage() {
         </div>
 
           {/* Quick Stats Bar */}
-          {!['pending', 'denied'].includes(creator.status) && (
+          {creator.collaboration && !['pending', 'denied'].includes(creator.collaboration.status) && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
               <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-xl p-4 text-center hover:bg-white/[0.08] hover:border-orange-500/30 hover:shadow-lg hover:shadow-orange-500/10 transition-all duration-300">
                 <div className="flex justify-center mb-1">
@@ -409,7 +450,7 @@ export default function CreatorDashboardPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
                 </div>
-                <div className="text-white font-semibold text-sm">{getStatusLabel(creator.status)}</div>
+                <div className="text-white font-semibold text-sm">{getStatusLabel(creator.collaboration.status)}</div>
                 <div className="text-white/50 text-xs">Current Status</div>
               </div>
               <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-xl p-4 text-center hover:bg-white/[0.08] hover:border-orange-500/30 hover:shadow-lg hover:shadow-orange-500/10 transition-all duration-300">
@@ -440,14 +481,14 @@ export default function CreatorDashboardPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                   </svg>
                 </div>
-                <div className="text-white font-semibold text-sm truncate">{creator.product}</div>
-                <div className="text-white/50 text-xs">Size {creator.size}</div>
+                <div className="text-white font-semibold text-sm truncate">{creator.collaboration.product}</div>
+                <div className="text-white/50 text-xs">Size {creator.collaboration.size}</div>
               </div>
             </div>
           )}
 
           {/* Completion Banner */}
-          {creator.contentSubmissions.length >= 3 && creator.status !== 'completed' && (
+          {creator.collaboration && creator.collaboration.contentSubmissions.length >= 3 && creator.collaboration.status !== 'completed' && (
             <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 rounded-2xl p-6 mb-6">
               <div className="flex items-center gap-4">
                 <div className="text-4xl">🎉</div>
@@ -462,27 +503,64 @@ export default function CreatorDashboardPage() {
           )}
 
           {/* Already Completed Banner */}
-          {creator.status === 'completed' && (
+          {creator.collaboration?.status === 'completed' && (
             <div className="bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border border-cyan-500/30 rounded-2xl p-6 mb-6">
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
                   <div className="text-4xl">🏆</div>
-            <div>
+                  <div>
                     <h2 className="text-lg font-bold text-cyan-400">Collaboration Complete!</h2>
                     <p className="text-white/60 text-sm">You crushed it! Thanks for being part of HoopGang.</p>
                   </div>
                 </div>
-                <Link href="/apply">
+                <Link href="/creator/request-product">
                   <Button variant="secondary" className="bg-white/20 hover:bg-white/30 text-white">
-                    Start New Collab
+                    Request New Product
                   </Button>
                 </Link>
               </div>
             </div>
           )}
 
+          {/* No Active Collaboration - Can Request New Product */}
+          {!creator.collaboration && !creator.isBlocked && creator.totalCollaborations > 0 && (
+            <div className="bg-gradient-to-r from-purple-500/20 to-indigo-500/20 border border-purple-500/30 rounded-2xl p-6 mb-6">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="text-4xl">🎯</div>
+                  <div>
+                    <h2 className="text-lg font-bold text-purple-400">Ready for Another Collab?</h2>
+                    <p className="text-white/60 text-sm">
+                      You've completed {creator.totalCollaborations} collaboration{creator.totalCollaborations > 1 ? 's' : ''}. Request your next product!
+                    </p>
+                  </div>
+                </div>
+                <Link href="/creator/request-product">
+                  <Button variant="primary">
+                    Request New Product
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          )}
+
+          {/* Blocked Creator Banner */}
+          {creator.isBlocked && (
+            <div className="bg-gradient-to-r from-red-500/20 to-rose-500/20 border border-red-500/30 rounded-2xl p-6 mb-6">
+              <div className="flex items-center gap-4">
+                <div className="text-4xl">🚫</div>
+                <div>
+                  <h2 className="text-lg font-bold text-red-400">Account Blocked</h2>
+                  <p className="text-white/60 text-sm">
+                    Your account has been blocked from future collaborations due to unfulfilled content requirements.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Pending Status Banner */}
-          {creator.status === 'pending' && (
+          {creator.collaboration?.status === 'pending' && (
             <div className="bg-gradient-to-r from-yellow-500/20 to-amber-500/20 border border-yellow-500/30 rounded-2xl p-6 mb-6">
               <div className="flex items-center gap-4">
                 <div className="text-4xl animate-pulse">⏳</div>
@@ -497,7 +575,7 @@ export default function CreatorDashboardPage() {
           )}
 
           {/* Denied Status Banner */}
-          {creator.status === 'denied' && (
+          {creator.collaboration?.status === 'denied' && (
             <div className="bg-gradient-to-r from-red-500/20 to-rose-500/20 border border-red-500/30 rounded-2xl p-6 mb-6">
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
@@ -517,7 +595,7 @@ export default function CreatorDashboardPage() {
           )}
 
           {/* Main Two-Column Grid - Only show for active/shipped/delivered/completed/ghosted */}
-          {!['pending', 'denied'].includes(creator.status) && (
+          {creator.collaboration && !['pending', 'denied'].includes(creator.collaboration.status) && (
             <div className="grid lg:grid-cols-5 gap-6">
               {/* Left Column - Timeline (2/5 width on desktop) */}
               <div className="lg:col-span-2">
@@ -581,14 +659,14 @@ export default function CreatorDashboardPage() {
             {/* Right Column - Package & Content (3/5 width on desktop) */}
             <div className="lg:col-span-3 space-y-6">
               {/* Package Status Card */}
-              {['approved', 'shipped', 'delivered', 'completed', 'ghosted'].includes(creator.status) && (
-                creator.trackingNumber || creator.status !== 'approved' ? (
+              {creator.collaboration && ['approved', 'shipped', 'delivered', 'completed', 'ghosted'].includes(creator.collaboration.status) && (
+                creator.collaboration.trackingNumber || creator.collaboration.status !== 'approved' ? (
                   <PackageStatusCard
-                    collaborationStatus={creator.status as 'approved' | 'shipped' | 'delivered' | 'completed' | 'ghosted'}
-                    trackingNumber={creator.trackingNumber}
-                    carrier={creator.carrier}
-                    shippedAt={creator.shippedAt}
-                    deliveredAt={creator.deliveredAt}
+                    collaborationStatus={creator.collaboration.status as 'approved' | 'shipped' | 'delivered' | 'completed' | 'ghosted'}
+                    trackingNumber={creator.collaboration.trackingNumber}
+                    carrier={creator.collaboration.carrier}
+                    shippedAt={creator.collaboration.shippedAt}
+                    deliveredAt={creator.collaboration.deliveredAt}
                   />
                 ) : (
                   <SectionCard title="Your Package" icon="📦" className="hover:border-white/20 transition-all duration-300">
@@ -598,7 +676,7 @@ export default function CreatorDashboardPage() {
               )}
 
               {/* Content Submission Card */}
-              {!['pending', 'denied'].includes(creator.status) && (
+              {creator.collaboration && !['pending', 'denied'].includes(creator.collaboration.status) && (
                 <SectionCard title="Submit Your Content" icon="🎥" className="hover:border-white/20 transition-all duration-300">
                   {/* Progress indicator */}
                   <div className="mb-6">
@@ -620,9 +698,9 @@ export default function CreatorDashboardPage() {
                   </div>
 
           {[0, 1, 2].map((index) => {
-            const submission = creator.contentSubmissions[index];
-            const isNextToSubmit = index === creator.contentSubmissions.length;
-            const isPending = index > creator.contentSubmissions.length;
+            const submission = creator.collaboration?.contentSubmissions[index];
+            const isNextToSubmit = index === (creator.collaboration?.contentSubmissions.length || 0);
+            const isPending = index > (creator.collaboration?.contentSubmissions.length || 0);
 
             return (
               <div
@@ -696,7 +774,7 @@ export default function CreatorDashboardPage() {
           )}
 
           {/* Bottom Section - Agreement, Stats & Perks (Full Width) */}
-          {!['pending', 'denied'].includes(creator.status) && (
+          {creator.collaboration && !['pending', 'denied'].includes(creator.collaboration.status) && (
             <div className="grid md:grid-cols-3 gap-6 mt-6">
               {/* Agreement Card */}
               <div className="bg-white/[0.03] backdrop-blur-sm border border-white/10 rounded-2xl p-6 hover:border-white/15 transition-all duration-300">
@@ -719,11 +797,11 @@ export default function CreatorDashboardPage() {
                 </div>
 
                 {/* Deadline info */}
-                {creator.deliveredAt && creator.contentDeadline && (
+                {creator.collaboration?.deliveredAt && creator.collaboration.contentDeadline && (
                   <div className="mt-4 pt-4 border-t border-white/10">
                     <div className="flex justify-between text-xs">
-                      <span className="text-white/40">Started: {formatDate(creator.deliveredAt)}</span>
-                      <span className="text-white/40">Due: {formatDate(creator.contentDeadline)}</span>
+                      <span className="text-white/40">Started: {formatDate(creator.collaboration.deliveredAt)}</span>
+                      <span className="text-white/40">Due: {formatDate(creator.collaboration.contentDeadline)}</span>
                     </div>
                   </div>
                 )}
@@ -812,8 +890,8 @@ export default function CreatorDashboardPage() {
                 <div className="grid grid-cols-2 gap-3">
                   {[
                     { icon: '⭐', text: 'Get featured', unlocked: videosSubmitted >= 3 },
-                    { icon: '🎁', text: 'Early drops', unlocked: creator.status === 'completed' },
-                    { icon: '💰', text: 'Paid collabs', unlocked: creator.status === 'completed' },
+                    { icon: '🎁', text: 'Early drops', unlocked: creator.collaboration?.status === 'completed' },
+                    { icon: '💰', text: 'Paid collabs', unlocked: creator.collaboration?.status === 'completed' },
                     { icon: '🏀', text: 'Creator Squad', unlocked: videosSubmitted >= 1 },
             ].map((perk, index) => (
                     <div 
@@ -837,7 +915,7 @@ export default function CreatorDashboardPage() {
           )}
 
           {/* Pending/Denied Timeline Only */}
-          {['pending', 'denied'].includes(creator.status) && (
+          {creator.collaboration && ['pending', 'denied'].includes(creator.collaboration.status) && (
             <SectionCard title="Your Journey" icon="📋" className="hover:border-white/20 transition-all duration-300">
               <div className="relative">
                 <div className="absolute left-2 top-0 bottom-0 w-0.5 bg-white/10" />
@@ -975,6 +1053,69 @@ export default function CreatorDashboardPage() {
                   </button>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Past Collaborations Section */}
+          {pastCollaborations.length > 0 && (
+            <div className="mt-6">
+              <SectionCard title="Past Collaborations" icon="📜" className="hover:border-white/20 transition-all duration-300">
+                <div className="space-y-3">
+                  {pastCollaborations.map((collab) => (
+                    <div 
+                      key={collab.id}
+                      className={`flex items-center justify-between p-4 rounded-xl border ${
+                        collab.status === 'completed' 
+                          ? 'bg-green-500/5 border-green-500/20' 
+                          : collab.status === 'denied'
+                            ? 'bg-yellow-500/5 border-yellow-500/20'
+                            : 'bg-red-500/5 border-red-500/20'
+                      }`}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg ${
+                          collab.status === 'completed' 
+                            ? 'bg-green-500/20' 
+                            : collab.status === 'denied'
+                              ? 'bg-yellow-500/20'
+                              : 'bg-red-500/20'
+                        }`}>
+                          {collab.status === 'completed' ? '✓' : collab.status === 'denied' ? '—' : '✗'}
+                        </div>
+                        <div>
+                          <div className="text-white font-medium">
+                            {collab.product} <span className="text-white/50 text-sm">({collab.size})</span>
+                          </div>
+                          <div className="text-white/50 text-xs">
+                            Collab #{collab.collabNumber} • {formatDate(collab.createdAt)}
+                          </div>
+                        </div>
+                      </div>
+                      <div className={`text-xs font-medium px-3 py-1 rounded-full ${
+                        collab.status === 'completed' 
+                          ? 'bg-green-500/20 text-green-400' 
+                          : collab.status === 'denied'
+                            ? 'bg-yellow-500/20 text-yellow-400'
+                            : 'bg-red-500/20 text-red-400'
+                      }`}>
+                        {collab.status === 'completed' ? 'Completed' : collab.status === 'denied' ? 'Not Approved' : 'Ghosted'}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Stats summary */}
+                <div className="mt-4 pt-4 border-t border-white/10 flex justify-between text-sm">
+                  <span className="text-white/50">
+                    Total collaborations: <span className="text-white font-medium">{creator.totalCollaborations}</span>
+                  </span>
+                  <span className="text-white/50">
+                    Completed: <span className="text-green-400 font-medium">
+                      {pastCollaborations.filter(c => c.status === 'completed').length + (creator.collaboration?.status === 'completed' ? 1 : 0)}
+                    </span>
+                  </span>
+                </div>
+              </SectionCard>
             </div>
           )}
       </div>

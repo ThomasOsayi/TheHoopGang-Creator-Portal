@@ -1,23 +1,35 @@
 // src/app/api/tracking/route.ts
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getCreatorById, updateCreator } from '@/lib/firestore';
+import { 
+  getCreatorById, 
+  getCollaborationById,
+  updateCollaboration 
+} from '@/lib/firestore';
 import { sendShippedEmail } from '@/lib/email/send-email';
 import { Carrier } from '@/types';
 
 /**
  * POST /api/tracking
- * Saves tracking info and sends shipped email (no external API calls)
+ * V2: Saves tracking info to collaboration subcollection and sends shipped email
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { creatorId, trackingNumber, carrier } = body;
+    const { creatorId, collaborationId, trackingNumber, carrier } = body;
 
     // Validate inputs
     if (!creatorId || typeof creatorId !== 'string') {
       return NextResponse.json(
         { success: false, error: 'creatorId is required' },
+        { status: 400 }
+      );
+    }
+
+    // V2: collaborationId is now required
+    if (!collaborationId || typeof collaborationId !== 'string') {
+      return NextResponse.json(
+        { success: false, error: 'collaborationId is required' },
         { status: 400 }
       );
     }
@@ -39,7 +51,7 @@ export async function POST(request: NextRequest) {
     // Clean tracking number: uppercase, no spaces
     const cleanedTrackingNumber = trackingNumber.trim().toUpperCase().replace(/\s+/g, '');
 
-    // Get creator
+    // Get creator (for email info)
     const creator = await getCreatorById(creatorId);
     if (!creator) {
       return NextResponse.json(
@@ -48,8 +60,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Update creator in Firestore (simple - no TrackingMore API)
-    await updateCreator(creatorId, {
+    // V2: Verify collaboration exists
+    const collaboration = await getCollaborationById(creatorId, collaborationId);
+    if (!collaboration) {
+      return NextResponse.json(
+        { success: false, error: 'Collaboration not found' },
+        { status: 404 }
+      );
+    }
+
+    // V2: Update COLLABORATION in Firestore (not creator)
+    await updateCollaboration(creatorId, collaborationId, {
       trackingNumber: cleanedTrackingNumber,
       carrier: carrier as Carrier,
       status: 'shipped',
@@ -85,13 +106,14 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * GET /api/tracking?creatorId=xxx
- * Returns tracking information for a creator
+ * GET /api/tracking?creatorId=xxx&collaborationId=yyy
+ * V2: Returns tracking information for a specific collaboration
  */
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const creatorId = searchParams.get('creatorId');
+    const collaborationId = searchParams.get('collaborationId');
 
     if (!creatorId) {
       return NextResponse.json(
@@ -100,28 +122,37 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get creator
-    const creator = await getCreatorById(creatorId);
-    if (!creator) {
+    // V2: collaborationId is now required
+    if (!collaborationId) {
       return NextResponse.json(
-        { success: false, error: 'Creator not found' },
+        { success: false, error: 'collaborationId query parameter is required' },
+        { status: 400 }
+      );
+    }
+
+    // V2: Get collaboration instead of creator
+    const collaboration = await getCollaborationById(creatorId, collaborationId);
+    if (!collaboration) {
+      return NextResponse.json(
+        { success: false, error: 'Collaboration not found' },
         { status: 404 }
       );
     }
 
     // Return tracking info if it exists
-    if (!creator.trackingNumber || !creator.carrier) {
+    if (!collaboration.trackingNumber || !collaboration.carrier) {
       return NextResponse.json(
-        { success: false, error: 'No tracking information found for this creator' },
+        { success: false, error: 'No tracking information found for this collaboration' },
         { status: 400 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      trackingNumber: creator.trackingNumber,
-      carrier: creator.carrier,
-      status: creator.status,
+      trackingNumber: collaboration.trackingNumber,
+      carrier: collaboration.carrier,
+      status: collaboration.status,
+      shipment: collaboration.shipment,
     });
   } catch (error: any) {
     console.error('Error fetching tracking:', error);
@@ -133,13 +164,14 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * DELETE /api/tracking?creatorId=xxx
- * Removes tracking information from creator
+ * DELETE /api/tracking?creatorId=xxx&collaborationId=yyy
+ * V2: Removes tracking information from collaboration
  */
 export async function DELETE(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const creatorId = searchParams.get('creatorId');
+    const collaborationId = searchParams.get('collaborationId');
 
     if (!creatorId) {
       return NextResponse.json(
@@ -148,19 +180,28 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Get creator to verify it exists
-    const creator = await getCreatorById(creatorId);
-    if (!creator) {
+    // V2: collaborationId is now required
+    if (!collaborationId) {
       return NextResponse.json(
-        { success: false, error: 'Creator not found' },
+        { success: false, error: 'collaborationId query parameter is required' },
+        { status: 400 }
+      );
+    }
+
+    // V2: Verify collaboration exists
+    const collaboration = await getCollaborationById(creatorId, collaborationId);
+    if (!collaboration) {
+      return NextResponse.json(
+        { success: false, error: 'Collaboration not found' },
         { status: 404 }
       );
     }
 
-    // Remove tracking information
-    await updateCreator(creatorId, {
+    // V2: Remove tracking information from COLLABORATION
+    await updateCollaboration(creatorId, collaborationId, {
       trackingNumber: null as any,
       carrier: null as any,
+      shipment: null as any,
     });
 
     return NextResponse.json({
