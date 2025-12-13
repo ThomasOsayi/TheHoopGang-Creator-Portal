@@ -226,6 +226,7 @@ export interface V3ContentSubmission {
   // Tracking
   submittedAt: Date;
   weekOf: string;                       // ISO week: "2025-W50"
+  competitionId?: string;               // Optional: ID of competition this submission is part of
 }
 
 /**
@@ -279,7 +280,7 @@ export interface Reward {
 /**
  * Redemptions - tracks reward fulfillment
  */
-export type RedemptionSource = 'milestone_submission' | 'volume_win' | 'gmv_win';
+export type RedemptionSource = 'milestone_submission' | 'volume_win' | 'gmv_win' | 'competition_win';
 export type RedemptionStatus = 'pending' | 'approved' | 'fulfilled' | 'rejected';
 export type CashMethod = 'paypal' | 'venmo';
 
@@ -330,4 +331,33 @@ export interface V3MilestoneStats {
 export interface V3CreatorStats {
   volume: V3VolumeStats;
   milestone: V3MilestoneStats;
+}
+
+// ===== COMPETITION TYPES =====
+
+export type CompetitionStatus = 'pending' | 'active' | 'ended' | 'finalized';
+
+export interface Competition {
+  id: string;
+  type: 'volume' | 'gmv';
+  status: CompetitionStatus;
+  name: string;
+  startedAt: Date | null;
+  endsAt: Date | null;
+  endedAt: Date | null;           // Actual end time (could be early)
+  finalizedAt: Date | null;
+  finalizedBy: string | null;
+  durationDays: number;
+  winners: CompetitionWinner[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CompetitionWinner {
+  rank: number;
+  creatorId: string;
+  creatorName: string;
+  creatorHandle: string;
+  value: number;
+  rewardAmount: number;
 }

@@ -43,6 +43,9 @@ import {
   V3VolumeStats,
   V3MilestoneStats,
   V3CreatorStats,
+  Competition,
+  CompetitionStatus,
+  CompetitionWinner,
 } from '@/types';
 import { generateCreatorId, MAX_CONTENT_SUBMISSIONS } from './constants';
 
@@ -53,6 +56,7 @@ const V3_SUBMISSIONS_COLLECTION = 'v3ContentSubmissions';
 const LEADERBOARD_COLLECTION = 'leaderboardEntries';
 const REWARDS_COLLECTION = 'rewards';
 const REDEMPTIONS_COLLECTION = 'redemptions';
+const COMPETITIONS_COLLECTION = 'competitions';
 
 /**
  * Recursively converts Firestore Timestamps to JavaScript Dates
@@ -81,6 +85,18 @@ function convertTimestamps<T>(data: any): T {
   }
 
   return data;
+}
+
+/**
+ * Helper to safely convert Firestore Timestamp to Date
+ * Handles multiple formats: Date, Timestamp with toDate(), and plain {seconds, nanoseconds} objects
+ */
+function toDate(value: any): Date | null {
+  if (!value) return null;
+  if (value instanceof Date) return value;
+  if (typeof value.toDate === 'function') return value.toDate();
+  if (value.seconds) return new Date(value.seconds * 1000);
+  return null;
 }
 
 /**
@@ -1327,3 +1343,273 @@ export async function getRedemptionById(id: string): Promise<Redemption | null> 
   return convertTimestamps<Redemption>({ id: docSnap.id, ...docSnap.data() });
 }
 
+// ============ COMPETITIONS ============
+
+/**
+ * Get the currently active competition (only one allowed at a time)
+ */
+export async function getActiveCompetition(type: 'volume' | 'gmv' = 'volume'): Promise<Competition | null> {
+  const q = query(
+    collection(db, COMPETITIONS_COLLECTION),
+    where('type', '==', type),
+    where('status', '==', 'active'),
+    limit(1)
+  );
+  
+  const snapshot = await getDocs(q);
+  if (snapshot.empty) return null;
+  
+  const docSnap = snapshot.docs[0];
+  const data = docSnap.data();
+  
+  return {
+    id: docSnap.id,
+    type: data.type,
+    status: data.status,
+    name: data.name,
+    durationDays: data.durationDays,
+    winners: data.winners || [],
+    finalizedBy: data.finalizedBy,
+    startedAt: toDate(data.startedAt),
+    endsAt: toDate(data.endsAt),
+    endedAt: toDate(data.endedAt),
+    finalizedAt: toDate(data.finalizedAt),
+    createdAt: toDate(data.createdAt) || new Date(),
+    updatedAt: toDate(data.updatedAt) || new Date(),
+  } as Competition;
+}
+
+/**
+ * Get competition by ID
+ */
+export async function getCompetitionById(competitionId: string): Promise<Competition | null> {
+  const docRef = doc(db, COMPETITIONS_COLLECTION, competitionId);
+  const docSnap = await getDoc(docRef);
+  
+  if (!docSnap.exists()) return null;
+  
+  const data = docSnap.data();
+  
+  return {
+    id: docSnap.id,
+    type: data.type,
+    status: data.status,
+    name: data.name,
+    durationDays: data.durationDays,
+    winners: data.winners || [],
+    finalizedBy: data.finalizedBy,
+    startedAt: toDate(data.startedAt),
+    endsAt: toDate(data.endsAt),
+    endedAt: toDate(data.endedAt),
+    finalizedAt: toDate(data.finalizedAt),
+    createdAt: toDate(data.createdAt) || new Date(),
+    updatedAt: toDate(data.updatedAt) || new Date(),
+  } as Competition;
+}
+
+/**
+ * Get recent competitions (for history)
+ */
+export async function getRecentCompetitions(
+  type: 'volume' | 'gmv' = 'volume',
+  limitCount: number = 10
+): Promise<Competition[]> {
+  const q = query(
+    collection(db, COMPETITIONS_COLLECTION),
+    where('type', '==', type),
+    orderBy('createdAt', 'desc'),
+    limit(limitCount)
+  );
+  
+  const snapshot = await getDocs(q);
+  
+  return snapshot.docs.map(docSnap => {
+    const data = docSnap.data();
+    return {
+      id: docSnap.id,
+      type: data.type,
+      status: data.status,
+      name: data.name,
+      durationDays: data.durationDays,
+      winners: data.winners || [],
+      finalizedBy: data.finalizedBy,
+      startedAt: toDate(data.startedAt),
+      endsAt: toDate(data.endsAt),
+      endedAt: toDate(data.endedAt),
+      finalizedAt: toDate(data.finalizedAt),
+      createdAt: toDate(data.createdAt) || new Date(),
+      updatedAt: toDate(data.updatedAt) || new Date(),
+    } as Competition;
+  });
+}
+
+/**
+ * Create a new competition and start it immediately
+ */
+export async function startCompetition(
+  type: 'volume' | 'gmv',
+  name: string,
+  durationDays: number = 7,
+  adminId: string
+): Promise<string> {
+  // Check if there's already an active competition
+  const existing = await getActiveCompetition(type);
+  if (existing) {
+    throw new Error(`There is already an active ${type} competition`);
+  }
+  
+  const now = new Date();
+  const endsAt = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000);
+  
+  const docRef = await addDoc(collection(db, COMPETITIONS_COLLECTION), {
+    type,
+    status: 'active',
+    name,
+    startedAt: Timestamp.fromDate(now),
+    endsAt: Timestamp.fromDate(endsAt),
+    endedAt: null,
+    finalizedAt: null,
+    finalizedBy: null,
+    durationDays,
+    winners: [],
+    createdAt: Timestamp.fromDate(now),
+    updatedAt: Timestamp.fromDate(now),
+  });
+  
+  return docRef.id;
+}
+
+/**
+ * End a competition (sets status to 'ended')
+ */
+export async function endCompetition(competitionId: string): Promise<void> {
+  const docRef = doc(db, COMPETITIONS_COLLECTION, competitionId);
+  const now = new Date();
+  await updateDoc(docRef, {
+    status: 'ended',
+    endedAt: Timestamp.fromDate(now),
+    updatedAt: Timestamp.fromDate(now),
+  });
+}
+
+/**
+ * Finalize a competition (create redemptions for winners)
+ */
+export async function finalizeCompetition(
+  competitionId: string,
+  winners: CompetitionWinner[],
+  adminId: string
+): Promise<void> {
+  const docRef = doc(db, COMPETITIONS_COLLECTION, competitionId);
+  const now = new Date();
+  await updateDoc(docRef, {
+    status: 'finalized',
+    winners,
+    finalizedAt: Timestamp.fromDate(now),
+    finalizedBy: adminId,
+    updatedAt: Timestamp.fromDate(now),
+  });
+}
+
+/**
+ * Get leaderboard for a specific competition
+ */
+export async function getCompetitionLeaderboard(
+  competitionId: string,
+  limitCount: number = 25
+): Promise<LeaderboardEntry[]> {
+  // Query submissions for this competition, group by creator
+  const q = query(
+    collection(db, V3_SUBMISSIONS_COLLECTION),
+    where('competitionId', '==', competitionId),
+    where('type', '==', 'volume'),
+    where('status', '==', 'approved')
+  );
+  
+  const snapshot = await getDocs(q);
+  
+  // Group by creator and count
+  const creatorCounts: Record<string, { 
+    count: number; 
+    creatorId: string;
+  }> = {};
+  
+  snapshot.docs.forEach(docSnap => {
+    const data = docSnap.data();
+    const creatorId = data.creatorId;
+    
+    if (!creatorCounts[creatorId]) {
+      creatorCounts[creatorId] = {
+        count: 0,
+        creatorId,
+      };
+    }
+    creatorCounts[creatorId].count++;
+  });
+  
+  // Fetch creator info for each unique creator
+  const creatorInfoPromises = Object.keys(creatorCounts).map(async (creatorId) => {
+    const creator = await getCreatorById(creatorId);
+    return {
+      creatorId,
+      creatorName: creator?.fullName || 'Unknown',
+      creatorHandle: creator?.tiktokHandle || 'unknown',
+    };
+  });
+  
+  const creatorInfos = await Promise.all(creatorInfoPromises);
+  const creatorInfoMap = new Map(creatorInfos.map(info => [info.creatorId, info]));
+  
+  // Sort by count and assign ranks
+  const sorted = Object.entries(creatorCounts)
+    .map(([creatorId, data]) => {
+      const info = creatorInfoMap.get(creatorId);
+      return {
+        ...data,
+        creatorName: info?.creatorName || 'Unknown',
+        creatorHandle: info?.creatorHandle || 'unknown',
+      };
+    })
+    .sort((a, b) => b.count - a.count)
+    .slice(0, limitCount);
+  
+  return sorted.map((entry, index) => ({
+    id: `${competitionId}-${entry.creatorId}`,
+    type: 'volume' as LeaderboardType,
+    period: competitionId,
+    creatorId: entry.creatorId,
+    creatorName: entry.creatorName,
+    creatorHandle: entry.creatorHandle,
+    value: entry.count,
+    rank: index + 1,
+    updatedAt: new Date(),
+  }));
+}
+
+/**
+ * Recalculate competition leaderboard and update leaderboardEntries
+ */
+export async function recalculateCompetitionLeaderboard(competitionId: string): Promise<void> {
+  const entries = await getCompetitionLeaderboard(competitionId, 100);
+  
+  const batch = writeBatch(db);
+  
+  for (const entry of entries) {
+    const entryId = `${competitionId}-${entry.creatorId}`;
+    const docRef = doc(db, LEADERBOARD_COLLECTION, entryId);
+    
+    batch.set(docRef, {
+      type: 'volume',
+      period: competitionId,
+      competitionId,
+      creatorId: entry.creatorId,
+      creatorName: entry.creatorName,
+      creatorHandle: entry.creatorHandle,
+      value: entry.value,
+      rank: entry.rank,
+      updatedAt: Timestamp.fromDate(new Date()),
+    }, { merge: true });
+  }
+  
+  await batch.commit();
+}
