@@ -31,6 +31,11 @@ export default function VolumeLeaderboardAdminPage() {
   const [error, setError] = useState<string | null>(null);
   const [finalizing, setFinalizing] = useState(false);
   
+  // Modal state
+  const [selectedCreator, setSelectedCreator] = useState<LeaderboardEntry | null>(null);
+  const [creatorSubmissions, setCreatorSubmissions] = useState<any[]>([]);
+  const [loadingSubmissions, setLoadingSubmissions] = useState(false);
+  
   // Period selection
   const [selectedWeek, setSelectedWeek] = useState(getCurrentWeek());
   const weekOptions = getPreviousWeeks(8);
@@ -130,6 +135,43 @@ export default function VolumeLeaderboardAdminPage() {
     } finally {
       setFinalizing(false);
     }
+  };
+
+  const loadCreatorSubmissions = async (creatorId: string, creatorName: string, entry: LeaderboardEntry) => {
+    setSelectedCreator(entry);
+    setLoadingSubmissions(true);
+    setCreatorSubmissions([]);
+    
+    try {
+      const token = await getAuthToken();
+      if (!token) return;
+
+      const response = await fetch(
+        `/api/admin/submissions?type=volume&weekOf=${selectedWeek}&creatorId=${creatorId}&limit=50`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch submissions');
+      }
+
+      const data = await response.json();
+      setCreatorSubmissions(data.submissions);
+    } catch (err) {
+      console.error('Error loading submissions:', err);
+      setCreatorSubmissions([]);
+    } finally {
+      setLoadingSubmissions(false);
+    }
+  };
+
+  const closeModal = () => {
+    setSelectedCreator(null);
+    setCreatorSubmissions([]);
   };
 
   const getRankDisplay = (rank: number) => {
@@ -318,7 +360,8 @@ export default function VolumeLeaderboardAdminPage() {
                 return (
                   <div 
                     key={entry.id}
-                    className={`flex items-center gap-4 p-4 hover:bg-zinc-700/20 transition-colors ${
+                    onClick={() => loadCreatorSubmissions(entry.creatorId, entry.creatorName, entry)}
+                    className={`flex items-center gap-4 p-4 hover:bg-zinc-700/20 transition-colors cursor-pointer ${
                       entry.rank <= 3 ? 'bg-zinc-700/10' : ''
                     }`}
                   >
@@ -353,6 +396,113 @@ export default function VolumeLeaderboardAdminPage() {
             </div>
           )}
         </div>
+
+        {/* Creator Submissions Modal */}
+        {selectedCreator && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div 
+              className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+              onClick={closeModal}
+            />
+            <div className="relative bg-zinc-900 border border-zinc-700 rounded-2xl p-6 max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+              {/* Modal Header */}
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-xl font-bold text-white">
+                    {selectedCreator.creatorName}'s Submissions
+                  </h3>
+                  <p className="text-zinc-400 text-sm">
+                    @{selectedCreator.creatorHandle} • Week {selectedWeek} • {selectedCreator.value} posts
+                  </p>
+                </div>
+                <button
+                  onClick={closeModal}
+                  className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              
+              {/* Submissions List */}
+              <div className="flex-1 overflow-y-auto">
+                {loadingSubmissions ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-orange-500"></div>
+                  </div>
+                ) : creatorSubmissions.length === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="text-4xl mb-2">📭</div>
+                    <p className="text-zinc-400">No submissions found</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {creatorSubmissions.map((submission, index) => (
+                      <div 
+                        key={submission.id}
+                        className="p-4 bg-zinc-800/50 rounded-xl border border-zinc-700/50"
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-zinc-400 text-sm font-medium">#{index + 1}</span>
+                              <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                                submission.status === 'approved' 
+                                  ? 'bg-green-500/20 text-green-400' 
+                                  : 'bg-yellow-500/20 text-yellow-400'
+                              }`}>
+                                {submission.status}
+                              </span>
+                            </div>
+                            
+                            <a
+                              href={submission.tiktokUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-orange-400 hover:text-orange-300 text-sm break-all line-clamp-2"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {submission.tiktokUrl}
+                            </a>
+                            <p className="text-zinc-500 text-xs mt-2">
+                              Submitted: {new Date(submission.submittedAt).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </p>
+                          </div>
+                          
+                          <a
+                            href={submission.tiktokUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="px-3 py-1.5 bg-zinc-700 hover:bg-zinc-600 text-white text-sm rounded-lg transition-colors flex-shrink-0"
+                          >
+                            Open ↗
+                          </a>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
+              {/* Modal Footer */}
+              <div className="mt-4 pt-4 border-t border-zinc-700 flex justify-end">
+                <button
+                  onClick={closeModal}
+                  className="px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-white font-medium rounded-lg transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

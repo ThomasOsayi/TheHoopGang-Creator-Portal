@@ -23,6 +23,7 @@ export async function GET(request: NextRequest) {
     const type = searchParams.get('type') as V3SubmissionType | null;
     const status = searchParams.get('status') as V3SubmissionStatus | null;
     const weekOf = searchParams.get('weekOf');
+    const creatorId = searchParams.get('creatorId');
     const limitParam = searchParams.get('limit');
     const limit = limitParam ? parseInt(limitParam, 10) : 20;
 
@@ -34,9 +35,15 @@ export async function GET(request: NextRequest) {
       limit,
     });
 
+    // Filter by creatorId if provided (client-side filter due to Firestore query limitations)
+    let filteredSubmissions = submissions;
+    if (creatorId) {
+      filteredSubmissions = submissions.filter(s => s.creatorId === creatorId);
+    }
+
     // Enrich with creator info
     const enrichedSubmissions = await Promise.all(
-      submissions.map(async (submission) => {
+      filteredSubmissions.map(async (submission) => {
         const creator = await getCreatorById(submission.creatorId);
         return {
           ...submission,
