@@ -201,10 +201,10 @@ export function getCurrentWeek(): string {
   
   /**
    * Gets the previous N months as an array of month strings
-   * @param count - Number of months to get (default 3)
+   * @param count - Number of months to get (default 6)
    * @returns Array of month strings, most recent first
    */
-  export function getPreviousMonths(count: number = 3): string[] {
+  export function getPreviousMonths(count: number = 6): string[] {
     const months: string[] = [];
     const now = new Date();
     
