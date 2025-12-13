@@ -57,6 +57,8 @@ hoopgang-creator-portal/
   - Multi-step email verification flow (account creation → verification → full application)
   - Firebase Authentication integration for user creation and email verification
   - Branded verification email with resend capability
+  - Always loads fullName from Firestore when user exists (regardless of verification status)
+  - Pre-fills form data from Firestore user document
 
 #### Admin Routes
 ```
@@ -140,6 +142,7 @@ api/
 │   │                           # - Renders React email templates to HTML via Resend
 │   │                           # - Production domain fallback (creators.hoopgang.com)
 │   │                           # - Professional subject line (no emojis)
+│   │                           # - Debug logging for troubleshooting request data
 │   ├── competitions/
 │   │   └── active/
 │   │       └── route.ts        # Public active competition API
@@ -579,6 +582,7 @@ creator/
 - React Email templates rendered to HTML
 - Production domain fallback (creators.hoopgang.com)
 - Professional subject lines and content (no emojis, consistent tone)
+- Debug logging for troubleshooting request data and field validation
 
 ### Tracking System (Simplified)
 
@@ -635,12 +639,15 @@ creator/
   - Email verification required before application submission
   - Resend verification email capability
   - Automatic verification status checking
+  - Debug logging in verification API for troubleshooting request data
 - **Application Form Updates**:
   - Removed phone number field
   - Changed product selection from dropdown to text input
   - Added optional height/weight fields for fit recommendations
   - Added store link to TheHoopGang website in product section
   - Re-application support: completed/denied/ghosted creators can apply again
+  - Always loads fullName from Firestore when user exists (improved UX)
+  - Pre-fills form with user data regardless of verification status
 - **Creator Type Updates**:
   - Added 'denied' status to CreatorStatus enum
   - Updated Creator interface: removed phone, product as string, added height/weight
@@ -782,6 +789,20 @@ creator/
   - All linting errors resolved
   - Ready for Vercel deployment
 
+### Email Verification & Application Flow Improvements (Latest)
+- **Email Verification API** (`/api/auth/send-verification/route.ts`):
+  - Added comprehensive debug logging for troubleshooting
+  - Logs received request body with userId, email, and fullName
+  - Logs field presence flags (hasUserId, hasEmail, hasFullName)
+  - Logs missing fields when validation fails
+  - Helps diagnose issues with verification email requests
+- **Apply Page** (`/app/apply/page.tsx`):
+  - Updated useEffect to always load fullName from Firestore when user exists
+  - Removed dependency on email verification status for fullName loading
+  - Form now pre-fills with fullName even before email verification
+  - Better UX: User data available immediately upon login
+  - Improved error handling for Firestore fetch failures
+
 ### V3 Content Submission & Competition System (Latest)
 - **Content Submission System**:
   - Volume submissions: Auto-approved, tracked by week
@@ -847,4 +868,18 @@ creator/
   - Week utilities: ISO week calculations, time formatting, period utilities
   - Month utilities: Month string generation, period calculations
   - Time formatting: formatTimeRemaining, formatTimeUntilReset functions
+
+### Email Verification & Application Flow Improvements (Latest)
+- **Email Verification API** (`/api/auth/send-verification/route.ts`):
+  - Added comprehensive debug logging for troubleshooting
+  - Logs received request body with userId, email, and fullName
+  - Logs field presence flags (hasUserId, hasEmail, hasFullName)
+  - Logs missing fields when validation fails
+  - Helps diagnose issues with verification email requests
+- **Apply Page** (`/app/apply/page.tsx`):
+  - Updated useEffect to always load fullName from Firestore when user exists
+  - Removed dependency on email verification status for fullName loading
+  - Form now pre-fills with fullName even before email verification
+  - Better UX: User data available immediately upon login
+  - Improved error handling for Firestore fetch failures
 
