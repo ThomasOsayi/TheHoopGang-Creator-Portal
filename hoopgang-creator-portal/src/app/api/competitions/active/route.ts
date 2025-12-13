@@ -1,6 +1,6 @@
 // app/api/competitions/active/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { getActiveCompetition, getCompetitionLeaderboard, getRecentCompetitions } from '@/lib/firestore';
+import { getActiveCompetition, getCompetitionLeaderboard, getRecentCompetitions, endCompetition } from '@/lib/firestore';
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,8 +11,19 @@ export async function GET(request: NextRequest) {
     // First try to get active competition
     let competition = await getActiveCompetition(type);
 
+    // Check if active competition has expired - auto-end it!
+    if (competition && competition.status === 'active' && competition.endsAt) {
+      const endsAt = new Date(competition.endsAt).getTime();
+      if (Date.now() >= endsAt) {
+        // Competition has expired - end it now
+        await endCompetition(competition.id);
+        competition = { ...competition, status: 'ended' as const, endedAt: new Date() };
+        console.log(`Auto-ended expired competition: ${competition.id}`);
+      }
+    }
+
     // If no active and includeEnded, check for recently ended competition
-    if (!competition && includeEnded) {
+    if ((!competition || competition.status !== 'active') && includeEnded) {
       const recentCompetitions = await getRecentCompetitions(type, 1);
       if (recentCompetitions.length > 0 && recentCompetitions[0].status === 'ended') {
         competition = recentCompetitions[0];
