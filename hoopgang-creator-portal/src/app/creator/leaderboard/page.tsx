@@ -6,9 +6,20 @@ import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import { Navbar } from '@/components/ui';
 import { LeaderboardEntry } from '@/types';
-import { getCurrentWeek, getCurrentMonth, getPreviousWeeks, getPreviousMonths, formatTimeUntilReset } from '@/lib/week-utils';
+import { getCurrentMonth, getPreviousMonths, formatTimeRemaining } from '@/lib/week-utils';
 
 type LeaderboardTab = 'volume' | 'gmv';
+
+interface ActiveCompetition {
+  id: string;
+  name: string;
+  status: 'active' | 'ended' | 'finalized';
+  startedAt: string;
+  endsAt: string;
+  endedAt?: string;
+  durationDays: number;
+  winners?: Array<{ rank: number; creatorId: string; creatorName: string; prize: number }>;
+}
 
 export default function LeaderboardPage() {
   const { user, userData, isAdmin, loading: authLoading } = useAuth();
@@ -19,14 +30,14 @@ export default function LeaderboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Period selection
-  const [selectedWeek, setSelectedWeek] = useState(getCurrentWeek());
-  const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth());
-  const weekOptions = getPreviousWeeks(8);
-  const monthOptions = getPreviousMonths(6);
+  // Competition state (for volume tab)
+  const [activeCompetition, setActiveCompetition] = useState<ActiveCompetition | null>(null);
+  const [competitionLoading, setCompetitionLoading] = useState(true);
+  const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   
-  // Countdown
-  const [timeUntilReset, setTimeUntilReset] = useState(formatTimeUntilReset());
+  // GMV period selection (unchanged)
+  const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth());
+  const monthOptions = getPreviousMonths(6);
   
   // Current user's rank
   const [userRank, setUserRank] = useState<LeaderboardEntry | null>(null);
@@ -37,13 +48,55 @@ export default function LeaderboardPage() {
     }
   }, [user, authLoading, router]);
 
-  // Update countdown every minute
+  // Fetch active OR recently ended competition for volume tab
   useEffect(() => {
-    const interval = setInterval(() => {
-      setTimeUntilReset(formatTimeUntilReset());
-    }, 60000);
-    return () => clearInterval(interval);
+    const fetchCompetition = async () => {
+      setCompetitionLoading(true);
+      try {
+        const response = await fetch('/api/competitions/active?type=volume&includeEnded=true');
+        const data = await response.json();
+        
+        if (data.competition) {
+          setActiveCompetition(data.competition);
+          // Calculate time remaining only if active
+          if (data.competition.status === 'active' && data.competition.endsAt) {
+            const endsAt = new Date(data.competition.endsAt).getTime();
+            setTimeRemaining(Math.max(0, endsAt - Date.now()));
+          } else {
+            setTimeRemaining(null);
+          }
+        } else {
+          setActiveCompetition(null);
+          setTimeRemaining(null);
+        }
+      } catch (err) {
+        console.error('Error fetching competition:', err);
+        setActiveCompetition(null);
+      } finally {
+        setCompetitionLoading(false);
+      }
+    };
+
+    fetchCompetition();
   }, []);
+
+  // Update countdown every second
+  useEffect(() => {
+    if (!activeCompetition?.endsAt) return;
+
+    const interval = setInterval(() => {
+      const endsAt = new Date(activeCompetition.endsAt).getTime();
+      const remaining = Math.max(0, endsAt - Date.now());
+      setTimeRemaining(remaining);
+      
+      // Stop if ended
+      if (remaining <= 0) {
+        clearInterval(interval);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [activeCompetition?.endsAt]);
 
   const loadLeaderboard = async () => {
     setLoading(true);
@@ -51,21 +104,33 @@ export default function LeaderboardPage() {
     setUserRank(null);
     
     try {
-      const period = activeTab === 'volume' ? selectedWeek : selectedMonth;
-      const response = await fetch(
-        `/api/leaderboard?type=${activeTab}&period=${period}&limit=25`
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch leaderboard');
+      let entriesData: LeaderboardEntry[] = [];
+      
+      if (activeTab === 'volume') {
+        // Use PUBLIC competitions endpoint (not admin)
+        if (!activeCompetition) {
+          setEntries([]);
+          setLoading(false);
+          return;
+        }
+        // Fetch from public endpoint - leaderboard is already included
+        const response = await fetch(`/api/competitions/active?type=volume`);
+        if (!response.ok) throw new Error('Failed to fetch leaderboard');
+        const data = await response.json();
+        entriesData = data.leaderboard || [];
+      } else {
+        // GMV still uses period-based endpoint
+        const response = await fetch(`/api/leaderboard?type=${activeTab}&period=${selectedMonth}&limit=25`);
+        if (!response.ok) throw new Error('Failed to fetch leaderboard');
+        const data = await response.json();
+        entriesData = data.entries || [];
       }
 
-      const data = await response.json();
-      setEntries(data.entries);
+      setEntries(entriesData);
       
       // Find current user's entry
       if (userData?.creatorId) {
-        const userEntry = data.entries.find(
+        const userEntry = entriesData.find(
           (e: LeaderboardEntry) => e.creatorId === userData.creatorId
         );
         setUserRank(userEntry || null);
@@ -79,10 +144,10 @@ export default function LeaderboardPage() {
   };
 
   useEffect(() => {
-    if (user) {
+    if (user && !competitionLoading) {
       loadLeaderboard();
     }
-  }, [user, activeTab, selectedWeek, selectedMonth]);
+  }, [user, activeTab, selectedMonth, activeCompetition, competitionLoading]);
 
   const getRankDisplay = (rank: number) => {
     if (rank === 1) return { emoji: '🥇', color: 'text-yellow-400' };
@@ -110,7 +175,7 @@ export default function LeaderboardPage() {
   };
 
   const isCurrentPeriod = activeTab === 'volume' 
-    ? selectedWeek === getCurrentWeek() 
+    ? !!activeCompetition 
     : selectedMonth === getCurrentMonth();
 
   const formatValue = (value: number) => {
@@ -155,7 +220,7 @@ export default function LeaderboardPage() {
         <div className="mb-8 text-center">
           <h1 className="text-4xl font-bold text-white mb-2">🏆 Leaderboard</h1>
           <p className="text-zinc-400">
-            Compete with other creators for weekly and monthly prizes
+            Compete with other creators for prizes
           </p>
         </div>
 
@@ -170,7 +235,7 @@ export default function LeaderboardPage() {
             }`}
           >
             <span>📊</span>
-            <span>Weekly Volume</span>
+            <span>Volume</span>
           </button>
           <button
             onClick={() => setActiveTab('gmv')}
@@ -185,25 +250,70 @@ export default function LeaderboardPage() {
           </button>
         </div>
 
-        {/* Period Selector & Timer */}
-        <div className="mb-6 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-zinc-800/50 backdrop-blur-sm rounded-xl border border-zinc-700/50">
-          <div className="flex items-center gap-3">
-            <label className="text-zinc-400 text-sm">
-              {activeTab === 'volume' ? 'Week:' : 'Month:'}
-            </label>
-            {activeTab === 'volume' ? (
-              <select
-                value={selectedWeek}
-                onChange={(e) => setSelectedWeek(e.target.value)}
-                className="bg-zinc-900/50 border border-zinc-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-orange-500 transition-colors"
-              >
-                {weekOptions.map((week) => (
-                  <option key={week} value={week}>
-                    {week} {week === getCurrentWeek() ? '(Current)' : ''}
-                  </option>
-                ))}
-              </select>
-            ) : (
+        {/* Volume: Competition Info or No Competition */}
+        {/* Volume: Competition Info or No Competition */}
+        {activeTab === 'volume' && (
+          competitionLoading ? (
+            <div className="mb-6 p-6 bg-zinc-800/50 backdrop-blur-sm rounded-xl border border-zinc-700/50">
+              <div className="flex items-center justify-center">
+                <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-orange-500"></div>
+              </div>
+            </div>
+          ) : activeCompetition?.status === 'ended' ? (
+            // Competition ended but not yet finalized - show verification message
+            <div className="mb-6 p-4 bg-yellow-500/10 backdrop-blur-sm rounded-xl border border-yellow-500/30">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">⏳</span>
+                  <div>
+                    <h3 className="text-yellow-400 font-semibold">{activeCompetition.name} - Results Pending</h3>
+                    <p className="text-zinc-400 text-sm">Competition has ended! Admins are verifying results.</p>
+                  </div>
+                </div>
+                <div className="px-4 py-2 bg-yellow-500/20 rounded-lg">
+                  <span className="text-yellow-400 text-sm font-medium">🏆 Winners announced soon!</span>
+                </div>
+              </div>
+            </div>
+          ) : activeCompetition?.status === 'active' ? (
+            // Active competition
+            <div className="mb-6 p-4 bg-zinc-800/50 backdrop-blur-sm rounded-xl border border-zinc-700/50">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <span className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
+                  <div>
+                    <h3 className="text-white font-semibold">{activeCompetition.name}</h3>
+                    <p className="text-zinc-400 text-sm">Active Competition</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2 bg-zinc-900/50 px-4 py-2 rounded-lg">
+                  <span className="text-zinc-400 text-sm">Ends in:</span>
+                  <span className="text-orange-400 font-mono font-bold text-lg">
+                    {timeRemaining !== null && timeRemaining > 0
+                      ? formatTimeRemaining(timeRemaining)
+                      : 'Ending soon...'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            // No active competition
+            <div className="mb-6 p-6 bg-zinc-800/50 backdrop-blur-sm rounded-xl border border-zinc-700/50 text-center">
+              <div className="text-4xl mb-3">🏁</div>
+              <h3 className="text-white font-semibold mb-2">No Active Competition</h3>
+              <p className="text-zinc-400 text-sm">
+                Check back soon! A new competition will be announced shortly.
+              </p>
+            </div>
+          )
+        )}
+
+        {/* GMV: Month Selector */}
+        {activeTab === 'gmv' && (
+          <div className="mb-6 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-zinc-800/50 backdrop-blur-sm rounded-xl border border-zinc-700/50">
+            <div className="flex items-center gap-3">
+              <label className="text-zinc-400 text-sm">Month:</label>
               <select
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(e.target.value)}
@@ -215,16 +325,9 @@ export default function LeaderboardPage() {
                   </option>
                 ))}
               </select>
-            )}
-          </div>
-          
-          {activeTab === 'volume' && isCurrentPeriod && (
-            <div className="flex items-center gap-2">
-              <span className="text-zinc-400 text-sm">Resets in:</span>
-              <span className="text-orange-400 font-mono font-bold">{timeUntilReset}</span>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Prize Pool Banner */}
         {isCurrentPeriod && (
@@ -286,12 +389,12 @@ export default function LeaderboardPage() {
               <div className="text-5xl mb-4">{activeTab === 'volume' ? '📊' : '💰'}</div>
               <p className="text-zinc-400 mb-2">
                 {activeTab === 'volume' 
-                  ? 'No submissions yet this week' 
+                  ? (activeCompetition ? 'No submissions yet for this competition' : 'No active competition')
                   : 'No GMV data for this month'}
               </p>
               <p className="text-zinc-500 text-sm">
                 {activeTab === 'volume' 
-                  ? 'Be the first to post and claim the top spot!' 
+                  ? (activeCompetition ? 'Be the first to post and claim the top spot!' : 'Check back when a competition starts!')
                   : 'Sales data will be updated by the admin team'}
               </p>
             </div>
@@ -349,7 +452,7 @@ export default function LeaderboardPage() {
         </div>
 
         {/* CTA - Hide for admins */}
-        {activeTab === 'volume' && isCurrentPeriod && !isAdmin && (
+        {activeTab === 'volume' && activeCompetition && !isAdmin && (
           <div className="mt-8 text-center">
             <button
               onClick={() => router.push('/creator/submit')}

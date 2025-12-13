@@ -712,10 +712,15 @@ export async function getAllCreatorsWithCollabs(filters?: {
 /**
  * Creates a volume content submission (auto-approved)
  */
+/**
+ * Creates a volume content submission (auto-approved)
+ * If competitionId is provided, tags the submission for that competition
+ */
 export async function createVolumeSubmission(
   creatorId: string,
   tiktokUrl: string,
-  weekOf: string
+  weekOf: string,
+  competitionId?: string | null
 ): Promise<V3ContentSubmission> {
   // Check for duplicate URL by this creator
   const existingQuery = query(
@@ -728,22 +733,27 @@ export async function createVolumeSubmission(
     throw new Error('You have already submitted this TikTok URL');
   }
 
-  const submissionData = {
+  const submissionData: Record<string, any> = {
     creatorId,
     tiktokUrl,
     type: 'volume' as V3SubmissionType,
     status: 'approved' as V3SubmissionStatus, // Volume submissions auto-approve
-    submittedAt: serverTimestamp(),
+    submittedAt: Timestamp.fromDate(new Date()),
     weekOf,
   };
 
+  // Tag with competition if active
+  if (competitionId) {
+    submissionData.competitionId = competitionId;
+  }
+
   const docRef = await addDoc(collection(db, V3_SUBMISSIONS_COLLECTION), submissionData);
   
-  return convertTimestamps<V3ContentSubmission>({
+  return {
     id: docRef.id,
     ...submissionData,
     submittedAt: new Date(),
-  });
+  } as V3ContentSubmission;
 }
 
 /**

@@ -1,0 +1,9 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/competitions",
+      "schedule": "*/5 * * * *"
+    }
+  ]
+}
+

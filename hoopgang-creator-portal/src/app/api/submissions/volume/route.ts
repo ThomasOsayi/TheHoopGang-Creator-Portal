@@ -1,6 +1,6 @@
 // src/app/api/submissions/volume/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { createVolumeSubmission, getCreatorByUserId, recalculateVolumeLeaderboard } from '@/lib/firestore';
+import { createVolumeSubmission, getCreatorByUserId, recalculateVolumeLeaderboard, getActiveCompetition, recalculateCompetitionLeaderboard } from '@/lib/firestore';
 import { getCurrentWeek } from '@/lib/week-utils';
 import { adminAuth } from '@/lib/firebase-admin';
 
@@ -37,16 +37,26 @@ export async function POST(request: NextRequest) {
     // Get current week
     const weekOf = getCurrentWeek();
 
+    // Get active competition (if any)
+    const activeCompetition = await getActiveCompetition('volume');
+    const competitionId = activeCompetition?.id || null;
+
     // Create submission (auto-approved for volume)
-    const submission = await createVolumeSubmission(creator.id, tiktokUrl, weekOf);
+    const submission = await createVolumeSubmission(creator.id, tiktokUrl, weekOf, competitionId);
 
     // Recalculate leaderboard after successful submission
     // Note: In production, you might want to do this via a background job
     await recalculateVolumeLeaderboard(weekOf);
 
+    // Recalculate competition leaderboard if there's an active competition
+    if (competitionId) {
+      await recalculateCompetitionLeaderboard(competitionId);
+    }
+
     return NextResponse.json({
       success: true,
       submission,
+      competitionId,
     });
   } catch (error) {
     console.error('Volume submission error:', error);

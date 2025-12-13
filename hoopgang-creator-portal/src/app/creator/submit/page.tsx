@@ -37,6 +37,15 @@ export default function SubmitContentPage() {
     totalEarned: 0,
   });
   
+  // Competition state
+  const [activeCompetition, setActiveCompetition] = useState<{
+    id: string;
+    name: string;
+    status: string;
+    endsAt: string;
+  } | null>(null);
+  const [competitionLoading, setCompetitionLoading] = useState(true);
+  
   // Time until reset
   const [timeUntilReset, setTimeUntilReset] = useState(formatTimeUntilReset());
 
@@ -89,6 +98,25 @@ export default function SubmitContentPage() {
     }
   };
 
+  // Function to fetch competition status
+  const fetchCompetition = async () => {
+    setCompetitionLoading(true);
+    try {
+      const response = await fetch('/api/competitions/active?type=volume');
+      const data = await response.json();
+      if (data.competition) {
+        setActiveCompetition(data.competition);
+      } else {
+        setActiveCompetition(null);
+      }
+    } catch (err) {
+      console.error('Error fetching competition:', err);
+      setActiveCompetition(null);
+    } finally {
+      setCompetitionLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/login');
@@ -116,6 +144,7 @@ export default function SubmitContentPage() {
       loadCreator();
       loadVolumeStats();
       loadMilestoneStats();
+      fetchCompetition();
     }
   }, [user, authLoading, router]);
 
@@ -240,6 +269,47 @@ export default function SubmitContentPage() {
             Submit your TikTok content to earn rewards and climb the leaderboard
           </p>
         </div>
+
+        {/* Competition Status Banner */}
+        {!competitionLoading && (
+          activeCompetition?.status === 'active' ? (
+            <div className="mb-6 p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
+              <div className="flex items-center gap-3">
+                <span className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
+                <div>
+                  <span className="text-green-400 font-medium">🏆 {activeCompetition.name} is LIVE!</span>
+                  <p className="text-zinc-400 text-sm mt-0.5">
+                    Your submissions will count toward the leaderboard
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : activeCompetition?.status === 'ended' ? (
+            <div className="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl">
+              <div className="flex items-center gap-3">
+                <span className="text-xl">⏳</span>
+                <div>
+                  <span className="text-yellow-400 font-medium">{activeCompetition.name} has ended</span>
+                  <p className="text-zinc-400 text-sm mt-0.5">
+                    Results are being verified. You can still submit content!
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="mb-6 p-4 bg-zinc-800/50 border border-zinc-700/50 rounded-xl">
+              <div className="flex items-center gap-3">
+                <span className="text-xl">📊</span>
+                <div>
+                  <span className="text-zinc-300 font-medium">No active competition</span>
+                  <p className="text-zinc-400 text-sm mt-0.5">
+                    Your submissions will still be tracked for future competitions
+                  </p>
+                </div>
+              </div>
+            </div>
+          )
+        )}
 
         {/* Weekly Reset Timer */}
         <div className="mb-6 p-4 bg-zinc-800/50 backdrop-blur-sm rounded-xl border border-zinc-700/50">
