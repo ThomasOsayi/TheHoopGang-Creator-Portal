@@ -98,6 +98,7 @@ export function Navbar() {
     { href: '/apply', label: 'Apply', icon: '📝', show: true },
     { href: '/admin/creators', label: 'Admin', icon: '👑', show: isAdmin },
     { href: '/creator/dashboard', label: 'Dashboard', icon: '🎯', show: user && !isAdmin && userData?.creatorId },
+    { href: '/creator/submit', label: 'Submit Content', icon: '📤', show: user && !isAdmin && userData?.creatorId },
   ].filter(link => link.show);
 
   return (

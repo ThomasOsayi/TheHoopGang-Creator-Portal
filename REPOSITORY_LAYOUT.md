@@ -75,6 +75,8 @@ api/
 │                               # - POST: Send branded verification email
 │                               # - Uses Firebase Admin SDK to generate verification links
 │                               # - Renders React email templates to HTML via Resend
+│                               # - Production domain fallback (creators.hoopgang.com)
+│                               # - Professional subject line (no emojis)
 ├── email/
 │   └── send/
 │       └── route.ts            # General email sending endpoint
@@ -121,7 +123,7 @@ creator/
 #### UI Components (`ui/`)
 - `Button.tsx` - Reusable button component
 - `DetailRow.tsx` - Detail row display component
-- `Navbar.tsx` - Navigation bar component with THG logo image
+- `Navbar.tsx` - Navigation bar component with THG logo image (V2 collaboration status system)
 - `Pagination.tsx` - Pagination component
 - `ProgressDots.tsx` - Progress indicator component
 - `SectionCard.tsx` - Section card container component
@@ -150,9 +152,9 @@ creator/
   - Tracking event parsing
   - External tracking URL generation (17TRACK for Yanwen)
 - `email/` - Email template system
-  - `email-layout.tsx` - Base email layout component for branded emails
-  - `send-email.ts` - Email sending utility using Resend API
-  - `templates/` - React email templates
+  - `email-layout.tsx` - Base email layout component for branded emails (production logo URL)
+  - `send-email.ts` - Email sending utility using Resend API (professional subject lines)
+  - `templates/` - React email templates (professional, consistent tone)
     - `verify-email.tsx` - Branded email verification template
     - `approved.tsx` - Application approval email template
     - `shipped.tsx` - Package shipped email template
@@ -251,7 +253,7 @@ creator/
 - `FIREBASE_CLIENT_EMAIL` - Firebase service account client email
 - `FIREBASE_PRIVATE_KEY` - Firebase service account private key (or use base64 encoded option below)
 - `FIREBASE_SERVICE_ACCOUNT_BASE64` - Base64 encoded Firebase service account JSON (alternative to individual vars above)
-- `NEXT_PUBLIC_APP_URL` - Public application URL for verification links (defaults to https://thehoopgang.xyz)
+- `NEXT_PUBLIC_APP_URL` - Public application URL for verification links (defaults to https://creators.hoopgang.com)
 
 **Client-side (NEXT_PUBLIC_ prefix):**
 - `NEXT_PUBLIC_FIREBASE_API_KEY` - Firebase API key
@@ -350,6 +352,9 @@ creator/
    - Email verification flow with secure Firebase Admin links
    - Application status emails (approved, shipped, delivered)
    - Professional email layout with consistent branding
+   - Production logo URLs (creators.hoopgang.com)
+   - Professional subject lines (no emojis, consistent tone)
+   - Professional email content (removed casual language and emojis)
 
 9. **Brand Identity & Visual Design**
    - Consistent THG logo usage across all pages
@@ -384,6 +389,8 @@ creator/
 - Branded email design with consistent layout
 - Resend verification capability
 - React Email templates rendered to HTML
+- Production domain fallback (creators.hoopgang.com)
+- Professional subject lines and content (no emojis, consistent tone)
 
 ### Tracking System (Simplified)
 
@@ -534,4 +541,55 @@ creator/
 - Status auto-updates (shipped → delivered)
 - Content deadline automation (14 days post-delivery)
 - Simplified tracking API (removed external dependency)
+
+### Email System Professionalization (Latest)
+- **Email Layout Updates**:
+  - Updated logo URL to use production domain (`https://creators.hoopgang.com/images/THG_logo_orange.png`)
+  - Replaced localhost test URL with production logo path
+- **Email Template Updates**:
+  - **Verification Email** (`verify-email.tsx`):
+    - Removed emojis from heading and greeting
+    - Changed "Creator Squad" to "Creator Program" for professional tone
+    - Simplified button text (removed arrow)
+    - Cleaned up expiry note text
+  - **Approved Email** (`approved.tsx`):
+    - Changed "Welcome to the Family!" to "Welcome to the Team 🏀"
+    - Removed emojis from greeting and body text
+    - Changed casual language ("hyped" → "excited", "look fire 🔥" → "try it on")
+    - Updated sign-off from "Let's get it" to "Welcome aboard"
+    - Removed arrow from button text
+  - **Shipped Email** (`shipped.tsx`):
+    - Updated heading to "Your Gear Has Shipped 📦"
+    - Removed emojis from greeting
+    - Professionalized shipping note (removed casual language and emojis)
+    - Removed arrow from button text
+    - Updated sign-off to "Thanks for your patience"
+  - **Delivered Email** (`delivered.tsx`):
+    - Removed emojis from heading and greeting
+    - Changed "fire content" to "great content"
+    - Removed emoji from requirements header
+    - Removed arrow from button text
+    - Updated sign-off to "Looking forward to seeing what you create"
+- **Email Sending Updates**:
+  - **Verification Route** (`send-verification/route.ts`):
+    - Updated production domain fallback from `thehoopgang.xyz` to `creators.hoopgang.com`
+    - Removed emoji from subject line ("Verify your email for HoopGang")
+  - **Email Utilities** (`send-email.ts`):
+    - Updated approved email subject: "Welcome to the HoopGang Creator Program"
+    - Updated shipped email subject: "Your HoopGang gear has shipped"
+    - Updated delivered email subject: "Your gear has arrived — time to create content"
+    - All subject lines now professional and consistent (no emojis)
+
+### TypeScript & Build Fixes (Latest)
+- **Navbar Component** (`Navbar.tsx`):
+  - Fixed TypeScript error: Migrated from `Creator['status']` to `CollaborationStatus`
+  - Updated to use V2 collaboration-based status system
+  - Fixed `getCreatorWithActiveCollab` return type usage (changed `activeCollaboration` to `collaboration`)
+  - Fixed React namespace issue by importing `MouseEvent` type directly
+  - All TypeScript compilation errors resolved for Vercel deployment
+- **Build System**:
+  - All email templates compile successfully
+  - No TypeScript errors in production build
+  - All linting errors resolved
+  - Ready for Vercel deployment
 

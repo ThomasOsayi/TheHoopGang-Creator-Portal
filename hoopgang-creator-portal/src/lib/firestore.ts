@@ -15,6 +15,7 @@ import {
   runTransaction,
   limit,
   startAfter,
+  writeBatch,
 } from 'firebase/firestore';
 import { db } from './firebase';
 import {
@@ -28,10 +29,30 @@ import {
   CollaborationStatus,
   CreatorWithCollab,
   Size,
+  V3ContentSubmission,
+  V3SubmissionType,
+  V3SubmissionStatus,
+  MilestoneTier,
+  LeaderboardEntry,
+  LeaderboardType,
+  Reward,
+  RewardCategory,
+  Redemption,
+  RedemptionSource,
+  RedemptionStatus,
+  V3VolumeStats,
+  V3MilestoneStats,
+  V3CreatorStats,
 } from '@/types';
 import { generateCreatorId, MAX_CONTENT_SUBMISSIONS } from './constants';
 
 const CREATORS_COLLECTION = 'creators';
+
+// ===== V3 COLLECTION NAMES =====
+const V3_SUBMISSIONS_COLLECTION = 'v3ContentSubmissions';
+const LEADERBOARD_COLLECTION = 'leaderboardEntries';
+const REWARDS_COLLECTION = 'rewards';
+const REDEMPTIONS_COLLECTION = 'redemptions';
 
 /**
  * Recursively converts Firestore Timestamps to JavaScript Dates
@@ -668,5 +689,641 @@ export async function getAllCreatorsWithCollabs(filters?: {
   const filtered = creatorsWithCollabs.filter((c) => c !== null) as CreatorWithCollab[];
   
   return { creators: filtered, lastDoc, hasMore };
+}
+
+// ===== V3 CONTENT SUBMISSIONS =====
+
+/**
+ * Creates a volume content submission (auto-approved)
+ */
+export async function createVolumeSubmission(
+  creatorId: string,
+  tiktokUrl: string,
+  weekOf: string
+): Promise<V3ContentSubmission> {
+  // Check for duplicate URL by this creator
+  const existingQuery = query(
+    collection(db, V3_SUBMISSIONS_COLLECTION),
+    where('creatorId', '==', creatorId),
+    where('tiktokUrl', '==', tiktokUrl)
+  );
+  const existing = await getDocs(existingQuery);
+  if (!existing.empty) {
+    throw new Error('You have already submitted this TikTok URL');
+  }
+
+  const submissionData = {
+    creatorId,
+    tiktokUrl,
+    type: 'volume' as V3SubmissionType,
+    status: 'approved' as V3SubmissionStatus, // Volume submissions auto-approve
+    submittedAt: serverTimestamp(),
+    weekOf,
+  };
+
+  const docRef = await addDoc(collection(db, V3_SUBMISSIONS_COLLECTION), submissionData);
+  
+  return convertTimestamps<V3ContentSubmission>({
+    id: docRef.id,
+    ...submissionData,
+    submittedAt: new Date(),
+  });
+}
+
+/**
+ * Creates a milestone content submission (requires admin review)
+ */
+export async function createMilestoneSubmission(
+  creatorId: string,
+  tiktokUrl: string,
+  claimedTier: MilestoneTier,
+  weekOf: string
+): Promise<V3ContentSubmission> {
+  // Check for duplicate milestone claim on same URL
+  const existingQuery = query(
+    collection(db, V3_SUBMISSIONS_COLLECTION),
+    where('tiktokUrl', '==', tiktokUrl),
+    where('type', '==', 'milestone')
+  );
+  const existing = await getDocs(existingQuery);
+  if (!existing.empty) {
+    throw new Error('This TikTok URL has already been submitted for a milestone');
+  }
+
+  const submissionData = {
+    creatorId,
+    tiktokUrl,
+    type: 'milestone' as V3SubmissionType,
+    claimedTier,
+    status: 'pending' as V3SubmissionStatus,
+    submittedAt: serverTimestamp(),
+    weekOf,
+  };
+
+  const docRef = await addDoc(collection(db, V3_SUBMISSIONS_COLLECTION), submissionData);
+  
+  return convertTimestamps<V3ContentSubmission>({
+    id: docRef.id,
+    ...submissionData,
+    submittedAt: new Date(),
+  });
+}
+
+/**
+ * Gets a V3 submission by ID
+ */
+export async function getV3SubmissionById(id: string): Promise<V3ContentSubmission | null> {
+  const docRef = doc(db, V3_SUBMISSIONS_COLLECTION, id);
+  const docSnap = await getDoc(docRef);
+  
+  if (!docSnap.exists()) return null;
+  
+  return convertTimestamps<V3ContentSubmission>({
+    id: docSnap.id,
+    ...docSnap.data(),
+  });
+}
+
+/**
+ * Gets all V3 submissions for a creator
+ */
+export async function getV3SubmissionsByCreatorId(
+  creatorId: string,
+  filters?: {
+    type?: V3SubmissionType;
+    status?: V3SubmissionStatus;
+    weekOf?: string;
+    limit?: number;
+  }
+): Promise<V3ContentSubmission[]> {
+  let q = query(
+    collection(db, V3_SUBMISSIONS_COLLECTION),
+    where('creatorId', '==', creatorId),
+    orderBy('submittedAt', 'desc')
+  );
+
+  if (filters?.type) {
+    q = query(q, where('type', '==', filters.type));
+  }
+  if (filters?.status) {
+    q = query(q, where('status', '==', filters.status));
+  }
+  if (filters?.weekOf) {
+    q = query(q, where('weekOf', '==', filters.weekOf));
+  }
+  if (filters?.limit) {
+    q = query(q, limit(filters.limit));
+  }
+
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(doc => 
+    convertTimestamps<V3ContentSubmission>({ id: doc.id, ...doc.data() })
+  );
+}
+
+/**
+ * Gets all V3 submissions (admin view)
+ */
+export async function getAllV3Submissions(filters?: {
+  type?: V3SubmissionType;
+  status?: V3SubmissionStatus;
+  weekOf?: string;
+  limit?: number;
+  lastDoc?: Parameters<typeof startAfter>[0];
+}): Promise<{ submissions: V3ContentSubmission[]; lastDoc: Parameters<typeof startAfter>[0] | null; hasMore: boolean }> {
+  const pageLimit = filters?.limit || 20;
+
+  // Build query based on available filters
+  // Note: Firestore compound query limitations mean we may need client-side filtering
+  let q = query(collection(db, V3_SUBMISSIONS_COLLECTION));
+
+  // Apply filters in order that works with Firestore indexes
+  if (filters?.type && filters?.status) {
+    q = query(q, where('type', '==', filters.type), where('status', '==', filters.status), orderBy('submittedAt', 'desc'));
+  } else if (filters?.type) {
+    q = query(q, where('type', '==', filters.type), orderBy('submittedAt', 'desc'));
+  } else if (filters?.status) {
+    q = query(q, where('status', '==', filters.status), orderBy('submittedAt', 'desc'));
+  } else {
+    q = query(q, orderBy('submittedAt', 'desc'));
+  }
+
+  if (filters?.lastDoc) {
+    q = query(q, startAfter(filters.lastDoc));
+  }
+  
+  q = query(q, limit(pageLimit + 1));
+
+  const snapshot = await getDocs(q);
+  const docs = snapshot.docs;
+  const hasMore = docs.length > pageLimit;
+  const resultDocs = hasMore ? docs.slice(0, pageLimit) : docs;
+
+  let submissions = resultDocs.map(doc =>
+    convertTimestamps<V3ContentSubmission>({ id: doc.id, ...doc.data() })
+  );
+
+  // Client-side filter for weekOf (Firestore compound query limitations)
+  if (filters?.weekOf) {
+    submissions = submissions.filter(s => s.weekOf === filters.weekOf);
+  }
+
+  return {
+    submissions,
+    lastDoc: resultDocs[resultDocs.length - 1] || null,
+    hasMore,
+  };
+}
+
+/**
+ * Reviews a milestone submission (admin action)
+ */
+export async function reviewMilestoneSubmission(
+  submissionId: string,
+  decision: 'approved' | 'rejected',
+  adminId: string,
+  verifiedViews?: number,
+  rejectionReason?: string
+): Promise<void> {
+  const docRef = doc(db, V3_SUBMISSIONS_COLLECTION, submissionId);
+  
+  const updateData: Record<string, unknown> = {
+    status: decision,
+    reviewedBy: adminId,
+    reviewedAt: serverTimestamp(),
+  };
+
+  if (decision === 'approved' && verifiedViews !== undefined) {
+    updateData.verifiedViews = verifiedViews;
+  }
+  if (decision === 'rejected' && rejectionReason) {
+    updateData.rejectionReason = rejectionReason;
+  }
+
+  await updateDoc(docRef, updateData);
+}
+
+/**
+ * Gets volume stats for a creator
+ */
+export async function getVolumeStats(
+  creatorId: string,
+  currentWeek: string
+): Promise<V3VolumeStats> {
+  // Get weekly count
+  const weeklyQuery = query(
+    collection(db, V3_SUBMISSIONS_COLLECTION),
+    where('creatorId', '==', creatorId),
+    where('type', '==', 'volume'),
+    where('weekOf', '==', currentWeek),
+    where('status', '==', 'approved')
+  );
+  const weeklySnap = await getDocs(weeklyQuery);
+  const weeklyCount = weeklySnap.size;
+
+  // Get all-time count
+  const allTimeQuery = query(
+    collection(db, V3_SUBMISSIONS_COLLECTION),
+    where('creatorId', '==', creatorId),
+    where('type', '==', 'volume'),
+    where('status', '==', 'approved')
+  );
+  const allTimeSnap = await getDocs(allTimeQuery);
+  const allTimeCount = allTimeSnap.size;
+
+  // Get current rank from leaderboard
+  const leaderboardQuery = query(
+    collection(db, LEADERBOARD_COLLECTION),
+    where('type', '==', 'volume'),
+    where('period', '==', currentWeek),
+    where('creatorId', '==', creatorId)
+  );
+  const leaderboardSnap = await getDocs(leaderboardQuery);
+  const currentRank = leaderboardSnap.empty ? null : leaderboardSnap.docs[0].data().rank;
+
+  // Get total creators in leaderboard this week
+  const allLeaderboardQuery = query(
+    collection(db, LEADERBOARD_COLLECTION),
+    where('type', '==', 'volume'),
+    where('period', '==', currentWeek)
+  );
+  const allLeaderboardSnap = await getDocs(allLeaderboardQuery);
+  const totalCreators = allLeaderboardSnap.size;
+
+  return {
+    weeklyCount,
+    allTimeCount,
+    currentRank,
+    totalCreators,
+  };
+}
+
+/**
+ * Gets milestone stats for a creator
+ */
+export async function getMilestoneStats(creatorId: string): Promise<V3MilestoneStats> {
+  const baseQuery = query(
+    collection(db, V3_SUBMISSIONS_COLLECTION),
+    where('creatorId', '==', creatorId),
+    where('type', '==', 'milestone')
+  );
+  
+  const snapshot = await getDocs(baseQuery);
+  const submissions = snapshot.docs.map(doc => doc.data() as V3ContentSubmission);
+
+  const pendingCount = submissions.filter(s => s.status === 'pending').length;
+  const approvedCount = submissions.filter(s => s.status === 'approved').length;
+  const rejectedCount = submissions.filter(s => s.status === 'rejected').length;
+
+  // Calculate total earned from approved milestones
+  // This will need to reference the rewards collection for actual values
+  // For now, using hardcoded tier values from the ticket
+  const tierValues: Record<MilestoneTier, number> = {
+    '100k': 10,
+    '500k': 25,
+    '1m': 50,
+  };
+  
+  const totalEarned = submissions
+    .filter(s => s.status === 'approved' && s.claimedTier)
+    .reduce((sum, s) => sum + (tierValues[s.claimedTier!] || 0), 0);
+
+  return {
+    pendingCount,
+    approvedCount,
+    rejectedCount,
+    totalEarned,
+  };
+}
+
+// ===== LEADERBOARD =====
+
+/**
+ * Gets leaderboard entries for a period
+ */
+export async function getLeaderboard(
+  type: LeaderboardType,
+  period: string,
+  limitCount: number = 10
+): Promise<LeaderboardEntry[]> {
+  const q = query(
+    collection(db, LEADERBOARD_COLLECTION),
+    where('type', '==', type),
+    where('period', '==', period),
+    orderBy('rank', 'asc'),
+    limit(limitCount)
+  );
+
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(doc =>
+    convertTimestamps<LeaderboardEntry>({ id: doc.id, ...doc.data() })
+  );
+}
+
+/**
+ * Updates or creates a leaderboard entry
+ */
+export async function upsertLeaderboardEntry(
+  data: Omit<LeaderboardEntry, 'id' | 'updatedAt'>,
+  adminId: string
+): Promise<string> {
+  // Check if entry exists
+  const existingQuery = query(
+    collection(db, LEADERBOARD_COLLECTION),
+    where('type', '==', data.type),
+    where('period', '==', data.period),
+    where('creatorId', '==', data.creatorId)
+  );
+  const existing = await getDocs(existingQuery);
+
+  if (!existing.empty) {
+    // Update existing
+    const docRef = doc(db, LEADERBOARD_COLLECTION, existing.docs[0].id);
+    await updateDoc(docRef, {
+      ...data,
+      updatedBy: adminId,
+      updatedAt: serverTimestamp(),
+    });
+    return existing.docs[0].id;
+  } else {
+    // Create new
+    const docRef = await addDoc(collection(db, LEADERBOARD_COLLECTION), {
+      ...data,
+      updatedBy: adminId,
+      updatedAt: serverTimestamp(),
+    });
+    return docRef.id;
+  }
+}
+
+/**
+ * Recalculates volume leaderboard ranks for a week
+ * Call this after new volume submissions
+ */
+export async function recalculateVolumeLeaderboard(weekOf: string): Promise<void> {
+  // Get all approved volume submissions for the week, grouped by creator
+  const submissionsQuery = query(
+    collection(db, V3_SUBMISSIONS_COLLECTION),
+    where('type', '==', 'volume'),
+    where('weekOf', '==', weekOf),
+    where('status', '==', 'approved')
+  );
+  const snapshot = await getDocs(submissionsQuery);
+  
+  // Group by creator
+  const creatorCounts: Map<string, number> = new Map();
+  snapshot.docs.forEach(doc => {
+    const data = doc.data();
+    const current = creatorCounts.get(data.creatorId) || 0;
+    creatorCounts.set(data.creatorId, current + 1);
+  });
+
+  // Sort by count descending
+  const sorted = Array.from(creatorCounts.entries())
+    .sort((a, b) => b[1] - a[1]);
+
+  // Update leaderboard entries
+  const batch = writeBatch(db);
+  
+  for (let i = 0; i < sorted.length; i++) {
+    const [creatorId, value] = sorted[i];
+    const rank = i + 1;
+    
+    // Get creator info for denormalization
+    const creator = await getCreatorById(creatorId);
+    if (!creator) continue;
+
+    // Check for existing entry
+    const existingQuery = query(
+      collection(db, LEADERBOARD_COLLECTION),
+      where('type', '==', 'volume'),
+      where('period', '==', weekOf),
+      where('creatorId', '==', creatorId)
+    );
+    const existing = await getDocs(existingQuery);
+
+    const entryData = {
+      type: 'volume' as LeaderboardType,
+      period: weekOf,
+      creatorId,
+      creatorName: creator.fullName,
+      creatorHandle: creator.tiktokHandle,
+      value,
+      rank,
+      updatedAt: serverTimestamp(),
+    };
+
+    if (existing.empty) {
+      const newDocRef = doc(collection(db, LEADERBOARD_COLLECTION));
+      batch.set(newDocRef, entryData);
+    } else {
+      batch.update(doc(db, LEADERBOARD_COLLECTION, existing.docs[0].id), entryData);
+    }
+  }
+
+  await batch.commit();
+}
+
+// ===== REWARDS =====
+
+/**
+ * Gets all active rewards
+ */
+export async function getActiveRewards(category?: RewardCategory): Promise<Reward[]> {
+  let q = query(
+    collection(db, REWARDS_COLLECTION),
+    where('isActive', '==', true)
+  );
+
+  if (category) {
+    q = query(q, where('category', '==', category));
+  }
+
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(doc =>
+    convertTimestamps<Reward>({ id: doc.id, ...doc.data() })
+  );
+}
+
+/**
+ * Gets a reward by ID
+ */
+export async function getRewardById(id: string): Promise<Reward | null> {
+  const docRef = doc(db, REWARDS_COLLECTION, id);
+  const docSnap = await getDoc(docRef);
+  
+  if (!docSnap.exists()) return null;
+  
+  return convertTimestamps<Reward>({ id: docSnap.id, ...docSnap.data() });
+}
+
+/**
+ * Gets reward for a specific milestone tier
+ */
+export async function getRewardByMilestoneTier(tier: MilestoneTier): Promise<Reward | null> {
+  const q = query(
+    collection(db, REWARDS_COLLECTION),
+    where('category', '==', 'milestone'),
+    where('milestoneTier', '==', tier),
+    where('isActive', '==', true),
+    limit(1)
+  );
+
+  const snapshot = await getDocs(q);
+  if (snapshot.empty) return null;
+
+  return convertTimestamps<Reward>({
+    id: snapshot.docs[0].id,
+    ...snapshot.docs[0].data(),
+  });
+}
+
+/**
+ * Creates a new reward (admin)
+ */
+export async function createReward(data: Omit<Reward, 'id' | 'createdAt'>): Promise<string> {
+  const docRef = await addDoc(collection(db, REWARDS_COLLECTION), {
+    ...data,
+    createdAt: serverTimestamp(),
+  });
+  return docRef.id;
+}
+
+/**
+ * Updates a reward (admin)
+ */
+export async function updateReward(id: string, data: Partial<Reward>): Promise<void> {
+  const docRef = doc(db, REWARDS_COLLECTION, id);
+  await updateDoc(docRef, {
+    ...data,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+// ===== REDEMPTIONS =====
+
+/**
+ * Creates a redemption record
+ */
+export async function createRedemption(
+  data: Omit<Redemption, 'id' | 'createdAt' | 'status'>
+): Promise<string> {
+  const docRef = await addDoc(collection(db, REDEMPTIONS_COLLECTION), {
+    ...data,
+    status: 'pending' as RedemptionStatus,
+    createdAt: serverTimestamp(),
+  });
+  return docRef.id;
+}
+
+/**
+ * Gets redemptions for a creator
+ */
+export async function getRedemptionsByCreatorId(
+  creatorId: string,
+  status?: RedemptionStatus
+): Promise<Redemption[]> {
+  let q = query(
+    collection(db, REDEMPTIONS_COLLECTION),
+    where('creatorId', '==', creatorId),
+    orderBy('createdAt', 'desc')
+  );
+
+  if (status) {
+    q = query(q, where('status', '==', status));
+  }
+
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(doc =>
+    convertTimestamps<Redemption>({ id: doc.id, ...doc.data() })
+  );
+}
+
+/**
+ * Gets all redemptions (admin view)
+ */
+export async function getAllRedemptions(filters?: {
+  status?: RedemptionStatus;
+  source?: RedemptionSource;
+  limit?: number;
+  lastDoc?: Parameters<typeof startAfter>[0];
+}): Promise<{ redemptions: Redemption[]; lastDoc: Parameters<typeof startAfter>[0] | null; hasMore: boolean }> {
+  const pageLimit = filters?.limit || 20;
+
+  let q = query(
+    collection(db, REDEMPTIONS_COLLECTION),
+    orderBy('createdAt', 'desc'),
+    limit(pageLimit + 1)
+  );
+
+  if (filters?.status) {
+    q = query(q, where('status', '==', filters.status));
+  }
+  if (filters?.lastDoc) {
+    q = query(q, startAfter(filters.lastDoc));
+  }
+
+  const snapshot = await getDocs(q);
+  const docs = snapshot.docs;
+  const hasMore = docs.length > pageLimit;
+  const resultDocs = hasMore ? docs.slice(0, pageLimit) : docs;
+
+  let redemptions = resultDocs.map(doc =>
+    convertTimestamps<Redemption>({ id: doc.id, ...doc.data() })
+  );
+
+  // Client-side filter for source (Firestore limitation)
+  if (filters?.source) {
+    redemptions = redemptions.filter(r => r.source === filters.source);
+  }
+
+  return {
+    redemptions,
+    lastDoc: resultDocs[resultDocs.length - 1] || null,
+    hasMore,
+  };
+}
+
+/**
+ * Updates redemption status (admin)
+ */
+export async function updateRedemptionStatus(
+  id: string,
+  status: RedemptionStatus,
+  adminId: string,
+  fulfillmentDetails?: Partial<Pick<Redemption, 
+    'cashAmount' | 'cashMethod' | 'cashHandle' | 
+    'storeCreditCode' | 'productShipped' | 'trackingNumber' | 'notes'
+  >>
+): Promise<void> {
+  const docRef = doc(db, REDEMPTIONS_COLLECTION, id);
+  
+  const updateData: Record<string, unknown> = {
+    status,
+    updatedAt: serverTimestamp(),
+  };
+
+  if (status === 'fulfilled') {
+    updateData.fulfilledAt = serverTimestamp();
+    updateData.fulfilledBy = adminId;
+  }
+
+  if (fulfillmentDetails) {
+    Object.assign(updateData, fulfillmentDetails);
+  }
+
+  await updateDoc(docRef, updateData);
+}
+
+/**
+ * Gets a redemption by ID
+ */
+export async function getRedemptionById(id: string): Promise<Redemption | null> {
+  const docRef = doc(db, REDEMPTIONS_COLLECTION, id);
+  const docSnap = await getDoc(docRef);
+  
+  if (!docSnap.exists()) return null;
+  
+  return convertTimestamps<Redemption>({ id: docSnap.id, ...docSnap.data() });
 }
 
