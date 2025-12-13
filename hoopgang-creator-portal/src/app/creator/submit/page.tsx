@@ -8,6 +8,7 @@ import { Navbar } from '@/components/ui';
 import { getCreatorByUserId } from '@/lib/firestore';
 import { getCurrentWeek, formatTimeUntilReset } from '@/lib/week-utils';
 import { Creator } from '@/types';
+import { auth } from '@/lib/firebase';
 
 export default function SubmitContentPage() {
   const { user, loading: authLoading } = useAuth();
@@ -39,6 +40,55 @@ export default function SubmitContentPage() {
   // Time until reset
   const [timeUntilReset, setTimeUntilReset] = useState(formatTimeUntilReset());
 
+  // Helper function to get auth token
+  const getAuthToken = async (): Promise<string | null> => {
+    const currentUser = auth.currentUser;
+    if (!currentUser) return null;
+    return currentUser.getIdToken();
+  };
+
+  // Function to load volume stats
+  const loadVolumeStats = async () => {
+    try {
+      const token = await getAuthToken();
+      if (!token) return;
+
+      const response = await fetch('/api/submissions/volume/stats', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setVolumeStats(data.stats);
+      }
+    } catch (error) {
+      console.error('Error loading volume stats:', error);
+    }
+  };
+
+  // Function to load milestone stats
+  const loadMilestoneStats = async () => {
+    try {
+      const token = await getAuthToken();
+      if (!token) return;
+
+      const response = await fetch('/api/submissions/volume/milestone/stats', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setMilestoneStats(data.stats);
+      }
+    } catch (error) {
+      console.error('Error loading milestone stats:', error);
+    }
+  };
+
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/login');
@@ -55,7 +105,6 @@ export default function SubmitContentPage() {
           return;
         }
         setCreator(creatorData);
-        // TODO: Load stats via API in HG-304/305
       } catch (error) {
         console.error('Error loading creator:', error);
       } finally {
@@ -65,6 +114,8 @@ export default function SubmitContentPage() {
 
     if (user) {
       loadCreator();
+      loadVolumeStats();
+      loadMilestoneStats();
     }
   }, [user, authLoading, router]);
 
@@ -82,12 +133,34 @@ export default function SubmitContentPage() {
     
     setVolumeSubmitting(true);
     try {
-      // TODO: Call API in HG-304
-      console.log('Submit volume:', volumeUrl);
+      const token = await getAuthToken();
+      if (!token) throw new Error('Not authenticated');
+
+      const response = await fetch('/api/submissions/volume', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ tiktokUrl: volumeUrl }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Submission failed');
+      }
+
+      // Clear input and refresh stats
       setVolumeUrl('');
-      // Refresh stats
+      await loadVolumeStats();
+      
+      // Optional: Show success toast
+      console.log('Submitted successfully:', data.submission);
     } catch (error) {
       console.error('Volume submission error:', error);
+      // Optional: Show error toast
+      alert(error instanceof Error ? error.message : 'Submission failed');
     } finally {
       setVolumeSubmitting(false);
     }
@@ -99,12 +172,36 @@ export default function SubmitContentPage() {
     
     setMilestoneSubmitting(true);
     try {
-      // TODO: Call API in HG-305
-      console.log('Submit milestone:', milestoneUrl, milestoneTier);
+      const token = await getAuthToken();
+      if (!token) throw new Error('Not authenticated');
+
+      const response = await fetch('/api/submissions/volume/milestone', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          tiktokUrl: milestoneUrl,
+          claimedTier: milestoneTier,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Submission failed');
+      }
+
+      // Clear input and refresh stats
       setMilestoneUrl('');
-      // Refresh stats
+      await loadMilestoneStats();
+      
+      // Show success message (milestone requires review)
+      alert(data.message || 'Milestone submitted for review!');
     } catch (error) {
       console.error('Milestone submission error:', error);
+      alert(error instanceof Error ? error.message : 'Submission failed');
     } finally {
       setMilestoneSubmitting(false);
     }

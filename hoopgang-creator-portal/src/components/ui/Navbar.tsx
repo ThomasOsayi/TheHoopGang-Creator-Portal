@@ -97,6 +97,7 @@ export function Navbar() {
   const navLinks = [
     { href: '/apply', label: 'Apply', icon: '📝', show: true },
     { href: '/admin/creators', label: 'Admin', icon: '👑', show: isAdmin },
+    { href: '/admin/submissions', label: 'Submissions', icon: '📋', show: isAdmin },
     { href: '/creator/dashboard', label: 'Dashboard', icon: '🎯', show: user && !isAdmin && userData?.creatorId },
     { href: '/creator/submit', label: 'Submit Content', icon: '📤', show: user && !isAdmin && userData?.creatorId },
   ].filter(link => link.show);
