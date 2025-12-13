@@ -2,8 +2,7 @@
   "crons": [
     {
       "path": "/api/cron/competitions",
-      "schedule": "*/5 * * * *"
+      "schedule": "0 0 * * *"
     }
   ]
 }
-
