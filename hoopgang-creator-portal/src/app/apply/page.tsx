@@ -62,29 +62,30 @@ export default function ApplyPage() {
   useEffect(() => {
     const loadUserData = async () => {
       if (user) {
-        if (user.emailVerified) {
-          setVerificationStep('application');
+        // Always fetch user data from Firestore (including fullName)
+        try {
+          const { doc, getDoc } = await import('firebase/firestore');
+          const { db } = await import('@/lib/firebase');
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
           
-          // Fetch fullName from Firestore user doc
-          try {
-            const { doc, getDoc } = await import('firebase/firestore');
-            const { db } = await import('@/lib/firebase');
-            const userDoc = await getDoc(doc(db, 'users', user.uid));
-            
-            if (userDoc.exists()) {
-              const userData = userDoc.data();
-              setFormData(prev => ({
-                ...prev,
-                email: user.email || '',
-                fullName: userData.fullName || prev.fullName || '',
-              }));
-            } else {
-              setFormData(prev => ({ ...prev, email: user.email || '' }));
-            }
-          } catch (error) {
-            console.error('Error fetching user data:', error);
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            setFormData(prev => ({
+              ...prev,
+              email: user.email || '',
+              fullName: userData.fullName || prev.fullName || '',
+            }));
+          } else {
             setFormData(prev => ({ ...prev, email: user.email || '' }));
           }
+        } catch (error) {
+          console.error('Error fetching user data:', error);
+          setFormData(prev => ({ ...prev, email: user.email || '' }));
+        }
+
+        // Set verification step based on email verification status
+        if (user.emailVerified) {
+          setVerificationStep('application');
         } else {
           setVerificationStep('verify-pending');
         }

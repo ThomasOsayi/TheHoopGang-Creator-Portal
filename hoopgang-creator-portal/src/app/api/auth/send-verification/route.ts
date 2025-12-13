@@ -11,9 +11,22 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, email, fullName } = await request.json();
+    const body = await request.json();
+    
+    // 👇 Add this debug logging
+    console.log('Received verification request:', {
+      userId: body.userId,
+      email: body.email,
+      fullName: body.fullName,
+      hasUserId: !!body.userId,
+      hasEmail: !!body.email,
+      hasFullName: !!body.fullName,
+    });
+
+    const { userId, email, fullName } = body;
 
     if (!userId || !email || !fullName) {
+      console.log('Missing fields:', { userId: !!userId, email: !!email, fullName: !!fullName });
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }

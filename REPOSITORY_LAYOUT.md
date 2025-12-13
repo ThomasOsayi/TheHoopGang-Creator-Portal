@@ -19,6 +19,12 @@ hoopgang-creator-portal/
 ├── package-lock.json           # Dependency lock file
 ├── postcss.config.mjs          # PostCSS configuration
 ├── tsconfig.json               # TypeScript configuration
+├── firestore.indexes.json      # Firestore composite indexes configuration
+├── firebase.json               # Firebase configuration
+├── firestore.rules             # Firestore security rules
+├── scripts/                    # Utility scripts
+│   ├── seed-v3-rewards.ts      # Script to seed default rewards
+│   └── migrate-to-collaborations.ts  # Migration script
 └── README.md                   # Project documentation
 ```
 
@@ -55,55 +61,164 @@ hoopgang-creator-portal/
 #### Admin Routes
 ```
 admin/
-└── creators/
-    ├── page.tsx                # Admin creators list page
-    │                           # - Approve/Deny/Review actions for pending creators
-    │                           # - Application review modal integration
+├── creators/
+│   ├── page.tsx                # Admin creators list page
+│   │                           # - Approve/Deny/Review actions for pending creators
+│   │                           # - Application review modal integration
+│   └── [id]/
+│       └── page.tsx            # Individual creator detail page (dynamic route)
+│                               # - Tracking management section
+│                               # - Height/weight display in profile
+│                               # - Fit information in stats bar
+├── leaderboard/
+│   ├── volume/
+│   │   └── page.tsx            # Volume competition admin page
+│   │                           # - Start/end/finalize competitions
+│   │                           # - View leaderboard and submissions
+│   │                           # - Competition history
+│   │                           # - Creator submission modal
+│   └── gmv/
+│       └── page.tsx            # GMV leaderboard admin page
+│                               # - Bulk GMV entry management
+│                               # - Monthly leaderboard view
+│                               # - GMV period selection
+└── submissions/
+    ├── page.tsx                # Milestone submissions list page
+    │                           # - Filter by status, type, week
+    │                           # - View all pending/approved/rejected submissions
     └── [id]/
-        └── page.tsx            # Individual creator detail page (dynamic route)
-                                # - Tracking management section
-                                # - Height/weight display in profile
-                                # - Fit information in stats bar
+        └── page.tsx            # Individual milestone review page
+                                # - Approve/reject milestone submissions
+                                # - Verify view counts
+                                # - Create redemption records
 ```
 
 #### API Routes (`api/`)
 ```
 api/
-├── auth/
-│   └── send-verification/
-│       └── route.ts            # Email verification API endpoint
-│                               # - POST: Send branded verification email
-│                               # - Uses Firebase Admin SDK to generate verification links
-│                               # - Renders React email templates to HTML via Resend
-│                               # - Production domain fallback (creators.hoopgang.com)
-│                               # - Professional subject line (no emojis)
-├── email/
-│   └── send/
-│       └── route.ts            # General email sending endpoint
-├── tracking/
-│   └── route.ts                # Tracking API endpoints (GET, POST, DELETE)
-│                               # - POST: Save tracking info to Firestore and send shipped email
-│                               # - GET: Fetch existing tracking information
-│                               # - DELETE: Remove tracking information
-│                               # (Simplified - no external TrackingMore API calls)
-└── webhooks/
-    └── tracking/
-        └── route.ts            # TrackingMore webhook handler
-                                # - POST: Receive push notifications
-                                # - GET: Health check endpoint
+├── admin/
+│   ├── competitions/
+│   │   ├── route.ts            # Competition management API
+│   │   │                       # - GET: Fetch active competition, leaderboard, history
+│   │   │                       # - POST: Start new competition
+│   │   │                       # - PUT: End active competition
+│   │   └── finalize/
+│   │       └── route.ts        # Finalize competition API
+│   │                           # - POST: Finalize ended competition
+│   │                           # - Create redemption records for winners
+│   ├── leaderboard/
+│   │   ├── volume/
+│   │   │   ├── status/
+│   │   │   │   └── route.ts    # Volume leaderboard status API
+│   │   │   │                   # - GET: Check if week is finalized
+│   │   │   └── finalize/
+│   │   │       └── route.ts    # Volume leaderboard finalization API
+│   │   │                       # - POST: Finalize weekly volume leaderboard
+│   │   └── gmv/
+│   │       ├── route.ts        # GMV leaderboard API
+│   │       │                   # - GET: Fetch GMV leaderboard for period
+│   │       │                   # - POST: Create/update GMV entry
+│   │       └── bulk/
+│   │           └── route.ts     # Bulk GMV operations API
+│   │                           # - POST: Bulk create/update GMV entries
+│   └── submissions/
+│       ├── route.ts            # Admin submissions API
+│       │                       # - GET: Fetch all submissions with filters
+│       │                       # - Supports filtering by type, status, weekOf, creatorId
+│       ├── [id]/
+│       │   ├── route.ts        # Single submission API
+│       │   │                   # - GET: Fetch single submission with creator details
+│       │   └── review/
+│       │       └── route.ts    # Milestone review API
+│       │                       # - PUT: Approve/reject milestone submission
+│       │                       # - Creates redemption records on approval
+│   ├── auth/
+│   │   └── send-verification/
+│   │       └── route.ts        # Email verification API endpoint
+│   │                           # - POST: Send branded verification email
+│   │                           # - Uses Firebase Admin SDK to generate verification links
+│   │                           # - Renders React email templates to HTML via Resend
+│   │                           # - Production domain fallback (creators.hoopgang.com)
+│   │                           # - Professional subject line (no emojis)
+│   ├── competitions/
+│   │   └── active/
+│   │       └── route.ts        # Public active competition API
+│   │                           # - GET: Fetch active competition (no auth required)
+│   │                           # - Auto-ends expired competitions on-demand
+│   │                           # - Returns leaderboard and time remaining
+│   │                           # - Supports includeEnded parameter
+│   ├── creator/
+│   │   └── stats/
+│   │       └── route.ts        # Creator stats API
+│   │                           # - GET: Fetch creator statistics
+│   ├── email/
+│   │   └── send/
+│   │       └── route.ts        # General email sending endpoint
+│   ├── leaderboard/
+│   │   └── route.ts            # Public leaderboard API
+│   │                           # - GET: Fetch leaderboard by type and period
+│   ├── submissions/
+│   │   ├── history/
+│   │   │   └── route.ts        # Submission history API
+│   │   │                       # - GET: Fetch creator's submission history
+│   │   └── volume/
+│   │       ├── route.ts        # Volume submission API
+│   │       │                   # - POST: Create volume submission
+│   │       │                   # - Auto-tags with active competition
+│   │       │                   # - Recalculates leaderboards
+│   │       ├── stats/
+│   │       │   └── route.ts    # Volume stats API
+│   │       │                   # - GET: Fetch creator volume statistics
+│   │       └── milestone/
+│   │           ├── route.ts    # Milestone submission API
+│   │           │               # - POST: Create milestone submission (pending review)
+│   │           └── stats/
+│   │               └── route.ts # Milestone stats API
+│   │                           # - GET: Fetch creator milestone statistics
+│   ├── tracking/
+│   │   └── route.ts            # Tracking API endpoints (GET, POST, DELETE)
+│   │                           # - POST: Save tracking info to Firestore and send shipped email
+│   │                           # - GET: Fetch existing tracking information
+│   │                           # - DELETE: Remove tracking information
+│   │                           # (Simplified - no external TrackingMore API calls)
+│   └── webhooks/
+│       └── tracking/
+│           └── route.ts        # TrackingMore webhook handler
+│                               # - POST: Receive push notifications
+│                               # - GET: Health check endpoint
 ```
 
 #### Creator Routes
 ```
 creator/
-└── dashboard/
-    └── page.tsx                # Creator dashboard page
-                                # - Status-based content visibility
-                                # - Two-column layout (timeline + content)
-                                # - Quick stats bar with status/videos/time/product
-                                # - Completion banners and countdown timers
-                                # - Enhanced timeline with checkmarks and progress
-                                # - Glassmorphic design with hover effects
+├── dashboard/
+│   └── page.tsx                # Creator dashboard page
+│                               # - Status-based content visibility
+│                               # - Two-column layout (timeline + content)
+│                               # - Quick stats bar with status/videos/time/product
+│                               # - Completion banners and countdown timers
+│                               # - Enhanced timeline with checkmarks and progress
+│                               # - Glassmorphic design with hover effects
+├── submit/
+│   └── page.tsx                # Content submission page
+│                               # - Volume submission form
+│                               # - Milestone submission form
+│                               # - Competition status banner
+│                               # - Weekly stats display
+│                               # - Milestone stats display
+│                               # - Time until weekly reset
+├── leaderboard/
+│   └── page.tsx                # Creator leaderboard page
+│                               # - Volume competition leaderboard
+│                               # - GMV leaderboard (monthly)
+│                               # - Competition status banners
+│                               # - User rank highlighting
+│                               # - Period selection for GMV
+└── submissions/
+    └── page.tsx                # Creator submissions history page
+                                # - View all submissions
+                                # - Filter by type and status
+                                # - Submission status tracking
 ```
 
 ---
@@ -146,6 +261,16 @@ creator/
   - Email verification link generation
   - Service account configuration (supports base64 encoded or individual env vars)
 - `firestore.ts` - Firestore database operations and utilities
+  - V3 Content Submission functions (volume, milestone)
+  - Competition management functions
+  - Leaderboard calculation and management
+  - Rewards and redemptions system
+  - Week/month utility functions
+- `week-utils.ts` - Week and month utility functions
+  - ISO week calculations (getCurrentWeek, getWeekString, etc.)
+  - Month calculations (getCurrentMonth, getMonthString, etc.)
+  - Time formatting (formatTimeRemaining, formatTimeUntilReset)
+  - Period utilities (getPreviousWeeks, getPreviousMonths)
 - `tracking.ts` - Tracking utility functions
   - Carrier code mapping
   - Status normalization
@@ -179,6 +304,30 @@ creator/
     - `ShipmentTracking` - Complete shipment tracking data
   - Application input types (CreatorApplicationInput)
   - Dashboard statistics types
+  - V3 Content Submission types:
+    - `V3SubmissionType` - 'volume' | 'milestone'
+    - `V3SubmissionStatus` - 'pending' | 'approved' | 'rejected'
+    - `MilestoneTier` - '100k' | '500k' | '1m'
+    - `V3ContentSubmission` - Submission interface with competitionId
+  - Competition types:
+    - `CompetitionStatus` - 'pending' | 'active' | 'ended' | 'finalized'
+    - `Competition` - Competition interface with winners, dates
+    - `CompetitionWinner` - Winner interface with rank and rewards
+  - Leaderboard types:
+    - `LeaderboardType` - 'volume' | 'gmv'
+    - `LeaderboardPeriod` - Period string (week or month)
+    - `LeaderboardEntry` - Leaderboard entry with rank and value
+  - Rewards and Redemptions types:
+    - `RewardCategory` - Reward category enumeration
+    - `FulfillmentType` - Cash, store credit, product, or mixed
+    - `Reward` - Reward interface with values and eligibility
+    - `RedemptionSource` - Source of redemption (milestone, competition, etc.)
+    - `RedemptionStatus` - Redemption status enumeration
+    - `Redemption` - Redemption interface with fulfillment details
+  - Stats types:
+    - `V3VolumeStats` - Volume submission statistics
+    - `V3MilestoneStats` - Milestone submission statistics
+    - `V3CreatorStats` - Combined creator statistics
 
 ---
 
@@ -205,16 +354,22 @@ creator/
 
 ## File Statistics
 
-### Pages (7 `page.tsx` files)
+### Pages (13+ `page.tsx` files)
 - Root page, login, apply, forgot-password
-- Admin: creators list, creator detail (with tracking management)
-- Creator: dashboard (with package tracking and countdown)
+- Admin: creators list, creator detail, submissions list, submission review, volume leaderboard, GMV leaderboard
+- Creator: dashboard, submit, leaderboard, submissions history
 
-### API Routes (4 files)
+### API Routes (20+ files)
 - Auth: Email verification endpoint
 - Email: Send email endpoint
 - Tracking API: POST, GET, DELETE handlers (simplified - no external API)
 - Webhooks: TrackingMore push notification handler
+- Competitions: Active competition endpoint (public)
+- Admin Competitions: Start, end, finalize competitions
+- Submissions: Volume, milestone, history endpoints
+- Leaderboards: Volume, GMV leaderboard endpoints
+- Admin Submissions: Review and manage submissions
+- Admin Leaderboards: Finalize and manage leaderboards
 
 ### Components (22 files)
 - Auth: 2 files
@@ -233,9 +388,12 @@ creator/
 ### Types (1 file)
 - Type definitions
 
-### Configuration Files (7 files, app root)
+### Configuration Files (9+ files, app root)
 - Build tools (Next.js, TypeScript, ESLint, PostCSS)
 - Package management
+- `firestore.indexes.json` - Firestore composite indexes configuration
+- `firebase.json` - Firebase configuration
+- `firestore.rules` - Firestore security rules
 
 ### Public Assets
 - SVG icons, logos, and image assets (see `hoopgang-creator-portal/public/`)
@@ -362,6 +520,36 @@ creator/
    - Real creator photos and content gallery
    - Enhanced visual hierarchy with floating cards and badges
    - Real-world statistics and social proof
+
+10. **V3 Content Submission System**
+    - Volume submissions (auto-approved)
+    - Milestone submissions (requires admin review)
+    - Competition integration (auto-tags submissions)
+    - Weekly and milestone statistics tracking
+    - Submission history and status tracking
+
+11. **Competition System**
+    - Volume and GMV competition support
+    - Start/end/finalize competition workflows
+    - Auto-ending expired competitions (on-demand)
+    - Competition leaderboard calculation
+    - Winner tracking and redemption creation
+    - Competition status banners for creators
+
+12. **Leaderboard System**
+    - Volume leaderboards (weekly, competition-based)
+    - GMV leaderboards (monthly)
+    - Real-time leaderboard updates
+    - User rank highlighting
+    - Period-based leaderboard views
+    - Leaderboard finalization workflows
+
+13. **Rewards & Redemptions System**
+    - Reward management (cash, store credit, products)
+    - Milestone-based rewards
+    - Competition winner rewards
+    - Redemption tracking and fulfillment
+    - Automatic redemption creation on approvals
 
 ---
 
@@ -586,10 +774,77 @@ creator/
   - Updated to use V2 collaboration-based status system
   - Fixed `getCreatorWithActiveCollab` return type usage (changed `activeCollaboration` to `collaboration`)
   - Fixed React namespace issue by importing `MouseEvent` type directly
+  - Added navigation links for creator submit, admin submissions, admin leaderboards
   - All TypeScript compilation errors resolved for Vercel deployment
 - **Build System**:
   - All email templates compile successfully
   - No TypeScript errors in production build
   - All linting errors resolved
   - Ready for Vercel deployment
+
+### V3 Content Submission & Competition System (Latest)
+- **Content Submission System**:
+  - Volume submissions: Auto-approved, tracked by week
+  - Milestone submissions: Requires admin review, tracks view milestones
+  - Competition integration: Submissions automatically tagged with active competition
+  - Submission stats: Weekly volume counts, milestone approval/rejection tracking
+  - Duplicate URL prevention: Checks for existing submissions before creating
+- **Competition System**:
+  - Competition types: Volume and GMV competitions
+  - Competition lifecycle: Start → Active → Ended → Finalized
+  - Auto-ending: Expired competitions automatically ended on-demand (when leaderboard/submit pages load)
+  - Competition leaderboards: Real-time calculation based on submissions
+  - Winner management: Tracks top 3 winners with rewards
+  - Competition status: Active, ended (pending verification), finalized states
+- **Leaderboard System**:
+  - Volume leaderboards: Weekly and competition-based
+  - GMV leaderboards: Monthly period-based
+  - Real-time updates: Leaderboards recalculate on submission
+  - Finalization: Admin can finalize weekly/monthly leaderboards
+  - User ranking: Creators can see their rank and position
+- **Rewards & Redemptions**:
+  - Reward categories: Milestone rewards, leaderboard rewards
+  - Fulfillment types: Cash, store credit, products, or mixed
+  - Automatic redemption creation: Created when milestones approved or competitions finalized
+  - Redemption tracking: Status tracking (pending, approved, fulfilled, rejected)
+- **Admin Features**:
+  - Competition management: Start, end, finalize competitions
+  - Submission review: Approve/reject milestone submissions with view verification
+  - Leaderboard management: View, finalize, and manage leaderboards
+  - Bulk operations: Bulk GMV entry management
+  - Creator submission viewer: Modal to view all submissions for a creator
+- **Creator Features**:
+  - Submit page: Volume and milestone submission forms with competition status
+  - Leaderboard page: View competition and GMV leaderboards with user rank
+  - Submissions history: View all past submissions with status
+  - Competition awareness: Status banners showing active/ended competitions
+  - Stats tracking: Weekly volume stats and milestone stats display
+- **API Enhancements**:
+  - Public competition endpoint: No auth required for viewing active competitions
+  - On-demand expiration: Competitions auto-end when accessed (no cron needed)
+  - Submission filtering: Filter by type, status, week, creator
+  - Leaderboard APIs: Separate endpoints for volume and GMV
+  - Stats APIs: Volume and milestone statistics endpoints
+- **Firestore Functions**:
+  - Competition functions: getActiveCompetition, startCompetition, endCompetition, finalizeCompetition
+  - Submission functions: createVolumeSubmission, createMilestoneSubmission, reviewMilestoneSubmission
+  - Leaderboard functions: getLeaderboard, recalculateVolumeLeaderboard, getCompetitionLeaderboard
+  - Reward functions: getActiveRewards, getRewardByMilestoneTier, createReward
+  - Redemption functions: createRedemption, getRedemptionsByCreatorId, updateRedemptionStatus
+- **Type System**:
+  - Added V3 submission types (V3ContentSubmission, V3SubmissionType, etc.)
+  - Added competition types (Competition, CompetitionStatus, CompetitionWinner)
+  - Added leaderboard types (LeaderboardEntry, LeaderboardType, LeaderboardPeriod)
+  - Added rewards types (Reward, RewardCategory, FulfillmentType)
+  - Added redemption types (Redemption, RedemptionSource, RedemptionStatus)
+  - Added stats types (V3VolumeStats, V3MilestoneStats, V3CreatorStats)
+- **Firestore Indexes**:
+  - Added indexes for competitions (type + status, type + createdAt)
+  - Added indexes for submissions (competitionId + type + status)
+  - Added indexes for leaderboard entries
+  - Created firestore.indexes.json configuration file
+- **Utility Functions**:
+  - Week utilities: ISO week calculations, time formatting, period utilities
+  - Month utilities: Month string generation, period calculations
+  - Time formatting: formatTimeRemaining, formatTimeUntilReset functions
 
