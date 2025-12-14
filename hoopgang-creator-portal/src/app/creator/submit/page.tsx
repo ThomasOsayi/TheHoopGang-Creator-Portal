@@ -20,6 +20,24 @@ import { getCurrentWeek, getWeekEnd } from '@/lib/week-utils';
 import { Creator } from '@/types';
 import { auth } from '@/lib/firebase';
 
+// TikTok Icon SVG Component
+function TikTokIcon({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+    </svg>
+  );
+}
+
+// External Link Icon
+function ExternalLinkIcon({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+    </svg>
+  );
+}
+
 export default function SubmitContentPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -27,8 +45,8 @@ export default function SubmitContentPage() {
   const [loading, setLoading] = useState(true);
   
   // Volume submission state
-  const [volumeUrl, setVolumeUrl] = useState('');
-  const [volumeSubmitting, setVolumeSubmitting] = useState(false);
+  const [tiktokUrl, setTiktokUrl] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const [volumeStats, setVolumeStats] = useState({
     weeklyCount: 0,
     allTimeCount: 0,
@@ -37,16 +55,12 @@ export default function SubmitContentPage() {
   });
   const [statsLoading, setStatsLoading] = useState(true);
   
-  // Milestone submission state
-  const [milestoneUrl, setMilestoneUrl] = useState('');
-  const [milestoneTier, setMilestoneTier] = useState<'100k' | '500k' | '1m'>('100k');
-  const [milestoneSubmitting, setMilestoneSubmitting] = useState(false);
-  const [milestoneStats, setMilestoneStats] = useState({
-    pendingCount: 0,
-    approvedCount: 0,
-    rejectedCount: 0,
-    totalEarned: 0,
-  });
+  // Recent submissions
+  const [recentSubmissions, setRecentSubmissions] = useState<Array<{
+    id: string;
+    tiktokUrl: string;
+    createdAt: Date;
+  }>>([]);
   
   // Competition state
   const [activeCompetition, setActiveCompetition] = useState<{
@@ -56,9 +70,6 @@ export default function SubmitContentPage() {
     endsAt: string;
   } | null>(null);
   const [competitionLoading, setCompetitionLoading] = useState(true);
-  
-  // Week reset date
-  const [weekResetDate, setWeekResetDate] = useState<Date>(new Date());
   
   // Success states
   const [showConfetti, setShowConfetti] = useState(false);
@@ -89,32 +100,16 @@ export default function SubmitContentPage() {
       if (response.ok) {
         const data = await response.json();
         setVolumeStats(data.stats);
+        
+        // Set recent submissions if available
+        if (data.recentSubmissions) {
+          setRecentSubmissions(data.recentSubmissions.slice(0, 3));
+        }
       }
     } catch (error) {
       console.error('Error loading volume stats:', error);
     } finally {
       setStatsLoading(false);
-    }
-  };
-
-  // Function to load milestone stats
-  const loadMilestoneStats = async () => {
-    try {
-      const token = await getAuthToken();
-      if (!token) return;
-
-      const response = await fetch('/api/submissions/volume/milestone/stats', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setMilestoneStats(data.stats);
-      }
-    } catch (error) {
-      console.error('Error loading milestone stats:', error);
     }
   };
 
@@ -163,20 +158,15 @@ export default function SubmitContentPage() {
     if (user) {
       loadCreator();
       loadVolumeStats();
-      loadMilestoneStats();
       fetchCompetition();
-      
-      // Set week reset date
-      const currentWeek = getCurrentWeek();
-      setWeekResetDate(getWeekEnd(currentWeek));
     }
   }, [user, authLoading, router]);
 
-  const handleVolumeSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!volumeUrl.trim() || volumeSubmitting) return;
+    if (!tiktokUrl.trim() || submitting) return;
     
-    setVolumeSubmitting(true);
+    setSubmitting(true);
     try {
       const token = await getAuthToken();
       if (!token) throw new Error('Not authenticated');
@@ -187,7 +177,7 @@ export default function SubmitContentPage() {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ tiktokUrl: volumeUrl }),
+        body: JSON.stringify({ tiktokUrl }),
       });
 
       const data = await response.json();
@@ -197,7 +187,7 @@ export default function SubmitContentPage() {
       }
 
       // Clear input and refresh stats
-      setVolumeUrl('');
+      setTiktokUrl('');
       await loadVolumeStats();
       
       // Show celebration!
@@ -209,53 +199,10 @@ export default function SubmitContentPage() {
       // Hide confetti after 3 seconds
       setTimeout(() => setShowConfetti(false), 3000);
     } catch (error) {
-      console.error('Volume submission error:', error);
+      console.error('Submission error:', error);
       alert(error instanceof Error ? error.message : 'Submission failed');
     } finally {
-      setVolumeSubmitting(false);
-    }
-  };
-
-  const handleMilestoneSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!milestoneUrl.trim() || milestoneSubmitting) return;
-    
-    setMilestoneSubmitting(true);
-    try {
-      const token = await getAuthToken();
-      if (!token) throw new Error('Not authenticated');
-
-      const response = await fetch('/api/submissions/volume/milestone', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          tiktokUrl: milestoneUrl,
-          claimedTier: milestoneTier,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Submission failed');
-      }
-
-      // Clear input and refresh stats
-      setMilestoneUrl('');
-      await loadMilestoneStats();
-      
-      // Show success toast (milestone requires review, so no confetti)
-      setSuccessMessage('Milestone Submitted! 🏆');
-      setSuccessSubMessage('Your video is now pending review');
-      setShowSuccessToast(true);
-    } catch (error) {
-      console.error('Milestone submission error:', error);
-      alert(error instanceof Error ? error.message : 'Submission failed');
-    } finally {
-      setMilestoneSubmitting(false);
+      setSubmitting(false);
     }
   };
 
@@ -263,13 +210,29 @@ export default function SubmitContentPage() {
     return url.includes('tiktok.com/') || url.includes('vm.tiktok.com/');
   };
 
-  // Get tier label for display
-  const getTierLabel = (tier: string) => {
-    switch (tier) {
-      case '100k': return '100K Views';
-      case '500k': return '500K Views';
-      case '1m': return '1M+ Views';
-      default: return tier;
+  // Format relative time
+  const formatRelativeTime = (date: Date): string => {
+    const now = new Date();
+    const diffMs = now.getTime() - new Date(date).getTime();
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffHours / 24);
+    
+    if (diffHours < 1) return 'Just now';
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    if (diffDays === 1) return 'Yesterday';
+    return `${diffDays} days ago`;
+  };
+
+  // Extract shortened URL for display
+  const shortenUrl = (url: string): string => {
+    try {
+      const match = url.match(/@([^/]+)\/video\/(\d+)/);
+      if (match) {
+        return `@${match[1]}/video/${match[2].slice(0, 3)}...`;
+      }
+      return url.slice(0, 30) + '...';
+    } catch {
+      return url.slice(0, 30) + '...';
     }
   };
 
@@ -305,7 +268,7 @@ export default function SubmitContentPage() {
         onClose={() => setShowSuccessToast(false)}
       />
 
-      <main className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 py-8">
+      <main className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 py-8">
         {/* Header - Centered */}
         <div className="mb-8 text-center animate-fade-in">
           <h1 className="text-3xl font-bold text-white mb-2">
@@ -317,95 +280,31 @@ export default function SubmitContentPage() {
           </p>
         </div>
 
-        {/* Stats Row */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4 text-center animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-            <div className="text-2xl font-bold text-white">
-              {statsLoading ? (
-                <Skeleton className="w-8 h-7 mx-auto" />
-              ) : (
-                <AnimatedCounter value={volumeStats.weeklyCount} />
-              )}
-            </div>
-            <div className="text-zinc-500 text-sm">This Week</div>
-          </div>
-          <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4 text-center animate-fade-in-up" style={{ animationDelay: '0.15s' }}>
-            <div className="text-2xl font-bold text-orange-400">
-              {statsLoading ? (
-                <Skeleton className="w-12 h-7 mx-auto" />
-              ) : volumeStats.currentRank ? (
-                <>
-                  #<AnimatedCounter value={volumeStats.currentRank} />
-                </>
-              ) : (
-                <span className="text-zinc-500">—</span>
-              )}
-            </div>
-            <div className="text-zinc-500 text-sm">Your Rank</div>
-          </div>
-          <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4 text-center animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-            <div className="text-2xl font-bold text-white">
-              {statsLoading ? (
-                <Skeleton className="w-8 h-7 mx-auto" />
-              ) : (
-                <AnimatedCounter value={volumeStats.allTimeCount} />
-              )}
-            </div>
-            <div className="text-zinc-500 text-sm">All-Time</div>
-          </div>
-          <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4 text-center animate-fade-in-up" style={{ animationDelay: '0.25s' }}>
-            <div className="text-2xl font-bold text-green-400">
-              $<AnimatedCounter value={milestoneStats.totalEarned} />
-            </div>
-            <div className="text-zinc-500 text-sm">Earned</div>
-          </div>
-        </div>
-
         {/* Competition Banner */}
         {!competitionLoading && activeCompetition?.status === 'active' && (
-          <div className="mb-6 p-4 bg-gradient-to-r from-green-500/10 via-emerald-500/5 to-green-500/10 border border-green-500/30 rounded-2xl animate-fade-in-up relative overflow-hidden group">
-            {/* Animated shine */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-            
-            <div className="relative flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="mb-6 p-4 bg-gradient-to-r from-green-500/10 via-emerald-500/5 to-green-500/10 border border-green-500/30 rounded-2xl animate-fade-in-up">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <div className="relative">
-                  <span className="text-3xl">🏆</span>
-                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse" />
+                  <span className="w-3 h-3 bg-green-500 rounded-full animate-pulse inline-block" />
                 </div>
-                <div>
-                  <h3 className="text-green-400 font-bold">{activeCompetition.name} is LIVE!</h3>
-                  <p className="text-zinc-400 text-sm">Your submissions count toward the leaderboard</p>
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">🏆</span>
+                  <span className="text-green-400 font-bold">{activeCompetition.name} is LIVE!</span>
                 </div>
+                <span className="text-zinc-400 hidden sm:inline">Your submissions count toward the leaderboard</span>
               </div>
               <div className="flex items-center gap-3">
                 <div className="text-right">
-                  <div className="text-zinc-500 text-xs">Ends in</div>
-                  <LiveCountdown targetDate={new Date(activeCompetition.endsAt)} size="sm" />
+                  <div className="text-zinc-500 text-xs mb-1">Ends in</div>
+                  <LiveCountdown targetDate={new Date(activeCompetition.endsAt)} size="md" />
                 </div>
-                <Link href="/creator/leaderboard">
-                  <button className="px-4 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-400 font-medium rounded-xl transition-all text-sm">
-                    Leaderboard →
-                  </button>
-                </Link>
               </div>
             </div>
           </div>
         )}
 
-        {!competitionLoading && activeCompetition?.status === 'ended' && (
-          <div className="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-2xl animate-fade-in-up">
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">⏳</span>
-              <div>
-                <span className="text-yellow-400 font-medium">{activeCompetition.name} has ended</span>
-                <p className="text-zinc-400 text-sm">Results are being verified. You can still submit content!</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {!competitionLoading && !activeCompetition && (
+        {!competitionLoading && (!activeCompetition || activeCompetition.status !== 'active') && (
           <div className="mb-6 p-4 bg-zinc-900/50 border border-zinc-800 rounded-2xl animate-fade-in-up">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -416,185 +315,238 @@ export default function SubmitContentPage() {
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-zinc-500 text-xs">Week resets in</div>
-                <LiveCountdown targetDate={weekResetDate} size="sm" />
+                <div className="text-zinc-500 text-xs mb-1">Week resets in</div>
+                <LiveCountdown targetDate={getWeekEnd(getCurrentWeek())} size="md" />
               </div>
             </div>
           </div>
         )}
 
-        {/* Main Content - Two Column Layout */}
-        <div className="grid lg:grid-cols-2 gap-6">
-          
-          {/* Volume Submissions Card */}
-          <GlowCard glowColor="orange" delay="0.3s">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 bg-gradient-to-br from-orange-500/20 to-amber-500/20 rounded-xl flex items-center justify-center">
-                <span className="text-2xl">📊</span>
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-white">Volume Submissions</h2>
-                <p className="text-zinc-400 text-sm">Post content to climb the weekly leaderboard</p>
-              </div>
+        {/* Stats Row - 3 Large Cards */}
+        <div className="grid grid-cols-3 gap-4 mb-8">
+          <GlowCard glowColor="orange" delay="0.1s" className="text-center py-8">
+            <div className="text-4xl font-bold text-white mb-2">
+              {statsLoading ? (
+                <Skeleton className="w-12 h-10 mx-auto" />
+              ) : (
+                <AnimatedCounter value={volumeStats.weeklyCount} />
+              )}
             </div>
-
-            <form onSubmit={handleVolumeSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm text-zinc-400 mb-2">TikTok URL</label>
-                <input
-                  type="url"
-                  value={volumeUrl}
-                  onChange={(e) => setVolumeUrl(e.target.value)}
-                  placeholder="https://tiktok.com/@username/video/..."
-                  className="w-full bg-zinc-800/50 border border-zinc-700 rounded-xl px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all"
-                />
-              </div>
-              
-              <button
-                type="submit"
-                disabled={!volumeUrl.trim() || volumeSubmitting || !validateTikTokUrl(volumeUrl)}
-                className="w-full py-3.5 bg-orange-500 hover:bg-orange-600 disabled:bg-zinc-700 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98] disabled:hover:scale-100 shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40 disabled:shadow-none"
-              >
-                {volumeSubmitting ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Submitting...
-                  </span>
-                ) : (
-                  'Submit Content →'
-                )}
-              </button>
-            </form>
-
-            {/* Quick Stats */}
-            <div className="mt-6 pt-4 border-t border-zinc-700/50">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-zinc-400">Weekly submissions</span>
-                <span className="text-white font-semibold">
-                  {statsLoading ? <Skeleton className="w-8 h-4" /> : volumeStats.weeklyCount}
-                </span>
-              </div>
-              <div className="flex items-center justify-between text-sm mt-2">
-                <span className="text-zinc-400">Current rank</span>
-                <span className="text-orange-400 font-semibold">
-                  {statsLoading ? (
-                    <Skeleton className="w-16 h-4" />
-                  ) : volumeStats.currentRank ? (
-                    `#${volumeStats.currentRank} of ${volumeStats.totalCreators}`
-                  ) : (
-                    'Not ranked'
-                  )}
-                </span>
-              </div>
-            </div>
+            <div className="text-zinc-400">This Week</div>
           </GlowCard>
-
-          {/* Milestone Submissions Card */}
-          <GlowCard glowColor="amber" delay="0.4s">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 bg-gradient-to-br from-amber-500/20 to-yellow-500/20 rounded-xl flex items-center justify-center">
-                <span className="text-2xl">🏆</span>
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-white">Milestone Submissions</h2>
-                <p className="text-zinc-400 text-sm">Got a viral video? Claim your reward</p>
-              </div>
+          
+          <GlowCard glowColor="orange" delay="0.15s" className="text-center py-8 border-orange-500/30">
+            <div className="text-4xl font-bold text-orange-400 mb-2">
+              {statsLoading ? (
+                <Skeleton className="w-16 h-10 mx-auto" />
+              ) : volumeStats.currentRank ? (
+                <>
+                  #<AnimatedCounter value={volumeStats.currentRank} />
+                </>
+              ) : (
+                <span className="text-zinc-500">—</span>
+              )}
             </div>
-
-            {/* Milestone Tiers */}
-            <div className="mb-6 space-y-2">
-              {[
-                { tier: '100k', label: '100K views', reward: '$10 store credit', icon: '🥉' },
-                { tier: '500k', label: '500K views', reward: '$25 + free product', icon: '🥈' },
-                { tier: '1m', label: '1M+ views', reward: '$50 + exclusive merch', icon: '🥇' },
-              ].map((item) => (
-                <div 
-                  key={item.tier}
-                  onClick={() => setMilestoneTier(item.tier as '100k' | '500k' | '1m')}
-                  className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${
-                    milestoneTier === item.tier 
-                      ? 'bg-amber-500/20 border border-amber-500/50' 
-                      : 'bg-zinc-800/30 border border-zinc-700/50 hover:border-zinc-600'
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <span>{item.icon}</span>
-                    <span className={milestoneTier === item.tier ? 'text-amber-300' : 'text-zinc-400'}>
-                      {item.label}
-                    </span>
-                  </div>
-                  <span className="text-green-400 text-sm">{item.reward}</span>
-                </div>
-              ))}
+            <div className="text-zinc-400">Your Rank</div>
+            {volumeStats.totalCreators > 0 && (
+              <div className="text-zinc-500 text-sm">of {volumeStats.totalCreators} creators</div>
+            )}
+          </GlowCard>
+          
+          <GlowCard glowColor="orange" delay="0.2s" className="text-center py-8">
+            <div className="text-4xl font-bold text-white mb-2">
+              {statsLoading ? (
+                <Skeleton className="w-12 h-10 mx-auto" />
+              ) : (
+                <AnimatedCounter value={volumeStats.allTimeCount} />
+              )}
             </div>
-
-            <form onSubmit={handleMilestoneSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm text-zinc-400 mb-2">TikTok URL</label>
-                <input
-                  type="url"
-                  value={milestoneUrl}
-                  onChange={(e) => setMilestoneUrl(e.target.value)}
-                  placeholder="https://tiktok.com/@username/video/..."
-                  className="w-full bg-zinc-800/50 border border-zinc-700 rounded-xl px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-all"
-                />
-              </div>
-              
-              <button
-                type="submit"
-                disabled={!milestoneUrl.trim() || milestoneSubmitting || !validateTikTokUrl(milestoneUrl)}
-                className="w-full py-3.5 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 disabled:from-zinc-700 disabled:to-zinc-700 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98] disabled:hover:scale-100 shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 disabled:shadow-none"
-              >
-                {milestoneSubmitting ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Submitting...
-                  </span>
-                ) : (
-                  `Claim ${getTierLabel(milestoneTier)} Reward →`
-                )}
-              </button>
-            </form>
-
-            {/* Milestone Stats */}
-            <div className="mt-6 pt-4 border-t border-zinc-700/50">
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div>
-                  <div className="text-yellow-400 font-semibold">{milestoneStats.pendingCount}</div>
-                  <div className="text-zinc-500 text-xs">Pending</div>
-                </div>
-                <div>
-                  <div className="text-green-400 font-semibold">{milestoneStats.approvedCount}</div>
-                  <div className="text-zinc-500 text-xs">Approved</div>
-                </div>
-                <div>
-                  <div className="text-green-400 font-semibold">${milestoneStats.totalEarned}</div>
-                  <div className="text-zinc-500 text-xs">Earned</div>
-                </div>
-              </div>
-            </div>
+            <div className="text-zinc-400">All-Time</div>
           </GlowCard>
         </div>
 
-        {/* Bottom Actions */}
-        <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
-          <Link 
-            href="/creator/submissions"
-            className="text-zinc-400 hover:text-orange-400 transition-colors text-sm flex items-center gap-1"
-          >
-            View submission history →
-          </Link>
-          <span className="text-zinc-700 hidden sm:inline">•</span>
+        {/* Drop Your TikTok Link Card */}
+        <GlowCard glowColor="orange" delay="0.25s" className="mb-8">
+          <div className="text-center mb-6">
+            <h2 className="text-xl font-bold text-white mb-2">Drop Your TikTok Link</h2>
+            <p className="text-zinc-400">Paste your TikTok URL and we&apos;ll add it to your stats</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="relative">
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500">
+                <TikTokIcon className="w-5 h-5" />
+              </div>
+              <input
+                type="url"
+                value={tiktokUrl}
+                onChange={(e) => setTiktokUrl(e.target.value)}
+                placeholder="https://www.tiktok.com/@username/video/..."
+                className="w-full bg-zinc-800/50 border border-zinc-700 rounded-xl pl-12 pr-4 py-4 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all"
+              />
+            </div>
+            
+            <button
+              type="submit"
+              disabled={!tiktokUrl.trim() || submitting || !validateTikTokUrl(tiktokUrl)}
+              className="w-full py-4 bg-zinc-800 hover:bg-zinc-700 disabled:bg-zinc-800 disabled:cursor-not-allowed text-white disabled:text-zinc-500 font-semibold rounded-xl transition-all"
+            >
+              {submitting ? (
+                <span className="flex items-center justify-center gap-2">
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Submitting...
+                </span>
+              ) : (
+                'Submit to Leaderboard →'
+              )}
+            </button>
+          </form>
+        </GlowCard>
+
+        {/* Recent Submissions */}
+        <GlowCard glowColor="orange" delay="0.3s" className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-xl">📋</span>
+            <h3 className="text-lg font-semibold text-white">Recent Submissions</h3>
+          </div>
+
+          {recentSubmissions.length > 0 ? (
+            <div className="space-y-3">
+              {recentSubmissions.map((submission) => (
+                <div 
+                  key={submission.id}
+                  className="flex items-center justify-between p-3 bg-zinc-800/30 rounded-xl"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-green-500/20 rounded-full flex items-center justify-center">
+                      <svg className="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div>
+                      <div className="text-white text-sm">{shortenUrl(submission.tiktokUrl)}</div>
+                      <div className="text-zinc-500 text-xs">{formatRelativeTime(submission.createdAt)}</div>
+                    </div>
+                  </div>
+                  <a 
+                    href={submission.tiktokUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-zinc-500 hover:text-zinc-300 transition-colors"
+                  >
+                    <ExternalLinkIcon />
+                  </a>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-zinc-500">
+              <p>No submissions yet this week</p>
+              <p className="text-sm">Submit your first TikTok above!</p>
+            </div>
+          )}
+
+          <div className="mt-4 pt-4 border-t border-zinc-700/50 text-center">
+            <Link 
+              href="/creator/submissions"
+              className="text-zinc-400 hover:text-white transition-colors text-sm"
+            >
+              View All History →
+            </Link>
+          </div>
+        </GlowCard>
+
+        {/* Milestone Bonuses */}
+        <GlowCard glowColor="amber" delay="0.35s" className="mb-8">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-2xl">🏆</span>
+            <h3 className="text-lg font-semibold text-white">Milestone Bonuses</h3>
+          </div>
+          <p className="text-zinc-400 text-sm mb-6">Got a viral video? Claim extra rewards!</p>
+
+          <div className="space-y-3">
+            <Link href="/creator/milestones" className="block">
+              <div className="flex items-center justify-between p-4 bg-zinc-800/30 rounded-xl hover:bg-zinc-800/50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="text-2xl">🥉</div>
+                  <div>
+                    <div className="text-white font-medium">100K Views</div>
+                  </div>
+                </div>
+                <span className="text-green-400">$10 store credit</span>
+              </div>
+            </Link>
+
+            <Link href="/creator/milestones" className="block">
+              <div className="flex items-center justify-between p-4 bg-zinc-800/30 rounded-xl hover:bg-zinc-800/50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="text-2xl">🥈</div>
+                  <div>
+                    <div className="text-white font-medium">500K Views</div>
+                  </div>
+                </div>
+                <span className="text-green-400">$25 + free product</span>
+              </div>
+            </Link>
+
+            <Link href="/creator/milestones" className="block">
+              <div className="flex items-center justify-between p-4 bg-zinc-800/30 rounded-xl hover:bg-zinc-800/50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="text-2xl">🥇</div>
+                  <div>
+                    <div className="text-white font-medium">1M+ Views</div>
+                  </div>
+                </div>
+                <span className="text-green-400">$50 + merch pack</span>
+              </div>
+            </Link>
+          </div>
+
+          <div className="mt-4 pt-4 border-t border-zinc-700/50 text-center">
+            <Link 
+              href="/creator/rewards"
+              className="text-zinc-400 hover:text-white transition-colors text-sm"
+            >
+              View All Rewards →
+            </Link>
+          </div>
+        </GlowCard>
+
+        {/* Maximize Your Content - Pro Tips */}
+        <GlowCard glowColor="purple" delay="0.4s" className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-2xl">💡</span>
+            <h3 className="text-lg font-semibold text-white">Maximize Your Content</h3>
+          </div>
+
+          <ul className="space-y-3">
+            <li className="flex items-start gap-2 text-zinc-400">
+              <span className="text-orange-400 mt-0.5">•</span>
+              <span>Tag <span className="text-orange-400">@thehoopgang</span> in every post for bonus visibility</span>
+            </li>
+            <li className="flex items-start gap-2 text-zinc-400">
+              <span className="text-orange-400 mt-0.5">•</span>
+              <span>Use trending sounds to boost your reach</span>
+            </li>
+            <li className="flex items-start gap-2 text-zinc-400">
+              <span className="text-orange-400 mt-0.5">•</span>
+              <span>Post during peak hours (6-9 PM) for maximum engagement</span>
+            </li>
+          </ul>
+        </GlowCard>
+
+        {/* Bottom Navigation */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
           <Link 
             href="/creator/leaderboard"
-            className="text-zinc-400 hover:text-orange-400 transition-colors text-sm flex items-center gap-1"
+            className="text-zinc-400 hover:text-orange-400 transition-colors text-sm"
           >
             View leaderboard →
           </Link>
           <span className="text-zinc-700 hidden sm:inline">•</span>
           <Link 
             href="/creator/dashboard"
-            className="text-zinc-400 hover:text-orange-400 transition-colors text-sm flex items-center gap-1"
+            className="text-zinc-400 hover:text-orange-400 transition-colors text-sm"
           >
             Back to dashboard →
           </Link>
