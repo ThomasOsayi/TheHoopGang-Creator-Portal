@@ -1,3 +1,5 @@
+// src/components/ui/AnimatedCounter.tsx
+
 'use client';
 
 import { useState, useEffect } from 'react';

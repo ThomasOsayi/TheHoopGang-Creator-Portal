@@ -1,3 +1,5 @@
+// src/components/ui/GlowCard.tsx
+
 import { cn } from '@/lib/utils';
 
 type GlowColor = 'orange' | 'green' | 'blue' | 'amber' | 'purple' | 'yellow' | 'red';

@@ -2,21 +2,28 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { CreatorWithCollab, Collaboration } from '@/types';
 import { 
   getCreatorWithActiveCollab, 
   getCreatorByUserId,
-  addContentSubmission,
   getCollaborationsByCreatorId 
 } from '@/lib/firestore';
-import { SectionCard, Button, useToast, EmptyStateNoTracking } from '@/components/ui';
+import { 
+  Button, 
+  useToast, 
+  GlowCard, 
+  AnimatedCounter, 
+  LiveCountdown, 
+  BackgroundOrbs,
+  Skeleton 
+} from '@/components/ui';
 import PackageStatusCard from '@/components/ui/PackageStatusCard';
 import { CONTENT_DEADLINE_DAYS } from '@/lib/constants';
 import { useAuth } from '@/lib/auth-context';
 import { ProtectedRoute } from '@/components/auth';
-import { getCurrentWeek, formatTimeUntilReset } from '@/lib/week-utils';
+import { getCurrentWeek, getWeekEnd } from '@/lib/week-utils';
 
 /**
  * Formats a date to a readable string
@@ -24,7 +31,7 @@ import { getCurrentWeek, formatTimeUntilReset } from '@/lib/week-utils';
 function formatDate(date: Date): string {
   return date.toLocaleDateString('en-US', {
     year: 'numeric',
-    month: 'long',
+    month: 'short',
     day: 'numeric',
   });
 }
@@ -41,8 +48,6 @@ export default function CreatorDashboardPage() {
   const { showToast } = useToast();
   const [creator, setCreator] = useState<CreatorWithCollab | null>(null);
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [newContentUrl, setNewContentUrl] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   
   // Stats modal state
@@ -59,6 +64,7 @@ export default function CreatorDashboardPage() {
     weeklySubmissions: number;
     allTimeSubmissions: number;
     currentRank: number | null;
+    previousRank: number | null;
     totalCreators: number;
   } | null>(null);
   const [v3StatsLoading, setV3StatsLoading] = useState(true);
@@ -70,8 +76,8 @@ export default function CreatorDashboardPage() {
   }>({ pending: 0, totalEarned: 0 });
   const [redemptionsLoading, setRedemptionsLoading] = useState(true);
   
-  // Weekly reset countdown
-  const [timeUntilReset, setTimeUntilReset] = useState<string>('');
+  // Weekly reset target date
+  const [weekResetDate, setWeekResetDate] = useState<Date>(new Date());
 
   // Fetch creator data
   useEffect(() => {
@@ -79,6 +85,10 @@ export default function CreatorDashboardPage() {
       fetchCreator();
       fetchV3Stats();
       fetchRedemptionStats();
+      
+      // Set week reset date
+      const currentWeek = getCurrentWeek();
+      setWeekResetDate(getWeekEnd(currentWeek));
     }
   }, [user]);
 
@@ -88,7 +98,6 @@ export default function CreatorDashboardPage() {
     setLoading(true);
     setError(null);
     try {
-      // First get creator by user ID
       const creatorDoc = await getCreatorByUserId(user.uid);
       
       if (!creatorDoc) {
@@ -97,15 +106,12 @@ export default function CreatorDashboardPage() {
         return;
       }
       
-      // Get creator with active collaboration (V2 model)
       const creatorData = await getCreatorWithActiveCollab(creatorDoc.id);
       
       if (creatorData) {
         setCreator(creatorData);
         
-        // Load all collaborations for history
         const allCollabs = await getCollaborationsByCreatorId(creatorDoc.id);
-        // Filter out the active one to get past collabs
         const past = allCollabs.filter(c => 
           c.id !== creatorData.activeCollaborationId && 
           ['completed', 'ghosted', 'denied'].includes(c.status)
@@ -122,7 +128,6 @@ export default function CreatorDashboardPage() {
     }
   };
 
-  // Fetch V3 content stats
   const fetchV3Stats = async () => {
     if (!user) return;
     
@@ -130,7 +135,6 @@ export default function CreatorDashboardPage() {
     try {
       const idToken = await user.getIdToken();
       
-      // Fetch submission stats
       const statsResponse = await fetch('/api/submissions/volume/stats', {
         headers: { 'Authorization': `Bearer ${idToken}` },
       });
@@ -138,7 +142,6 @@ export default function CreatorDashboardPage() {
       if (statsResponse.ok) {
         const statsData = await statsResponse.json();
         
-        // Fetch leaderboard to get current rank
         const currentWeek = getCurrentWeek();
         const leaderboardResponse = await fetch(
           `/api/leaderboard?period=${currentWeek}&type=volume`,
@@ -152,7 +155,6 @@ export default function CreatorDashboardPage() {
           const leaderboardData = await leaderboardResponse.json();
           totalCreators = leaderboardData.entries?.length || 0;
           
-          // Find creator's rank
           const creatorDoc = await getCreatorByUserId(user.uid);
           if (creatorDoc && leaderboardData.entries) {
             const entry = leaderboardData.entries.find(
@@ -168,6 +170,7 @@ export default function CreatorDashboardPage() {
           weeklySubmissions: statsData.stats?.weeklyCount || 0,
           allTimeSubmissions: statsData.stats?.allTimeCount || 0,
           currentRank,
+          previousRank: null,
           totalCreators,
         });
       }
@@ -178,7 +181,6 @@ export default function CreatorDashboardPage() {
     }
   };
 
-  // Fetch redemption stats
   const fetchRedemptionStats = async () => {
     if (!user) return;
     
@@ -213,43 +215,6 @@ export default function CreatorDashboardPage() {
     }
   };
 
-  // Update countdown timer
-  useEffect(() => {
-    const updateCountdown = () => {
-      setTimeUntilReset(formatTimeUntilReset());
-    };
-    
-    updateCountdown();
-    const interval = setInterval(updateCountdown, 60000); // Update every minute
-    
-    return () => clearInterval(interval);
-  }, []);
-
-  const handleSubmitContent = async () => {
-    if (!creator) return;
-
-    if (!newContentUrl.trim()) {
-      showToast('Please enter a valid URL', 'error');
-      return;
-    }
-
-    setSubmitting(true);
-    setError(null);
-    try {
-      await addContentSubmission(creator.id, newContentUrl.trim());
-      setNewContentUrl('');
-      await fetchCreator();
-      showToast('Content submitted!', 'success');
-    } catch (err) {
-      console.error('Error submitting content:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to submit content. Please try again.';
-      setError(errorMessage);
-      showToast(errorMessage, 'error');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   const handleUpdateStats = async () => {
     if (!creator || !user) return;
 
@@ -257,7 +222,6 @@ export default function CreatorDashboardPage() {
     setError(null);
 
     try {
-      // Get the user's ID token
       const idToken = await user.getIdToken();
 
       const response = await fetch('/api/creator/stats', {
@@ -278,7 +242,6 @@ export default function CreatorDashboardPage() {
         throw new Error(data.message || 'Failed to update stats');
       }
 
-      // Refresh creator data
       await fetchCreator();
       setShowStatsModal(false);
       showToast('Stats updated successfully!', 'success');
@@ -300,9 +263,9 @@ export default function CreatorDashboardPage() {
     }
   };
 
-  // Calculate days remaining for content deadline
-  const getDaysRemaining = (): { days: number | null; label: string } => {
-    if (!creator || !creator.collaboration) return { days: null, label: 'Starts after delivery' };
+  // Get days remaining for content deadline
+  const getDaysRemaining = useCallback((): { days: number | null; deadline: Date | null } => {
+    if (!creator?.collaboration) return { days: null, deadline: null };
 
     let deadline: Date | null = null;
 
@@ -313,83 +276,77 @@ export default function CreatorDashboardPage() {
       deadline.setDate(deadline.getDate() + CONTENT_DEADLINE_DAYS);
     }
 
-    if (!deadline) {
-      return { days: null, label: 'Starts after delivery' };
-    }
+    if (!deadline) return { days: null, deadline: null };
 
     const now = new Date();
     const diffTime = deadline.getTime() - now.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    return { days: diffDays, label: diffDays > 0 ? 'DAYS REMAINING' : 'DEADLINE PASSED' };
-  };
+    return { days: diffDays, deadline };
+  }, [creator]);
 
-  // Determine timeline step states
-  const getTimelineSteps = (): Array<{ label: string; status: 'completed' | 'active' | 'pending' | 'failed'; date?: string }> => {
-    if (!creator || !creator.collaboration) return [];
+  // Timeline steps - returns step index based on status
+  const getTimelineData = useCallback(() => {
+    if (!creator?.collaboration) return { steps: [], activeIndex: -1 };
 
     const status = creator.collaboration.status;
-    const steps: Array<{ label: string; status: 'completed' | 'active' | 'pending' | 'failed'; date?: string }> = [
-      { label: 'Application Received', status: 'completed' },
-      { label: 'Application Approved', status: 'pending' },
-      { label: 'Package Shipped', status: 'pending' },
-      { label: 'Package Delivered', status: 'pending' },
-      { label: 'Content Completed', status: 'pending' },
+    
+    // Map status to step index (0-indexed)
+    const statusToIndex: Record<string, number> = {
+      pending: 0,
+      approved: 1,
+      shipped: 2,
+      delivered: 3,
+      completed: 4,
+      denied: -1,
+      ghosted: 4,
+    };
+
+    const activeIndex = statusToIndex[status] ?? -1;
+
+    const steps = [
+      { label: 'Applied', key: 'pending' },
+      { label: 'Approved', key: 'approved' },
+      { label: 'Shipped', key: 'shipped' },
+      { label: 'Delivered', key: 'delivered' },
+      { label: 'Completed', key: 'completed' },
     ];
 
-    if (status === 'pending') {
-      steps[0].status = 'completed';
-      steps[1].status = 'active';
-    } else if (status === 'denied') {
-      steps[0].status = 'completed';
-      steps[1].status = 'failed';
-    } else if (status === 'approved') {
-      steps[0].status = 'completed';
-      steps[1].status = 'completed';
-      steps[2].status = 'active';
-    } else if (status === 'shipped') {
-      steps[0].status = 'completed';
-      steps[1].status = 'completed';
-      steps[2].status = 'completed';
-      steps[3].status = 'active';
-    } else if (status === 'delivered') {
-      steps[0].status = 'completed';
-      steps[1].status = 'completed';
-      steps[2].status = 'completed';
-      steps[3].status = 'completed';
-      steps[4].status = 'active';
-    } else if (status === 'completed') {
-      steps.forEach((step) => (step.status = 'completed'));
-    } else if (status === 'ghosted') {
-      steps[0].status = 'completed';
-      steps[1].status = 'completed';
-      steps[2].status = 'completed';
-      steps[3].status = 'completed';
-      steps[4].status = 'failed';
-    }
-
-    // Add dates from statusHistory if available
-    steps.forEach((step, index) => {
-      const statusMap: Record<number, string> = {
-        0: 'pending',
-        1: 'approved',
-        2: 'shipped',
-        3: 'delivered',
-        4: 'completed',
-      };
-      const targetStatus = statusMap[index];
-      if (targetStatus && creator.collaboration?.statusHistory) {
-        const historyEntry = creator.collaboration.statusHistory.find((h: { status: string }) => h.status === targetStatus);
+    // Add dates from statusHistory
+    const stepsWithDates = steps.map((step, index) => {
+      let date: string | undefined;
+      if (creator.collaboration?.statusHistory) {
+        const historyEntry = creator.collaboration.statusHistory.find(
+          (h: { status: string }) => h.status === step.key
+        );
         if (historyEntry) {
-          step.date = formatDate(historyEntry.timestamp);
+          date = formatDate(historyEntry.timestamp);
         }
       }
+      
+      let stepStatus: 'completed' | 'active' | 'pending' | 'failed' = 'pending';
+      if (status === 'denied' && index === 1) {
+        stepStatus = 'failed';
+      } else if (status === 'ghosted' && index === 4) {
+        stepStatus = 'failed';
+      } else if (index < activeIndex || (index === activeIndex && status === 'completed')) {
+        stepStatus = 'completed';
+      } else if (index === activeIndex) {
+        stepStatus = 'active';
+      }
+
+      return { ...step, date, status: stepStatus };
     });
 
-    return steps;
-  };
+    // Mark first step as completed if we're past pending
+    if (activeIndex > 0) {
+      stepsWithDates[0].status = 'completed';
+    }
 
-  // Get status label for stats
+    return { steps: stepsWithDates, activeIndex };
+  }, [creator]);
+
+  // Status label mapping
   const getStatusLabel = (status: string): string => {
     const labels: Record<string, string> = {
       pending: 'Under Review',
@@ -403,44 +360,44 @@ export default function CreatorDashboardPage() {
     return labels[status] || status;
   };
 
-  /**
-   * Calculates follower growth since signup
-   */
-  function getFollowerGrowth(creator: CreatorWithCollab): {
-    instagram: { current: number; original: number; change: number; percent: string };
-    tiktok: { current: number; original: number; change: number; percent: string };
-    lastUpdated: Date | null;
-  } {
-    const history = creator.followerHistory || [];
-    const applicationEntry = history.find(h => h.source === 'application') || history[0];
-    const latestEntry = history[history.length - 1];
+  // Get next step message
+  const getNextStepMessage = (): { title: string; message: string; showCta: boolean } => {
+    if (!creator?.collaboration) return { title: '', message: '', showCta: false };
+    
+    const status = creator.collaboration.status;
+    const videosSubmitted = creator.collaboration.contentSubmissions.length || 0;
+    
+    switch (status) {
+      case 'approved':
+        return {
+          title: 'Your package is being prepared',
+          message: "We'll notify you when it ships!",
+          showCta: true,
+        };
+      case 'shipped':
+        return {
+          title: 'Your package is on the way',
+          message: 'Track your shipment below.',
+          showCta: true,
+        };
+      case 'delivered':
+        return {
+          title: `Post ${3 - videosSubmitted} more video${3 - videosSubmitted !== 1 ? 's' : ''} to complete`,
+          message: 'Show off your HoopGang gear!',
+          showCta: true,
+        };
+      case 'completed':
+        return {
+          title: 'Collaboration Complete!',
+          message: 'Amazing work! You crushed it.',
+          showCta: false,
+        };
+      default:
+        return { title: '', message: '', showCta: false };
+    }
+  };
 
-    const originalIG = applicationEntry?.instagramFollowers || creator.instagramFollowers;
-    const originalTT = applicationEntry?.tiktokFollowers || creator.tiktokFollowers;
-
-    const igChange = creator.instagramFollowers - originalIG;
-    const ttChange = creator.tiktokFollowers - originalTT;
-
-    const igPercent = originalIG > 0 ? ((igChange / originalIG) * 100).toFixed(1) : '0';
-    const ttPercent = originalTT > 0 ? ((ttChange / originalTT) * 100).toFixed(1) : '0';
-
-    return {
-      instagram: {
-        current: creator.instagramFollowers,
-        original: originalIG,
-        change: igChange,
-        percent: igPercent,
-      },
-      tiktok: {
-        current: creator.tiktokFollowers,
-        original: originalTT,
-        change: ttChange,
-        percent: ttPercent,
-      },
-      lastUpdated: latestEntry?.date || null,
-    };
-  }
-
+  // Loading state
   if (loading) {
     return (
       <ProtectedRoute allowedRoles={['creator']}>
@@ -454,23 +411,20 @@ export default function CreatorDashboardPage() {
     );
   }
 
+  // No creator found
   if (!creator) {
     return (
       <ProtectedRoute allowedRoles={['creator']}>
         <div className="min-h-screen bg-zinc-950 flex items-center justify-center px-4">
           <div className="text-center max-w-md">
-            <div className="mb-6">
-              <svg className="w-16 h-16 mx-auto text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
+            <div className="mb-6 text-6xl">🏀</div>
             <h1 className="text-2xl font-bold text-white mb-4">No Application Found</h1>
             <p className="text-white/60 mb-8">
-              You haven't applied to join the HoopGang Creator Squad yet.
+              You haven&apos;t applied to join the HoopGang Creator Squad yet.
             </p>
-              <Link href="/apply">
+            <Link href="/apply">
               <Button variant="primary" size="lg">Apply Now</Button>
-              </Link>
+            </Link>
           </div>
         </div>
       </ProtectedRoute>
@@ -478,326 +432,83 @@ export default function CreatorDashboardPage() {
   }
 
   const firstName = getFirstName(creator.fullName);
-  const timelineSteps = getTimelineSteps();
-  const daysRemaining = getDaysRemaining();
+  const { steps: timelineSteps, activeIndex } = getTimelineData();
   const videosSubmitted = creator.collaboration?.contentSubmissions.length || 0;
+  const nextStep = getNextStepMessage();
+  const isActiveCollab = creator.collaboration && !['pending', 'denied'].includes(creator.collaboration.status);
 
   return (
     <ProtectedRoute allowedRoles={['creator']} requireApplication>
       <div className="min-h-screen bg-zinc-950 relative overflow-hidden">
-        {/* Background Gradient Orbs */}
-        <div className="fixed inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute -top-40 -right-40 w-96 h-96 bg-orange-500/15 rounded-full blur-3xl" />
-          <div className="absolute top-1/2 -left-40 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl" />
-          <div className="absolute -bottom-40 right-1/3 w-72 h-72 bg-orange-500/10 rounded-full blur-3xl" />
-        </div>
+        {/* Background Orbs */}
+        <BackgroundOrbs colors={['orange', 'purple', 'orange']} />
 
         <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-8">
-        {/* Error Display */}
-        {error && (
-          <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl mb-6">
-            {error}
-          </div>
-        )}
+          {/* Error Display */}
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl mb-6 animate-fade-in">
+              {error}
+            </div>
+          )}
 
-        {/* Welcome Banner */}
-          <div className="group relative bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl p-8 text-center mb-6 overflow-hidden hover:bg-white/[0.08] hover:border-orange-500/30 hover:shadow-xl hover:shadow-orange-500/10 transition-all duration-300 cursor-default">
-            {/* Decorative elements */}
-            <div className="absolute top-0 right-0 w-40 h-40 bg-orange-500/10 rounded-full blur-2xl group-hover:bg-orange-500/20 transition-all duration-300" />
-            <div className="absolute bottom-0 left-0 w-32 h-32 bg-purple-500/10 rounded-full blur-xl group-hover:bg-purple-500/15 transition-all duration-300" />
-            <div className="absolute top-4 left-4 opacity-10 group-hover:opacity-20 transition-opacity">
-              <svg className="w-16 h-16 text-orange-500" viewBox="0 0 24 24" fill="currentColor">
-                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5" fill="none"/>
-                <path d="M12 2C12 2 12 22 12 22" stroke="currentColor" strokeWidth="1.5"/>
-                <path d="M2 12C2 12 22 12 22 12" stroke="currentColor" strokeWidth="1.5"/>
-                <path d="M4.93 4.93C4.93 4.93 19.07 19.07 19.07 19.07" stroke="currentColor" strokeWidth="1.5"/>
-                <path d="M19.07 4.93C19.07 4.93 4.93 19.07 4.93 19.07" stroke="currentColor" strokeWidth="1.5"/>
-              </svg>
-            </div>
-            <div className="absolute bottom-4 right-4 opacity-10 group-hover:opacity-20 transition-opacity">
-              <svg className="w-16 h-16 text-orange-500" viewBox="0 0 24 24" fill="currentColor">
-                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5" fill="none"/>
-                <path d="M12 2C12 2 12 22 12 22" stroke="currentColor" strokeWidth="1.5"/>
-                <path d="M2 12C2 12 22 12 22 12" stroke="currentColor" strokeWidth="1.5"/>
-                <path d="M4.93 4.93C4.93 4.93 19.07 19.07 19.07 19.07" stroke="currentColor" strokeWidth="1.5"/>
-                <path d="M19.07 4.93C19.07 4.93 4.93 19.07 4.93 19.07" stroke="currentColor" strokeWidth="1.5"/>
-              </svg>
-            </div>
-            
-            <div className="relative">
-              {!creator.collaboration ? (
-                <>
-                  <h1 className="text-2xl md:text-3xl font-bold text-white mb-2 group-hover:text-orange-100 transition-colors">
-                    Welcome, {firstName}! 🏀
-                  </h1>
-                  <p className="text-white/70 group-hover:text-white/90 transition-colors">
-                    No active collaboration
-                  </p>
-                </>
-              ) : creator.collaboration.status === 'pending' ? (
-                <>
-                  <h1 className="text-2xl md:text-3xl font-bold text-white mb-2 group-hover:text-orange-100 transition-colors">
-                    Welcome, {firstName}! 🏀
-                  </h1>
-                  <p className="text-white/70 group-hover:text-white/90 transition-colors">
-                    Thanks for applying to join HoopGang
-                  </p>
-                </>
-              ) : creator.collaboration.status === 'denied' ? (
-                <>
-                  <h1 className="text-2xl md:text-3xl font-bold text-white mb-2 group-hover:text-orange-100 transition-colors">
-                    Hey, {firstName} 🏀
-                  </h1>
-                  <p className="text-white/70 group-hover:text-white/90 transition-colors">
-                    Thanks for your interest in HoopGang
-                  </p>
-                </>
+          {/* Welcome Header - CENTERED */}
+          <div className="mb-8 animate-fade-in text-center">
+            <h1 className="text-3xl font-bold text-white mb-2">
+              {creator.collaboration?.status === 'pending' ? (
+                <>Welcome, {firstName}!</>
+              ) : creator.collaboration?.status === 'denied' ? (
+                <>Hey, {firstName}</>
               ) : (
-                <>
-                  <h1 className="text-2xl md:text-3xl font-bold text-white mb-2 group-hover:text-orange-100 transition-colors">
-                    Congrats, {firstName}! 🎉
-                  </h1>
-                  <p className="text-white/70 group-hover:text-white/90 transition-colors">
-                    You're officially part of the HoopGang Creator Squad
-                  </p>
-                </>
+                <>Welcome back, {firstName}!</>
               )}
-            </div>
-        </div>
+              <span className="inline-block ml-2 animate-bounce">👋</span>
+            </h1>
+            <p className="text-zinc-400">
+              {creator.collaboration?.status === 'pending' 
+                ? "Thanks for applying to join HoopGang"
+                : creator.collaboration?.status === 'denied'
+                  ? "Thanks for your interest in HoopGang"
+                  : "Here's what's happening with your HoopGang collaboration"
+              }
+            </p>
+          </div>
 
-          {/* Quick Stats Bar */}
-          {creator.collaboration && !['pending', 'denied'].includes(creator.collaboration.status) && (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-              <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-xl p-4 text-center hover:bg-white/[0.08] hover:border-orange-500/30 hover:shadow-lg hover:shadow-orange-500/10 transition-all duration-300">
-                <div className="flex justify-center mb-1">
-                  <svg className="w-6 h-6 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                </div>
-                <div className="text-white font-semibold text-sm">{getStatusLabel(creator.collaboration.status)}</div>
-                <div className="text-white/50 text-xs">Current Status</div>
-              </div>
-              <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-xl p-4 text-center hover:bg-white/[0.08] hover:border-orange-500/30 hover:shadow-lg hover:shadow-orange-500/10 transition-all duration-300">
-                <div className="flex justify-center mb-1">
-                  <svg className="w-6 h-6 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <div className="text-white font-semibold text-sm">{videosSubmitted}/3</div>
-                <div className="text-white/50 text-xs">Videos Posted</div>
-              </div>
-              <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-xl p-4 text-center hover:bg-white/[0.08] hover:border-orange-500/30 hover:shadow-lg hover:shadow-orange-500/10 transition-all duration-300">
-                <div className="flex justify-center mb-1">
-                  <svg className={`w-6 h-6 ${daysRemaining.days !== null && daysRemaining.days <= 3 ? 'text-red-400' : 'text-orange-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div className={`font-semibold text-sm ${
-                  daysRemaining.days !== null && daysRemaining.days <= 3 ? 'text-red-400' : 'text-white'
-                }`}>
-                  {daysRemaining.days !== null ? `${Math.max(0, daysRemaining.days)} days` : '—'}
-                </div>
-                <div className="text-white/50 text-xs">Time Left</div>
-              </div>
-              <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-xl p-4 text-center hover:bg-white/[0.08] hover:border-orange-500/30 hover:shadow-lg hover:shadow-orange-500/10 transition-all duration-300">
-                <div className="flex justify-center mb-1">
-                  <svg className="w-6 h-6 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                  </svg>
-                </div>
-                <div className="text-white font-semibold text-sm truncate">{creator.collaboration.product}</div>
-                <div className="text-white/50 text-xs">Size {creator.collaboration.size}</div>
-              </div>
-            </div>
-          )}
-
-          {/* V3 Creator Program Section */}
-          {creator.collaboration && !['pending', 'denied'].includes(creator.collaboration.status) && (
-            <div className="mb-6">
-              <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <span>🚀</span> Creator Program
-              </h2>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Content Stats Card */}
-                <div className="bg-gradient-to-br from-orange-500/10 to-amber-500/10 backdrop-blur-md border border-orange-500/20 rounded-2xl p-5 hover:border-orange-500/40 transition-all duration-300">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-white font-semibold flex items-center gap-2">
-                      <span>📊</span> Content Stats
-                    </h3>
-                    <div className="text-xs text-orange-400 bg-orange-500/20 px-2 py-1 rounded-full">
-                      {timeUntilReset || 'Loading...'}
-                    </div>
-                  </div>
-                  
-                  {v3StatsLoading ? (
-                    <div className="space-y-3">
-                      <div className="h-8 bg-white/10 rounded animate-pulse" />
-                      <div className="h-8 bg-white/10 rounded animate-pulse" />
-                    </div>
-                  ) : v3Stats ? (
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-white/60 text-sm">This Week</span>
-                        <span className="text-white font-bold text-lg">{v3Stats.weeklySubmissions}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-white/60 text-sm">All Time</span>
-                        <span className="text-white font-medium">{v3Stats.allTimeSubmissions}</span>
-                      </div>
-                      <div className="flex justify-between items-center pt-2 border-t border-white/10">
-                        <span className="text-white/60 text-sm">Current Rank</span>
-                        {v3Stats.currentRank ? (
-                          <span className="text-orange-400 font-bold">
-                            #{v3Stats.currentRank}
-                            <span className="text-white/40 text-xs font-normal ml-1">
-                              / {v3Stats.totalCreators}
-                            </span>
-                          </span>
-                        ) : (
-                          <span className="text-white/40 text-sm">Not ranked</span>
-                        )}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-white/40 text-sm">Unable to load stats</div>
-                  )}
-                </div>
-
-                {/* Rewards Card */}
-                <div className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 backdrop-blur-md border border-green-500/20 rounded-2xl p-5 hover:border-green-500/40 transition-all duration-300">
-                  <h3 className="text-white font-semibold flex items-center gap-2 mb-4">
-                    <span>💰</span> Rewards
-                  </h3>
-                  
-                  {redemptionsLoading ? (
-                    <div className="space-y-3">
-                      <div className="h-8 bg-white/10 rounded animate-pulse" />
-                      <div className="h-8 bg-white/10 rounded animate-pulse" />
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-white/60 text-sm">Pending</span>
-                        <span className={`font-bold text-lg ${redemptionStats.pending > 0 ? 'text-yellow-400' : 'text-white'}`}>
-                          {redemptionStats.pending}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center pt-2 border-t border-white/10">
-                        <span className="text-white/60 text-sm">Total Earned</span>
-                        <span className="text-green-400 font-bold text-lg">
-                          ${redemptionStats.totalEarned}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {redemptionStats.pending > 0 && (
-                    <div className="mt-3 pt-3 border-t border-white/10">
-                      <span className="text-yellow-400 text-xs">
-                        🎉 {redemptionStats.pending} reward{redemptionStats.pending > 1 ? 's' : ''} being processed!
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Quick Actions Card */}
-                <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-5 hover:border-white/20 transition-all duration-300">
-                  <h3 className="text-white font-semibold flex items-center gap-2 mb-4">
-                    <span>⚡</span> Quick Actions
-                  </h3>
-                  
-                  <div className="space-y-2">
-                    <Link 
-                      href="/creator/submit"
-                      className="flex items-center justify-between p-3 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/20 rounded-xl transition-all group"
-                    >
-                      <span className="text-white text-sm font-medium">Submit Content</span>
-                      <span className="text-orange-400 group-hover:translate-x-1 transition-transform">→</span>
-                    </Link>
-                    
-                    <Link 
-                      href="/creator/leaderboard"
-                      className="flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all group"
-                    >
-                      <span className="text-white text-sm font-medium">View Leaderboard</span>
-                      <span className="text-white/60 group-hover:translate-x-1 transition-transform">→</span>
-                    </Link>
-                    
-                    <Link 
-                      href="/creator/rewards"
-                      className="flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all group"
-                    >
-                      <span className="text-white text-sm font-medium">Browse Rewards</span>
-                      <span className="text-white/60 group-hover:translate-x-1 transition-transform">→</span>
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Completion Banner */}
-          {creator.collaboration && creator.collaboration.contentSubmissions.length >= 3 && creator.collaboration.status !== 'completed' && (
-            <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 rounded-2xl p-6 mb-6">
+          {/* Status Banners */}
+          {creator.collaboration?.status === 'pending' && (
+            <GlowCard glowColor="yellow" className="mb-6 bg-gradient-to-r from-yellow-500/10 to-amber-500/10 border-yellow-500/20">
               <div className="flex items-center gap-4">
-                <div className="text-4xl">🎉</div>
+                <div className="text-4xl animate-pulse">⏳</div>
                 <div>
-                  <h2 className="text-lg font-bold text-green-400">All Content Submitted!</h2>
+                  <h2 className="text-lg font-bold text-yellow-400">Application Under Review</h2>
                   <p className="text-white/60 text-sm">
-                    Amazing work! Your submissions are being reviewed. You'll be marked as completed soon!
+                    We&apos;ll notify you once your application has been approved. Usually takes 1-3 business days.
                   </p>
                 </div>
               </div>
-          </div>
+            </GlowCard>
           )}
 
-          {/* Already Completed Banner */}
-          {creator.collaboration?.status === 'completed' && (
-            <div className="bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border border-cyan-500/30 rounded-2xl p-6 mb-6">
+          {creator.collaboration?.status === 'denied' && (
+            <GlowCard glowColor="red" className="mb-6 bg-gradient-to-r from-red-500/10 to-rose-500/10 border-red-500/20">
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                  <div className="text-4xl">🏆</div>
+                  <div className="text-4xl">😔</div>
                   <div>
-                    <h2 className="text-lg font-bold text-cyan-400">Collaboration Complete!</h2>
-                    <p className="text-white/60 text-sm">You crushed it! Thanks for being part of HoopGang.</p>
-                  </div>
-                </div>
-                <Link href="/creator/request-product">
-                  <Button variant="secondary" className="bg-white/20 hover:bg-white/30 text-white">
-                    Request New Product
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          )}
-
-          {/* No Active Collaboration - Can Request New Product */}
-          {!creator.collaboration && !creator.isBlocked && creator.totalCollaborations > 0 && (
-            <div className="bg-gradient-to-r from-purple-500/20 to-indigo-500/20 border border-purple-500/30 rounded-2xl p-6 mb-6">
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <div className="text-4xl">🎯</div>
-                  <div>
-                    <h2 className="text-lg font-bold text-purple-400">Ready for Another Collab?</h2>
+                    <h2 className="text-lg font-bold text-red-400">Application Not Approved</h2>
                     <p className="text-white/60 text-sm">
-                      You've completed {creator.totalCollaborations} collaboration{creator.totalCollaborations > 1 ? 's' : ''}. Request your next product!
+                      Unfortunately, your application wasn&apos;t approved this time. Feel free to apply again!
                     </p>
                   </div>
                 </div>
-                <Link href="/creator/request-product">
-                  <Button variant="primary">
-                    Request New Product
-                  </Button>
+                <Link href="/apply">
+                  <Button variant="primary">Apply Again</Button>
                 </Link>
               </div>
-            </div>
+            </GlowCard>
           )}
 
-          {/* Blocked Creator Banner */}
           {creator.isBlocked && (
-            <div className="bg-gradient-to-r from-red-500/20 to-rose-500/20 border border-red-500/30 rounded-2xl p-6 mb-6">
+            <GlowCard glowColor="red" className="mb-6 bg-gradient-to-r from-red-500/10 to-rose-500/10 border-red-500/20">
               <div className="flex items-center gap-4">
                 <div className="text-4xl">🚫</div>
                 <div>
@@ -807,570 +518,472 @@ export default function CreatorDashboardPage() {
                   </p>
                 </div>
               </div>
-            </div>
+            </GlowCard>
           )}
 
-          {/* Pending Status Banner */}
-          {creator.collaboration?.status === 'pending' && (
-            <div className="bg-gradient-to-r from-yellow-500/20 to-amber-500/20 border border-yellow-500/30 rounded-2xl p-6 mb-6">
-              <div className="flex items-center gap-4">
-                <div className="text-4xl animate-pulse">⏳</div>
-            <div>
-                  <h2 className="text-lg font-bold text-yellow-400">Application Under Review</h2>
-                  <p className="text-white/60 text-sm">
-                    We'll notify you once your application has been approved. Usually takes 1-3 business days.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Denied Status Banner */}
-          {creator.collaboration?.status === 'denied' && (
-            <div className="bg-gradient-to-r from-red-500/20 to-rose-500/20 border border-red-500/30 rounded-2xl p-6 mb-6">
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <div className="text-4xl">😔</div>
-            <div>
-                    <h2 className="text-lg font-bold text-red-400">Application Not Approved</h2>
-                    <p className="text-white/60 text-sm">
-                      Unfortunately, your application wasn't approved this time. Feel free to apply again!
-                    </p>
+          {/* Primary Action Card - FULL WIDTH - Only for active collaborations */}
+          {isActiveCollab && nextStep.title && (
+            <div className="mb-8 p-6 bg-gradient-to-r from-orange-500/20 via-amber-500/10 to-orange-500/20 border border-orange-500/30 rounded-2xl relative overflow-hidden group transition-all duration-300 animate-fade-in-up hover:shadow-glow-orange hover:border-orange-500/60 hover:scale-[1.005]">
+              {/* Animated gradient shine */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+              
+              <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-2xl">🎯</span>
+                    <h2 className="text-xl font-bold text-white">Your Next Step</h2>
                   </div>
-            </div>
-                <Link href="/apply">
-                  <Button variant="primary">Apply Again</Button>
-                </Link>
+                  <p className="text-zinc-300">{nextStep.title}</p>
+                  <p className="text-zinc-500 text-sm">{nextStep.message}</p>
+                </div>
+                {nextStep.showCta && (
+                  <Link href="/creator/submit">
+                    <Button variant="primary" className="whitespace-nowrap">
+                      Submit Content →
+                    </Button>
+                  </Link>
+                )}
               </div>
             </div>
           )}
 
-          {/* Main Two-Column Grid - Only show for active/shipped/delivered/completed/ghosted */}
-          {creator.collaboration && !['pending', 'denied'].includes(creator.collaboration.status) && (
-            <div className="grid lg:grid-cols-5 gap-6">
-              {/* Left Column - Timeline (2/5 width on desktop) */}
-              <div className="lg:col-span-2">
-              <SectionCard title="Your Journey" icon="📋" className="h-full hover:border-white/20 transition-all duration-300">
-                <div className="relative">
-                  {/* Vertical progress line */}
-                  <div className="absolute left-2 top-0 bottom-0 w-0.5 bg-white/10" />
+          {/* Main Two-Column Grid - Only for active collaborations */}
+          {isActiveCollab && (
+            <div className="grid lg:grid-cols-3 gap-6 mb-8">
+              {/* Left Column - Collaboration Details (2/3 on desktop) */}
+              <div className="lg:col-span-2 space-y-6">
+                {/* Your Collaboration Card */}
+                <GlowCard glowColor="orange" delay="0.1s">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                      <span>📦</span> Your Collaboration
+                    </h3>
+                    <span className={`text-xs font-medium px-3 py-1 rounded-full ${
+                      creator.collaboration?.status === 'completed' 
+                        ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                        : 'bg-green-500/20 text-green-400 border border-green-500/30'
+                    }`}>
+                      ✓ {getStatusLabel(creator.collaboration?.status || '')}
+                    </span>
+                  </div>
 
-                  {timelineSteps.map((step, index) => (
-                    <div key={index} className="relative mb-6 last:mb-0 pl-10">
-                      {/* Progress line fill */}
-                      {step.status === 'completed' && index < timelineSteps.length - 1 && (
-                        <div 
-                          className="absolute left-2 top-4 w-0.5 h-full bg-gradient-to-b from-green-500 to-green-500/50"
-                          style={{ height: 'calc(100% + 1.5rem)' }}
-                        />
-                      )}
-                      
-                      {/* Dot */}
-                      <div
-                        className={`absolute left-0 w-5 h-5 rounded-full transition-all duration-300 flex items-center justify-center ${
-                          step.status === 'completed'
-                            ? 'bg-green-500 shadow-lg shadow-green-500/30'
-                            : step.status === 'active'
-                              ? 'bg-orange-500 ring-4 ring-orange-500/30 animate-pulse'
-                              : step.status === 'failed'
-                                ? 'bg-red-500 shadow-lg shadow-red-500/30'
-                                : 'bg-white/20'
-                        }`}
-                      >
-                        {step.status === 'completed' && (
-                          <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                        )}
-          </div>
-
-                      {/* Content */}
-                      <div>
-                        <div className={`font-medium ${
-                          step.status === 'completed' ? 'text-white' :
-                          step.status === 'active' ? 'text-orange-400' :
-                          step.status === 'failed' ? 'text-red-400' :
-                          'text-white/40'
-                        }`}>
-                          {step.label}
-                        </div>
-                        {step.date && (
-                          <div className="text-sm text-white/50 mt-0.5">{step.date}</div>
-                        )}
-                        {step.status === 'active' && (
-                          <div className="text-xs text-orange-400 mt-1">In Progress</div>
-                        )}
-                      </div>
+                  {/* Product Info - with 3D cube icon */}
+                  <div className="flex items-center gap-4 mb-6 p-4 bg-zinc-800/30 rounded-xl hover:bg-zinc-800/50 transition-colors">
+                    <div className="w-16 h-16 bg-gradient-to-br from-zinc-700 to-zinc-800 rounded-xl flex items-center justify-center border border-zinc-700">
+                      <svg className="w-8 h-8 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                      </svg>
                     </div>
-                  ))}
-                </div>
-              </SectionCard>
-            </div>
+                    <div>
+                      <div className="text-white font-semibold text-lg">{creator.collaboration?.product}</div>
+                      <div className="text-zinc-400">Size {creator.collaboration?.size}</div>
+                    </div>
+                  </div>
 
-            {/* Right Column - Package & Content (3/5 width on desktop) */}
-            <div className="lg:col-span-3 space-y-6">
-              {/* Package Status Card */}
-              {creator.collaboration && ['approved', 'shipped', 'delivered', 'completed', 'ghosted'].includes(creator.collaboration.status) && (
-                creator.collaboration.trackingNumber || creator.collaboration.status !== 'approved' ? (
+                  {/* Horizontal Timeline - Matching Mockup Exactly */}
+                  <div className="relative">
+                    <div className="flex justify-between items-start">
+                      {timelineSteps.map((step, index) => (
+                        <div key={index} className="flex-1 relative">
+                          {/* Connector line */}
+                          {index < timelineSteps.length - 1 && (
+                            <div className="absolute top-4 left-1/2 w-full h-0.5">
+                              <div className={`h-full ${
+                                step.status === 'completed' ? 'bg-green-500' : 'bg-zinc-700'
+                              }`} />
+                            </div>
+                          )}
+                          
+                          {/* Step circle */}
+                          <div className="relative flex flex-col items-center">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center z-10 text-sm font-medium ${
+                              step.status === 'completed'
+                                ? 'bg-green-500 text-white'
+                                : step.status === 'active'
+                                  ? 'bg-orange-500 text-white ring-4 ring-orange-500/30'
+                                  : step.status === 'failed'
+                                    ? 'bg-red-500 text-white'
+                                    : 'bg-zinc-700 text-zinc-400 border border-zinc-600'
+                            }`}>
+                              {step.status === 'completed' ? (
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                              ) : step.status === 'failed' ? (
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                </svg>
+                              ) : (
+                                index + 1
+                              )}
+                            </div>
+                            
+                            {/* Label */}
+                            <span className={`mt-2 text-xs font-medium ${
+                              step.status === 'completed' ? 'text-green-400' :
+                              step.status === 'active' ? 'text-orange-400' :
+                              step.status === 'failed' ? 'text-red-400' :
+                              'text-zinc-500'
+                            }`}>
+                              {step.label}
+                            </span>
+                            
+                            {/* Date */}
+                            {step.date && (
+                              <span className="text-zinc-600 text-xs">{step.date}</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </GlowCard>
+
+                {/* Package Status - Only for shipped/delivered */}
+                {creator.collaboration && ['shipped', 'delivered', 'completed', 'ghosted'].includes(creator.collaboration.status) && (
                   <PackageStatusCard
-                    collaborationStatus={creator.collaboration.status as 'approved' | 'shipped' | 'delivered' | 'completed' | 'ghosted'}
+                    collaborationStatus={creator.collaboration.status as 'shipped' | 'delivered' | 'completed' | 'ghosted'}
                     trackingNumber={creator.collaboration.trackingNumber}
                     carrier={creator.collaboration.carrier}
                     shippedAt={creator.collaboration.shippedAt}
                     deliveredAt={creator.collaboration.deliveredAt}
                   />
-                ) : (
-                  <SectionCard title="Your Package" icon="📦" className="hover:border-white/20 transition-all duration-300">
-                    <EmptyStateNoTracking />
-                  </SectionCard>
-                )
-              )}
+                )}
 
-              {/* Content Submission Card */}
-              {creator.collaboration && !['pending', 'denied'].includes(creator.collaboration.status) && (
-                <SectionCard title="Submit Your Content" icon="🎥" className="hover:border-white/20 transition-all duration-300">
-                  {/* Progress indicator */}
-                  <div className="mb-6">
-                    <div className="flex justify-between text-sm mb-2">
-                      <span className="text-white/60">Progress</span>
-                      <span className="text-white font-medium">{videosSubmitted}/3 videos</span>
-                    </div>
-                    <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-gradient-to-r from-orange-500 to-amber-500 rounded-full transition-all duration-500"
-                        style={{ width: `${(videosSubmitted / 3) * 100}%` }}
-                      />
-                    </div>
-                    {videosSubmitted > 0 && videosSubmitted < 3 && (
-                      <p className="text-orange-400 text-xs mt-2">
-                        🔥 {videosSubmitted} down, {3 - videosSubmitted} to go!
-                      </p>
-                    )}
+                {/* Content Progress Card */}
+                <GlowCard glowColor="amber" delay="0.2s">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                      <span>🎥</span> Collab Content
+                    </h3>
+                    <span className="text-zinc-400 text-sm">{videosSubmitted}/3 videos</span>
                   </div>
 
-          {[0, 1, 2].map((index) => {
-            const submission = creator.collaboration?.contentSubmissions[index];
-            const isNextToSubmit = index === (creator.collaboration?.contentSubmissions.length || 0);
-            const isPending = index > (creator.collaboration?.contentSubmissions.length || 0);
-
-            return (
-              <div
-                key={index}
-                        className={`flex items-center gap-4 py-4 ${
-                  index < 2 ? 'border-b border-white/10' : ''
-                }`}
-              >
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg font-bold ${
-                          submission ? 'bg-green-500/20 text-green-400' :
-                          isNextToSubmit ? 'bg-orange-500/20 text-orange-400' :
-                          'bg-white/10 text-white/30'
-                        }`}>
-                          {submission ? '✓' : index + 1}
-                        </div>
-
-                {submission ? (
-                  <>
-                            <div className="flex-1 min-w-0">
-                              <a 
-                                href={submission.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-white/70 text-sm truncate block hover:text-orange-400 transition-colors"
-                              >
-                                {submission.url}
-                              </a>
-                              <div className="text-white/40 text-xs mt-0.5">
-                                Submitted {formatDate(submission.submittedAt)}
-                              </div>
-                            </div>
-                            <span className="text-green-400 text-xs font-medium px-2 py-1 bg-green-500/10 rounded-lg">
-                              ✓ Done
-                            </span>
-                  </>
-                ) : isNextToSubmit ? (
-                  <>
-                    <input
-                      type="url"
-                      value={newContentUrl}
-                      onChange={(e) => setNewContentUrl(e.target.value)}
-                              placeholder="Paste your TikTok URL..."
-                              className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
-                      disabled={submitting}
-                    />
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={handleSubmitContent}
-                      disabled={submitting || !newContentUrl.trim()}
-                      loading={submitting}
-                    >
-                      Submit
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                            <div className="flex-1 text-white/30 text-sm">Waiting...</div>
-                            <span className="text-white/30 text-xs font-medium px-2 py-1 bg-white/5 rounded-lg">
-                      Pending
-                            </span>
-                  </>
-                )}
-              </div>
-            );
-          })}
-        </SectionCard>
-              )}
-            </div>
-            </div>
-          )}
-
-          {/* Bottom Section - Agreement, Stats & Perks (Full Width) */}
-          {creator.collaboration && !['pending', 'denied'].includes(creator.collaboration.status) && (
-            <div className="grid md:grid-cols-3 gap-6 mt-6">
-              {/* Agreement Card */}
-              <div className="bg-white/[0.03] backdrop-blur-sm border border-white/10 rounded-2xl p-6 hover:border-white/15 transition-all duration-300">
-                <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                  <span>📋</span> Your Agreement
-                </h2>
-                
-                <div className="space-y-3">
-                  {[
-                    { icon: '🎥', text: 'Post 3 TikToks featuring HoopGang' },
-                    { icon: '🏷️', text: 'Tag @thehoopgang in every post' },
-                    { icon: '🎵', text: 'Use trending basketball sounds' },
-                    { icon: '🏀', text: 'Show the product in action' },
-                  ].map((item, index) => (
-                    <div key={index} className="flex items-center gap-3 text-sm">
-                      <span className="text-lg">{item.icon}</span>
-                      <span className="text-white/70">{item.text}</span>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Deadline info */}
-                {creator.collaboration?.deliveredAt && creator.collaboration.contentDeadline && (
-                  <div className="mt-4 pt-4 border-t border-white/10">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-white/40">Started: {formatDate(creator.collaboration.deliveredAt)}</span>
-                      <span className="text-white/40">Due: {formatDate(creator.collaboration.contentDeadline)}</span>
-                    </div>
-                  </div>
-                )}
-          </div>
-
-        {/* Stats Card */}
-              <div className="bg-white/[0.03] backdrop-blur-sm border border-white/10 rounded-2xl p-6 hover:border-white/15 transition-all duration-300">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                    <span>📊</span> Your Stats
-                  </h2>
-                  <button
-                    onClick={openStatsModal}
-                    className="text-xs text-orange-400 hover:text-orange-300 transition-colors flex items-center gap-1"
-                  >
-                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                    </svg>
-                    Update
-                  </button>
-                </div>
-
-                {(() => {
-                  const growth = getFollowerGrowth(creator);
-                  return (
-                    <div className="space-y-4">
-                      {/* Instagram */}
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-pink-400">
-                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                              <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-                            </svg>
-                          </span>
-                          <span className="text-white/50 text-xs">@{creator.instagramHandle}</span>
-                        </div>
-                        <div className="flex items-baseline gap-2">
-                          <span className="text-white font-semibold">{growth.instagram.current.toLocaleString()}</span>
-                          {growth.instagram.change !== 0 && (
-                            <span className={`text-xs ${growth.instagram.change > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                              {growth.instagram.change > 0 ? '+' : ''}{growth.instagram.change.toLocaleString()} ({growth.instagram.percent}%)
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* TikTok */}
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-white">
-                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                              <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005 20.1a6.34 6.34 0 0010.86-4.43v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1-.1z"/>
-                            </svg>
-                          </span>
-                          <span className="text-white/50 text-xs">@{creator.tiktokHandle}</span>
-                        </div>
-                        <div className="flex items-baseline gap-2">
-                          <span className="text-white font-semibold">{growth.tiktok.current.toLocaleString()}</span>
-                          {growth.tiktok.change !== 0 && (
-                            <span className={`text-xs ${growth.tiktok.change > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                              {growth.tiktok.change > 0 ? '+' : ''}{growth.tiktok.change.toLocaleString()} ({growth.tiktok.percent}%)
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Last Updated */}
-                      {growth.lastUpdated && (
-                        <div className="pt-3 border-t border-white/10">
-                          <span className="text-white/40 text-xs">
-                            Last updated: {formatDate(growth.lastUpdated)}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })()}
-              </div>
-
-        {/* Perks Card */}
-              <div className="bg-white/[0.03] backdrop-blur-sm border border-white/10 rounded-2xl p-6 hover:border-white/15 transition-all duration-300">
-                <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                  <span>🎁</span> Unlock Perks
-                </h2>
-                
-                <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { icon: '⭐', text: 'Get featured', unlocked: videosSubmitted >= 3 },
-                    { icon: '🎁', text: 'Early drops', unlocked: creator.collaboration?.status === 'completed' },
-                    { icon: '💰', text: 'Paid collabs', unlocked: creator.collaboration?.status === 'completed' },
-                    { icon: '🏀', text: 'Creator Squad', unlocked: videosSubmitted >= 1 },
-            ].map((perk, index) => (
+                  {/* Progress bar with shimmer */}
+                  <div className="h-3 bg-zinc-800 rounded-full overflow-hidden mb-4 relative">
                     <div 
-                      key={index} 
-                      className={`flex items-center gap-2 p-3 rounded-xl transition-all ${
-                        perk.unlocked 
-                          ? 'bg-green-500/10 border border-green-500/20' 
-                          : 'bg-white/5 border border-white/5 opacity-50'
-                      }`}
+                      className="h-full bg-gradient-to-r from-orange-500 to-amber-500 rounded-full transition-all duration-1000 relative"
+                      style={{ width: `${Math.max((videosSubmitted / 3) * 100, 2)}%` }}
                     >
-                      <span className="text-xl">{perk.icon}</span>
-                      <span className={`text-xs font-medium ${perk.unlocked ? 'text-green-400' : 'text-white/50'}`}>
-                        {perk.text}
-                      </span>
-                      {perk.unlocked && <span className="ml-auto text-green-400 text-xs">✓</span>}
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" />
                     </div>
-                  ))}
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <p className="text-zinc-400 text-sm">
+                      {videosSubmitted === 0 
+                        ? "Post your first TikTok featuring your HoopGang gear!"
+                        : `${3 - videosSubmitted} more to complete your collaboration`
+                      }
+                    </p>
+                    <Link 
+                      href="/creator/submit"
+                      className="text-orange-400 hover:text-orange-300 text-sm font-medium transition-colors"
+                    >
+                      View Requirements →
+                    </Link>
+                  </div>
+                </GlowCard>
+              </div>
+
+              {/* Right Column - Stats (1/3 on desktop) */}
+              <div className="space-y-6">
+                {/* This Week Stats - With Orange Gradient Background */}
+                <div 
+                  className="bg-gradient-to-br from-orange-500/10 to-amber-500/5 border border-orange-500/20 rounded-2xl p-6 transition-all duration-300 ease-out hover:shadow-glow-orange hover:border-orange-500/40 hover:scale-[1.01] hover:-translate-y-1 animate-fade-in-up"
+                  style={{ animationDelay: '0.3s' }}
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                      <span>🚀</span> This Week
+                    </h3>
+                    <div className="bg-orange-500/20 px-2 py-1 rounded-full">
+                      <LiveCountdown targetDate={weekResetDate} size="sm" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-zinc-400">Submissions</span>
+                      <span className="text-white font-bold text-xl">
+                        {v3StatsLoading ? (
+                          <Skeleton className="w-8 h-6" />
+                        ) : (
+                          <AnimatedCounter value={v3Stats?.weeklySubmissions || 0} />
+                        )}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                      <span className="text-zinc-400">Your Rank</span>
+                      <div className="flex items-center gap-2">
+                        {v3StatsLoading ? (
+                          <Skeleton className="w-16 h-6" />
+                        ) : v3Stats?.currentRank ? (
+                          <>
+                            <span className="text-orange-400 font-bold text-xl">
+                              #<AnimatedCounter value={v3Stats.currentRank} />
+                            </span>
+                            <span className="text-zinc-500 text-sm">/ {v3Stats.totalCreators}</span>
+                          </>
+                        ) : (
+                          <span className="text-zinc-500">Not ranked</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="pt-3 border-t border-zinc-700/50">
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-zinc-400">All-time</span>
+                        <span className="text-zinc-300">
+                          {v3StatsLoading ? (
+                            <Skeleton className="w-12 h-4" />
+                          ) : (
+                            <><AnimatedCounter value={v3Stats?.allTimeSubmissions || 0} /> posts</>
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Link href="/creator/leaderboard">
+                    <button className="w-full mt-4 py-2.5 bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 font-medium rounded-xl transition-all text-sm hover:scale-[1.02] active:scale-[0.98]">
+                      View Leaderboard →
+                    </button>
+                  </Link>
                 </div>
+
+                {/* Rewards Summary */}
+                <GlowCard glowColor="green" delay="0.4s">
+                  <h3 className="text-lg font-semibold text-white flex items-center gap-2 mb-4">
+                    <span>💰</span> Rewards
+                  </h3>
+
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-zinc-400">Pending</span>
+                      <span className={`font-semibold ${
+                        redemptionStats.pending > 0 ? 'text-yellow-400' : 'text-zinc-500'
+                      }`}>
+                        {redemptionsLoading ? (
+                          <Skeleton className="w-6 h-5" />
+                        ) : (
+                          redemptionStats.pending
+                        )}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-zinc-400">Total Earned</span>
+                      <span className="text-green-400 font-semibold">
+                        {redemptionsLoading ? (
+                          <Skeleton className="w-12 h-5" />
+                        ) : (
+                          <>$<AnimatedCounter value={redemptionStats.totalEarned} /></>
+                        )}
+                      </span>
+                    </div>
+                  </div>
+
+                  <Link href="/creator/rewards">
+                    <button className="w-full mt-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-medium rounded-xl transition-all text-sm hover:scale-[1.02] active:scale-[0.98]">
+                      Browse Rewards →
+                    </button>
+                  </Link>
+                </GlowCard>
+
+                {/* Pro Tips */}
+                <GlowCard glowColor="purple" delay="0.5s">
+                  <h3 className="text-lg font-semibold text-white flex items-center gap-2 mb-4">
+                    <span className="animate-pulse">💡</span> Pro Tips
+                  </h3>
+                  <ul className="space-y-3 text-sm">
+                    {[
+                      'Tag @thehoopgang in every post',
+                      'Use trending basketball sounds',
+                      'Show the product in action',
+                    ].map((tip, i) => (
+                      <li key={i} className="flex gap-2 text-zinc-400">
+                        <span className="text-orange-400">•</span>
+                        <span>{tip}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </GlowCard>
               </div>
             </div>
           )}
 
-          {/* Pending/Denied Timeline Only */}
+          {/* Timeline for Pending/Denied - Simplified view */}
           {creator.collaboration && ['pending', 'denied'].includes(creator.collaboration.status) && (
-            <SectionCard title="Your Journey" icon="📋" className="hover:border-white/20 transition-all duration-300">
+            <GlowCard glowColor="orange" className="mb-6">
+              <h3 className="text-lg font-semibold text-white flex items-center gap-2 mb-6">
+                <span>📋</span> Your Journey
+              </h3>
               <div className="relative">
-                <div className="absolute left-2 top-0 bottom-0 w-0.5 bg-white/10" />
-
+                <div className="absolute left-2 top-0 bottom-0 w-0.5 bg-zinc-800" />
                 {timelineSteps.map((step, index) => (
                   <div key={index} className="relative mb-6 last:mb-0 pl-10">
-                    <div
-                      className={`absolute left-0 w-5 h-5 rounded-full transition-all duration-300 flex items-center justify-center ${
-                        step.status === 'completed'
-                          ? 'bg-green-500 shadow-lg shadow-green-500/30'
-                          : step.status === 'active'
-                            ? 'bg-orange-500 ring-4 ring-orange-500/30 animate-pulse'
-                            : step.status === 'failed'
-                              ? 'bg-red-500 shadow-lg shadow-red-500/30'
-                              : 'bg-white/20'
-                      }`}
-                    >
-                      {step.status === 'completed' && (
-                        <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                      )}
-                      {step.status === 'failed' && (
-                        <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                        </svg>
-                      )}
+                    <div className={`absolute left-0 w-5 h-5 rounded-full flex items-center justify-center text-xs ${
+                      step.status === 'completed'
+                        ? 'bg-green-500 text-white'
+                        : step.status === 'active'
+                          ? 'bg-orange-500 text-white ring-4 ring-orange-500/30'
+                          : step.status === 'failed'
+                            ? 'bg-red-500 text-white'
+                            : 'bg-zinc-700 text-zinc-400'
+                    }`}>
+                      {step.status === 'completed' ? '✓' : step.status === 'failed' ? '✗' : ''}
                     </div>
-
-                    <div>
-                      <div className={`font-medium ${
-                        step.status === 'completed' ? 'text-white' :
-                        step.status === 'active' ? 'text-orange-400' :
-                        step.status === 'failed' ? 'text-red-400' :
-                        'text-white/40'
-                      }`}>
-                        {step.label}
-                      </div>
-                      {step.date && (
-                        <div className="text-sm text-white/50 mt-0.5">{step.date}</div>
-                      )}
+                    <div className={`font-medium ${
+                      step.status === 'completed' ? 'text-white' :
+                      step.status === 'active' ? 'text-orange-400' :
+                      step.status === 'failed' ? 'text-red-400' :
+                      'text-zinc-500'
+                    }`}>
+                      {step.label}
                     </div>
+                    {step.date && <div className="text-xs text-zinc-500">{step.date}</div>}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </SectionCard>
+            </GlowCard>
+          )}
+
+          {/* No Active Collaboration - Can Request New */}
+          {!creator.collaboration && !creator.isBlocked && creator.totalCollaborations > 0 && (
+            <GlowCard glowColor="purple" className="mb-6 bg-gradient-to-r from-purple-500/10 to-indigo-500/10 border-purple-500/20">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="text-4xl">🎯</div>
+                  <div>
+                    <h2 className="text-lg font-bold text-purple-400">Ready for Another Collab?</h2>
+                    <p className="text-white/60 text-sm">
+                      You&apos;ve completed {creator.totalCollaborations} collaboration{creator.totalCollaborations > 1 ? 's' : ''}. Request your next product!
+                    </p>
+                  </div>
+                </div>
+                <Link href="/creator/request-product">
+                  <Button variant="primary">Request New Product</Button>
+                </Link>
+              </div>
+            </GlowCard>
+          )}
+
+          {/* Past Collaborations */}
+          {pastCollaborations.length > 0 && (
+            <GlowCard glowColor="orange" delay="0.6s" className="mt-6">
+              <h3 className="text-lg font-semibold text-white flex items-center gap-2 mb-4">
+                <span>📜</span> Past Collaborations
+              </h3>
+              <div className="space-y-3">
+                {pastCollaborations.map((collab) => (
+                  <div 
+                    key={collab.id}
+                    className={`flex items-center justify-between p-4 rounded-xl border ${
+                      collab.status === 'completed' 
+                        ? 'bg-green-500/5 border-green-500/20' 
+                        : collab.status === 'denied'
+                          ? 'bg-yellow-500/5 border-yellow-500/20'
+                          : 'bg-red-500/5 border-red-500/20'
+                    }`}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg ${
+                        collab.status === 'completed' 
+                          ? 'bg-green-500/20' 
+                          : collab.status === 'denied'
+                            ? 'bg-yellow-500/20'
+                            : 'bg-red-500/20'
+                      }`}>
+                        {collab.status === 'completed' ? '✓' : collab.status === 'denied' ? '—' : '✗'}
+                      </div>
+                      <div>
+                        <div className="text-white font-medium">
+                          {collab.product} <span className="text-zinc-500 text-sm">({collab.size})</span>
+                        </div>
+                        <div className="text-zinc-500 text-xs">
+                          Collab #{collab.collabNumber} • {formatDate(collab.createdAt)}
+                        </div>
+                      </div>
+                    </div>
+                    <span className={`text-xs font-medium px-3 py-1 rounded-full ${
+                      collab.status === 'completed' 
+                        ? 'bg-green-500/20 text-green-400' 
+                        : collab.status === 'denied'
+                          ? 'bg-yellow-500/20 text-yellow-400'
+                          : 'bg-red-500/20 text-red-400'
+                    }`}>
+                      {collab.status === 'completed' ? 'Completed' : collab.status === 'denied' ? 'Not Approved' : 'Ghosted'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </GlowCard>
           )}
 
           {/* Update Stats Modal */}
           {showStatsModal && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-              {/* Backdrop */}
               <div 
                 className="absolute inset-0 bg-black/70 backdrop-blur-sm"
                 onClick={() => setShowStatsModal(false)}
               />
               
-              {/* Modal */}
-              <div className="relative bg-zinc-900 border border-white/10 rounded-2xl p-6 w-full max-w-md">
+              <div className="relative bg-zinc-900 border border-zinc-800 rounded-2xl p-6 w-full max-w-md animate-fade-in-up">
                 <h3 className="text-xl font-bold text-white mb-2">Update Your Stats</h3>
-                <p className="text-white/50 text-sm mb-6">
+                <p className="text-zinc-500 text-sm mb-6">
                   Keep your follower counts up to date to unlock better opportunities.
                 </p>
 
                 <div className="space-y-4">
-                  {/* Instagram Input */}
                   <div>
-                    <label className="block text-white/50 text-xs uppercase tracking-wider mb-2">
+                    <label className="block text-zinc-500 text-xs uppercase tracking-wider mb-2">
                       Instagram Followers
                     </label>
-                    <div className="relative">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-pink-400">
-                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-                        </svg>
-                      </span>
-                      <input
-                        type="number"
-                        value={newInstagramFollowers}
-                        onChange={(e) => setNewInstagramFollowers(parseInt(e.target.value) || 0)}
-                        className="w-full bg-white/5 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                        min="0"
-                      />
-                    </div>
+                    <input
+                      type="number"
+                      value={newInstagramFollowers}
+                      onChange={(e) => setNewInstagramFollowers(parseInt(e.target.value) || 0)}
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      min="0"
+                    />
                   </div>
 
-                  {/* TikTok Input */}
                   <div>
-                    <label className="block text-white/50 text-xs uppercase tracking-wider mb-2">
+                    <label className="block text-zinc-500 text-xs uppercase tracking-wider mb-2">
                       TikTok Followers
                     </label>
-                    <div className="relative">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white">
-                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005 20.1a6.34 6.34 0 0010.86-4.43v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1-.1z"/>
-                        </svg>
-                      </span>
-                      <input
-                        type="number"
-                        value={newTiktokFollowers}
-                        onChange={(e) => setNewTiktokFollowers(parseInt(e.target.value) || 0)}
-                        className="w-full bg-white/5 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                        min="0"
-                      />
-                    </div>
+                    <input
+                      type="number"
+                      value={newTiktokFollowers}
+                      onChange={(e) => setNewTiktokFollowers(parseInt(e.target.value) || 0)}
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      min="0"
+                    />
                   </div>
                 </div>
 
-                {/* Rate limit notice */}
-                <p className="text-white/40 text-xs mt-4">
-                  You can update your stats once every 24 hours.
-                </p>
-
-                {/* Actions */}
                 <div className="flex gap-3 mt-6">
                   <button
                     onClick={() => setShowStatsModal(false)}
-                    className="flex-1 py-3 bg-white/10 hover:bg-white/15 text-white font-medium rounded-xl transition-colors"
+                    className="flex-1 py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-medium rounded-xl transition-colors"
                   >
                     Cancel
                   </button>
-                  <button
+                  <Button
+                    variant="primary"
                     onClick={handleUpdateStats}
-                    disabled={updatingStats}
-                    className="flex-1 py-3 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    loading={updatingStats}
+                    className="flex-1"
                   >
-                    {updatingStats ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      'Save Changes'
-                    )}
-                  </button>
+                    Save Changes
+                  </Button>
                 </div>
               </div>
             </div>
           )}
-
-          {/* Past Collaborations Section */}
-          {pastCollaborations.length > 0 && (
-            <div className="mt-6">
-              <SectionCard title="Past Collaborations" icon="📜" className="hover:border-white/20 transition-all duration-300">
-                <div className="space-y-3">
-                  {pastCollaborations.map((collab) => (
-                    <div 
-                      key={collab.id}
-                      className={`flex items-center justify-between p-4 rounded-xl border ${
-                        collab.status === 'completed' 
-                          ? 'bg-green-500/5 border-green-500/20' 
-                          : collab.status === 'denied'
-                            ? 'bg-yellow-500/5 border-yellow-500/20'
-                            : 'bg-red-500/5 border-red-500/20'
-                      }`}
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg ${
-                          collab.status === 'completed' 
-                            ? 'bg-green-500/20' 
-                            : collab.status === 'denied'
-                              ? 'bg-yellow-500/20'
-                              : 'bg-red-500/20'
-                        }`}>
-                          {collab.status === 'completed' ? '✓' : collab.status === 'denied' ? '—' : '✗'}
-                        </div>
-                        <div>
-                          <div className="text-white font-medium">
-                            {collab.product} <span className="text-white/50 text-sm">({collab.size})</span>
-                          </div>
-                          <div className="text-white/50 text-xs">
-                            Collab #{collab.collabNumber} • {formatDate(collab.createdAt)}
-                          </div>
-                        </div>
-                      </div>
-                      <div className={`text-xs font-medium px-3 py-1 rounded-full ${
-                        collab.status === 'completed' 
-                          ? 'bg-green-500/20 text-green-400' 
-                          : collab.status === 'denied'
-                            ? 'bg-yellow-500/20 text-yellow-400'
-                            : 'bg-red-500/20 text-red-400'
-                      }`}>
-                        {collab.status === 'completed' ? 'Completed' : collab.status === 'denied' ? 'Not Approved' : 'Ghosted'}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                
-                {/* Stats summary */}
-                <div className="mt-4 pt-4 border-t border-white/10 flex justify-between text-sm">
-                  <span className="text-white/50">
-                    Total collaborations: <span className="text-white font-medium">{creator.totalCollaborations}</span>
-                  </span>
-                  <span className="text-white/50">
-                    Completed: <span className="text-green-400 font-medium">
-                      {pastCollaborations.filter(c => c.status === 'completed').length + (creator.collaboration?.status === 'completed' ? 1 : 0)}
-                    </span>
-                  </span>
-                </div>
-              </SectionCard>
-            </div>
-          )}
+        </div>
       </div>
-    </div>
     </ProtectedRoute>
   );
 }

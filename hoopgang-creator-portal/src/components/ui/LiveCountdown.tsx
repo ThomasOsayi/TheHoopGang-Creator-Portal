@@ -1,3 +1,5 @@
+// src/components/ui/LiveCountdown.tsx
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
