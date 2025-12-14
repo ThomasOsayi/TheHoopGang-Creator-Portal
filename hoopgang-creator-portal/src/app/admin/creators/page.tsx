@@ -4,15 +4,19 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { CreatorWithCollab, CollaborationStatus, DashboardStats } from '@/types';
 import { getAllCreatorsWithCollabs, getDashboardStats, updateCollaboration } from '@/lib/firestore';
 import { StatCard, useToast, Pagination } from '@/components/ui';
 import { FilterBar, CreatorTable, ApplicationReviewModal } from '@/components/creators';
 import { ProtectedRoute } from '@/components/auth';
+import { useAuth } from '@/lib/auth-context';
+import { getCurrentWeek } from '@/lib/week-utils';
 
 export default function AdminCreatorsPage() {
   const router = useRouter();
   const { showToast } = useToast();
+  const { user } = useAuth();
   const [creators, setCreators] = useState<CreatorWithCollab[]>([]);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -26,6 +30,17 @@ export default function AdminCreatorsPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const PAGE_SIZE = 10;
 
+  // V3 Stats state
+  const [v3Stats, setV3Stats] = useState<{
+    totalSubmissions: number;
+    weeklySubmissions: number;
+    activeCreatorsThisWeek: number;
+    pendingRedemptions: number;
+    approvedRedemptions: number;
+    totalRewardsValue: number;
+  } | null>(null);
+  const [v3Loading, setV3Loading] = useState(true);
+
   // Fetch stats on mount
   useEffect(() => {
     const fetchStats = async () => {
@@ -38,6 +53,96 @@ export default function AdminCreatorsPage() {
     };
     fetchStats();
   }, []);
+
+  // Fetch V3 stats
+  useEffect(() => {
+    const fetchV3Stats = async () => {
+      if (!user) return;
+      
+      setV3Loading(true);
+      try {
+        const idToken = await user.getIdToken();
+        const currentWeek = getCurrentWeek();
+        
+        // Fetch submissions stats
+        const submissionsResponse = await fetch('/api/admin/submissions?limit=1', {
+          headers: { 'Authorization': `Bearer ${idToken}` },
+        });
+        
+        // Fetch leaderboard for active creators count
+        const leaderboardResponse = await fetch(
+          `/api/leaderboard?period=${currentWeek}&type=volume`,
+          { headers: { 'Authorization': `Bearer ${idToken}` } }
+        );
+        
+        // Fetch redemptions
+        const redemptionsResponse = await fetch('/api/admin/redemptions', {
+          headers: { 'Authorization': `Bearer ${idToken}` },
+        });
+        
+        let totalSubmissions = 0;
+        let weeklySubmissions = 0;
+        let activeCreatorsThisWeek = 0;
+        let pendingRedemptions = 0;
+        let approvedRedemptions = 0;
+        let totalRewardsValue = 0;
+        
+        if (submissionsResponse.ok) {
+          const data = await submissionsResponse.json();
+          totalSubmissions = data.submissions?.length || 0;
+        }
+        
+        // Get weekly count by fetching with week filter
+        const weeklyResponse = await fetch(
+          `/api/admin/submissions?weekOf=${currentWeek}&limit=1000`,
+          { headers: { 'Authorization': `Bearer ${idToken}` } }
+        );
+        if (weeklyResponse.ok) {
+          const weeklyData = await weeklyResponse.json();
+          weeklySubmissions = weeklyData.submissions?.length || 0;
+        }
+        
+        if (leaderboardResponse.ok) {
+          const data = await leaderboardResponse.json();
+          activeCreatorsThisWeek = data.entries?.length || 0;
+        }
+        
+        if (redemptionsResponse.ok) {
+          const data = await redemptionsResponse.json();
+          const redemptions = data.redemptions || [];
+          
+          pendingRedemptions = redemptions.filter(
+            (r: { status: string }) => r.status === 'pending'
+          ).length;
+          
+          approvedRedemptions = redemptions.filter(
+            (r: { status: string }) => r.status === 'approved'
+          ).length;
+          
+          totalRewardsValue = redemptions
+            .filter((r: { status: string }) => r.status === 'fulfilled')
+            .reduce((sum: number, r: { cashAmount?: number }) => {
+              return sum + (r.cashAmount || 0);
+            }, 0);
+        }
+        
+        setV3Stats({
+          totalSubmissions,
+          weeklySubmissions,
+          activeCreatorsThisWeek,
+          pendingRedemptions,
+          approvedRedemptions,
+          totalRewardsValue,
+        });
+      } catch (error) {
+        console.error('Error fetching V3 stats:', error);
+      } finally {
+        setV3Loading(false);
+      }
+    };
+    
+    fetchV3Stats();
+  }, [user]);
 
   // Fetch creators with pagination
   const fetchCreators = useCallback(async (pageLastDoc?: any, isNewFilter = false, pageNum?: number) => {
@@ -358,6 +463,122 @@ export default function AdminCreatorsPage() {
                 </div>
               ))
             )}
+          </div>
+
+          {/* V3 Creator Program Stats */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                <span>🚀</span> Creator Program (V3)
+              </h2>
+              <div className="flex gap-2">
+                <Link
+                  href="/admin/submissions"
+                  className="text-sm text-orange-400 hover:text-orange-300 transition-colors"
+                >
+                  View Submissions →
+                </Link>
+                <span className="text-white/20">|</span>
+                <Link
+                  href="/admin/redemptions"
+                  className="text-sm text-orange-400 hover:text-orange-300 transition-colors"
+                >
+                  View Redemptions →
+                </Link>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+              {v3Loading ? (
+                Array.from({ length: 6 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-4 animate-pulse"
+                  >
+                    <div className="h-3 bg-white/10 rounded w-16 mb-2" />
+                    <div className="h-6 bg-white/10 rounded w-12" />
+                  </div>
+                ))
+              ) : v3Stats ? (
+                <>
+                  {/* Weekly Submissions */}
+                  <div className="bg-gradient-to-br from-orange-500/10 to-amber-500/10 backdrop-blur-sm border border-orange-500/20 rounded-2xl p-4 hover:border-orange-500/40 transition-all">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-lg">📤</span>
+                      <span className="text-white/50 text-xs">This Week</span>
+                    </div>
+                    <div className="text-2xl font-bold text-white">{v3Stats.weeklySubmissions}</div>
+                    <div className="text-white/40 text-xs mt-1">submissions</div>
+                  </div>
+                  
+                  {/* Total Submissions */}
+                  <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-4 hover:border-white/20 transition-all">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-lg">📊</span>
+                      <span className="text-white/50 text-xs">All Time</span>
+                    </div>
+                    <div className="text-2xl font-bold text-white">{v3Stats.totalSubmissions}</div>
+                    <div className="text-white/40 text-xs mt-1">submissions</div>
+                  </div>
+                  
+                  {/* Active Creators */}
+                  <div className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 backdrop-blur-sm border border-blue-500/20 rounded-2xl p-4 hover:border-blue-500/40 transition-all">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-lg">👥</span>
+                      <span className="text-white/50 text-xs">Active</span>
+                    </div>
+                    <div className="text-2xl font-bold text-white">{v3Stats.activeCreatorsThisWeek}</div>
+                    <div className="text-white/40 text-xs mt-1">creators this week</div>
+                  </div>
+                  
+                  {/* Pending Redemptions */}
+                  <div className={`backdrop-blur-sm border rounded-2xl p-4 transition-all ${
+                    v3Stats.pendingRedemptions > 0
+                      ? 'bg-gradient-to-br from-yellow-500/10 to-amber-500/10 border-yellow-500/20 hover:border-yellow-500/40'
+                      : 'bg-white/5 border-white/10 hover:border-white/20'
+                  }`}>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-lg">⏳</span>
+                      <span className="text-white/50 text-xs">Pending</span>
+                    </div>
+                    <div className={`text-2xl font-bold ${v3Stats.pendingRedemptions > 0 ? 'text-yellow-400' : 'text-white'}`}>
+                      {v3Stats.pendingRedemptions}
+                    </div>
+                    <div className="text-white/40 text-xs mt-1">redemptions</div>
+                  </div>
+                  
+                  {/* Approved (Ready to Fulfill) */}
+                  <div className={`backdrop-blur-sm border rounded-2xl p-4 transition-all ${
+                    v3Stats.approvedRedemptions > 0
+                      ? 'bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border-blue-500/20 hover:border-blue-500/40'
+                      : 'bg-white/5 border-white/10 hover:border-white/20'
+                  }`}>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-lg">✅</span>
+                      <span className="text-white/50 text-xs">To Fulfill</span>
+                    </div>
+                    <div className={`text-2xl font-bold ${v3Stats.approvedRedemptions > 0 ? 'text-blue-400' : 'text-white'}`}>
+                      {v3Stats.approvedRedemptions}
+                    </div>
+                    <div className="text-white/40 text-xs mt-1">approved</div>
+                  </div>
+                  
+                  {/* Total Paid Out */}
+                  <div className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 backdrop-blur-sm border border-green-500/20 rounded-2xl p-4 hover:border-green-500/40 transition-all">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-lg">💰</span>
+                      <span className="text-white/50 text-xs">Paid Out</span>
+                    </div>
+                    <div className="text-2xl font-bold text-green-400">${v3Stats.totalRewardsValue}</div>
+                    <div className="text-white/40 text-xs mt-1">total rewards</div>
+                  </div>
+                </>
+              ) : (
+                <div className="col-span-full text-center text-white/40 py-4">
+                  Unable to load V3 stats
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Filter Bar */}

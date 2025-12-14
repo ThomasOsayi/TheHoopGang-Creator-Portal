@@ -16,6 +16,7 @@ import PackageStatusCard from '@/components/ui/PackageStatusCard';
 import { CONTENT_DEADLINE_DAYS } from '@/lib/constants';
 import { useAuth } from '@/lib/auth-context';
 import { ProtectedRoute } from '@/components/auth';
+import { getCurrentWeek, formatTimeUntilReset } from '@/lib/week-utils';
 
 /**
  * Formats a date to a readable string
@@ -53,10 +54,31 @@ export default function CreatorDashboardPage() {
   // Past collaborations state
   const [pastCollaborations, setPastCollaborations] = useState<Collaboration[]>([]);
 
+  // V3 Stats state
+  const [v3Stats, setV3Stats] = useState<{
+    weeklySubmissions: number;
+    allTimeSubmissions: number;
+    currentRank: number | null;
+    totalCreators: number;
+  } | null>(null);
+  const [v3StatsLoading, setV3StatsLoading] = useState(true);
+  
+  // V3 Rewards/Redemptions state
+  const [redemptionStats, setRedemptionStats] = useState<{
+    pending: number;
+    totalEarned: number;
+  }>({ pending: 0, totalEarned: 0 });
+  const [redemptionsLoading, setRedemptionsLoading] = useState(true);
+  
+  // Weekly reset countdown
+  const [timeUntilReset, setTimeUntilReset] = useState<string>('');
+
   // Fetch creator data
   useEffect(() => {
     if (user) {
       fetchCreator();
+      fetchV3Stats();
+      fetchRedemptionStats();
     }
   }, [user]);
 
@@ -99,6 +121,109 @@ export default function CreatorDashboardPage() {
       setLoading(false);
     }
   };
+
+  // Fetch V3 content stats
+  const fetchV3Stats = async () => {
+    if (!user) return;
+    
+    setV3StatsLoading(true);
+    try {
+      const idToken = await user.getIdToken();
+      
+      // Fetch submission stats
+      const statsResponse = await fetch('/api/submissions/volume/stats', {
+        headers: { 'Authorization': `Bearer ${idToken}` },
+      });
+      
+      if (statsResponse.ok) {
+        const statsData = await statsResponse.json();
+        
+        // Fetch leaderboard to get current rank
+        const currentWeek = getCurrentWeek();
+        const leaderboardResponse = await fetch(
+          `/api/leaderboard?period=${currentWeek}&type=volume`,
+          { headers: { 'Authorization': `Bearer ${idToken}` } }
+        );
+        
+        let currentRank: number | null = null;
+        let totalCreators = 0;
+        
+        if (leaderboardResponse.ok) {
+          const leaderboardData = await leaderboardResponse.json();
+          totalCreators = leaderboardData.entries?.length || 0;
+          
+          // Find creator's rank
+          const creatorDoc = await getCreatorByUserId(user.uid);
+          if (creatorDoc && leaderboardData.entries) {
+            const entry = leaderboardData.entries.find(
+              (e: { creatorId: string; rank: number }) => e.creatorId === creatorDoc.id
+            );
+            if (entry) {
+              currentRank = entry.rank;
+            }
+          }
+        }
+        
+        setV3Stats({
+          weeklySubmissions: statsData.stats?.weeklyCount || 0,
+          allTimeSubmissions: statsData.stats?.allTimeCount || 0,
+          currentRank,
+          totalCreators,
+        });
+      }
+    } catch (err) {
+      console.error('Error fetching V3 stats:', err);
+    } finally {
+      setV3StatsLoading(false);
+    }
+  };
+
+  // Fetch redemption stats
+  const fetchRedemptionStats = async () => {
+    if (!user) return;
+    
+    setRedemptionsLoading(true);
+    try {
+      const idToken = await user.getIdToken();
+      
+      const response = await fetch('/api/creator/redemptions', {
+        headers: { 'Authorization': `Bearer ${idToken}` },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        const redemptions = data.redemptions || [];
+        
+        const pending = redemptions.filter(
+          (r: { status: string }) => r.status === 'pending' || r.status === 'approved'
+        ).length;
+        
+        const totalEarned = redemptions
+          .filter((r: { status: string }) => r.status === 'fulfilled')
+          .reduce((sum: number, r: { cashAmount?: number; storeCreditValue?: number }) => {
+            return sum + (r.cashAmount || 0) + (r.storeCreditValue || 0);
+          }, 0);
+        
+        setRedemptionStats({ pending, totalEarned });
+      }
+    } catch (err) {
+      console.error('Error fetching redemption stats:', err);
+    } finally {
+      setRedemptionsLoading(false);
+    }
+  };
+
+  // Update countdown timer
+  useEffect(() => {
+    const updateCountdown = () => {
+      setTimeUntilReset(formatTimeUntilReset());
+    };
+    
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 60000); // Update every minute
+    
+    return () => clearInterval(interval);
+  }, []);
 
   const handleSubmitContent = async () => {
     if (!creator) return;
@@ -483,6 +608,132 @@ export default function CreatorDashboardPage() {
                 </div>
                 <div className="text-white font-semibold text-sm truncate">{creator.collaboration.product}</div>
                 <div className="text-white/50 text-xs">Size {creator.collaboration.size}</div>
+              </div>
+            </div>
+          )}
+
+          {/* V3 Creator Program Section */}
+          {creator.collaboration && !['pending', 'denied'].includes(creator.collaboration.status) && (
+            <div className="mb-6">
+              <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <span>🚀</span> Creator Program
+              </h2>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Content Stats Card */}
+                <div className="bg-gradient-to-br from-orange-500/10 to-amber-500/10 backdrop-blur-md border border-orange-500/20 rounded-2xl p-5 hover:border-orange-500/40 transition-all duration-300">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-white font-semibold flex items-center gap-2">
+                      <span>📊</span> Content Stats
+                    </h3>
+                    <div className="text-xs text-orange-400 bg-orange-500/20 px-2 py-1 rounded-full">
+                      {timeUntilReset || 'Loading...'}
+                    </div>
+                  </div>
+                  
+                  {v3StatsLoading ? (
+                    <div className="space-y-3">
+                      <div className="h-8 bg-white/10 rounded animate-pulse" />
+                      <div className="h-8 bg-white/10 rounded animate-pulse" />
+                    </div>
+                  ) : v3Stats ? (
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-white/60 text-sm">This Week</span>
+                        <span className="text-white font-bold text-lg">{v3Stats.weeklySubmissions}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-white/60 text-sm">All Time</span>
+                        <span className="text-white font-medium">{v3Stats.allTimeSubmissions}</span>
+                      </div>
+                      <div className="flex justify-between items-center pt-2 border-t border-white/10">
+                        <span className="text-white/60 text-sm">Current Rank</span>
+                        {v3Stats.currentRank ? (
+                          <span className="text-orange-400 font-bold">
+                            #{v3Stats.currentRank}
+                            <span className="text-white/40 text-xs font-normal ml-1">
+                              / {v3Stats.totalCreators}
+                            </span>
+                          </span>
+                        ) : (
+                          <span className="text-white/40 text-sm">Not ranked</span>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-white/40 text-sm">Unable to load stats</div>
+                  )}
+                </div>
+
+                {/* Rewards Card */}
+                <div className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 backdrop-blur-md border border-green-500/20 rounded-2xl p-5 hover:border-green-500/40 transition-all duration-300">
+                  <h3 className="text-white font-semibold flex items-center gap-2 mb-4">
+                    <span>💰</span> Rewards
+                  </h3>
+                  
+                  {redemptionsLoading ? (
+                    <div className="space-y-3">
+                      <div className="h-8 bg-white/10 rounded animate-pulse" />
+                      <div className="h-8 bg-white/10 rounded animate-pulse" />
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-white/60 text-sm">Pending</span>
+                        <span className={`font-bold text-lg ${redemptionStats.pending > 0 ? 'text-yellow-400' : 'text-white'}`}>
+                          {redemptionStats.pending}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center pt-2 border-t border-white/10">
+                        <span className="text-white/60 text-sm">Total Earned</span>
+                        <span className="text-green-400 font-bold text-lg">
+                          ${redemptionStats.totalEarned}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {redemptionStats.pending > 0 && (
+                    <div className="mt-3 pt-3 border-t border-white/10">
+                      <span className="text-yellow-400 text-xs">
+                        🎉 {redemptionStats.pending} reward{redemptionStats.pending > 1 ? 's' : ''} being processed!
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Quick Actions Card */}
+                <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-5 hover:border-white/20 transition-all duration-300">
+                  <h3 className="text-white font-semibold flex items-center gap-2 mb-4">
+                    <span>⚡</span> Quick Actions
+                  </h3>
+                  
+                  <div className="space-y-2">
+                    <Link 
+                      href="/creator/submit"
+                      className="flex items-center justify-between p-3 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/20 rounded-xl transition-all group"
+                    >
+                      <span className="text-white text-sm font-medium">Submit Content</span>
+                      <span className="text-orange-400 group-hover:translate-x-1 transition-transform">→</span>
+                    </Link>
+                    
+                    <Link 
+                      href="/creator/leaderboard"
+                      className="flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all group"
+                    >
+                      <span className="text-white text-sm font-medium">View Leaderboard</span>
+                      <span className="text-white/60 group-hover:translate-x-1 transition-transform">→</span>
+                    </Link>
+                    
+                    <Link 
+                      href="/creator/rewards"
+                      className="flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all group"
+                    >
+                      <span className="text-white text-sm font-medium">Browse Rewards</span>
+                      <span className="text-white/60 group-hover:translate-x-1 transition-transform">→</span>
+                    </Link>
+                  </div>
+                </div>
               </div>
             </div>
           )}
