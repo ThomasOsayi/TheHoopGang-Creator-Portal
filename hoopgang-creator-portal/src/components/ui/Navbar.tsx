@@ -101,6 +101,7 @@ export function Navbar() {
     { href: '/admin/rewards', label: 'Rewards', icon: '🎁', show: isAdmin },
     { href: '/admin/leaderboard/volume', label: 'Volume Admin', icon: '📊', show: isAdmin },
     { href: '/admin/leaderboard/gmv', label: 'GMV Admin', icon: '💰', show: isAdmin },
+    { href: '/admin/redemptions', label: 'Redemptions', icon: '💰', show: isAdmin },
     { href: '/creator/dashboard', label: 'Dashboard', icon: '🎯', show: user && !isAdmin && userData?.creatorId },
     { href: '/creator/submit', label: 'Submit Content', icon: '📤', show: user && !isAdmin && userData?.creatorId },
     { href: '/creator/leaderboard', label: 'Leaderboard', icon: '🏆', show: user && (isAdmin || userData?.creatorId) },
