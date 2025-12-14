@@ -67,6 +67,9 @@ admin/
 │   ├── page.tsx                # Admin creators list page
 │   │                           # - Approve/Deny/Review actions for pending creators
 │   │                           # - Application review modal integration
+│   │                           # - V3 Creator Program stats section
+│   │                           # - Weekly/total submissions, active creators
+│   │                           # - Pending/approved redemptions, total paid out
 │   └── [id]/
 │       └── page.tsx            # Individual creator detail page (dynamic route)
 │                               # - Tracking management section
@@ -84,6 +87,18 @@ admin/
 │                               # - Bulk GMV entry management
 │                               # - Monthly leaderboard view
 │                               # - GMV period selection
+├── rewards/
+│   └── page.tsx                # Admin rewards management page
+│                               # - Create, edit, and manage rewards
+│                               # - Filter by category and status
+│                               # - Reward image upload support
+│                               # - Milestone and leaderboard reward configuration
+├── redemptions/
+│   └── page.tsx                # Admin redemptions management page
+│                               # - View all redemptions with filters
+│                               # - Update redemption status (pending → approved → fulfilled)
+│                               # - Filter by status, creator, source
+│                               # - Bulk status updates
 └── submissions/
     ├── page.tsx                # Milestone submissions list page
     │                           # - Filter by status, type, week
@@ -123,6 +138,22 @@ api/
 │   │       └── bulk/
 │   │           └── route.ts     # Bulk GMV operations API
 │   │                           # - POST: Bulk create/update GMV entries
+│   ├── rewards/
+│   │   ├── route.ts            # Admin rewards API
+│   │   │                       # - GET: Fetch all rewards with filters (category, status)
+│   │   │                       # - POST: Create new reward
+│   │   └── [id]/
+│   │       └── route.ts        # Individual reward API
+│   │                           # - GET: Fetch single reward
+│   │                           # - PUT: Update reward details
+│   ├── redemptions/
+│   │   ├── route.ts            # Admin redemptions API
+│   │   │                       # - GET: Fetch all redemptions with filters
+│   │   │                       # - Supports filtering by status, creatorId, source
+│   │   └── [id]/
+│   │       └── route.ts        # Individual redemption API
+│   │                           # - GET: Fetch single redemption
+│   │                           # - PUT: Update redemption status
 │   └── submissions/
 │       ├── route.ts            # Admin submissions API
 │       │                       # - GET: Fetch all submissions with filters
@@ -151,6 +182,12 @@ api/
 │   │                           # - Returns leaderboard and time remaining
 │   │                           # - Supports includeEnded parameter
 │   ├── creator/
+│   │   ├── rewards/
+│   │   │   └── route.ts        # Creator rewards API
+│   │   │                       # - GET: Fetch available rewards for creators
+│   │   ├── redemptions/
+│   │   │   └── route.ts        # Creator redemptions API
+│   │   │                       # - GET: Fetch creator's redemption history
 │   │   └── stats/
 │   │       └── route.ts        # Creator stats API
 │   │                           # - GET: Fetch creator statistics
@@ -202,6 +239,10 @@ creator/
 │                               # - Completion banners and countdown timers
 │                               # - Enhanced timeline with checkmarks and progress
 │                               # - Glassmorphic design with hover effects
+│                               # - V3 Creator Program stats section
+│                               # - Content stats (weekly/all-time submissions, rank)
+│                               # - Rewards stats (pending, total earned)
+│                               # - Quick actions (submit, leaderboard, rewards)
 ├── submit/
 │   └── page.tsx                # Content submission page
 │                               # - Volume submission form
@@ -217,6 +258,13 @@ creator/
 │                               # - Competition status banners
 │                               # - User rank highlighting
 │                               # - Period selection for GMV
+├── rewards/
+│   └── page.tsx                # Creator rewards page
+│                               # - View available rewards
+│                               # - Milestone rewards display
+│                               # - Leaderboard rewards display
+│                               # - Reward images and descriptions
+│                               # - Redemption status tracking
 └── submissions/
     └── page.tsx                # Creator submissions history page
                                 # - View all submissions
@@ -553,6 +601,11 @@ creator/
     - Competition winner rewards
     - Redemption tracking and fulfillment
     - Automatic redemption creation on approvals
+    - Admin rewards management interface
+    - Admin redemptions management interface
+    - Creator rewards browsing page
+    - Reward image support
+    - Status workflow management (pending → approved → fulfilled)
 
 ---
 
@@ -664,6 +717,21 @@ creator/
   - Added height/weight display in profile section
   - Added fit information to quick stats bar (5-column grid when available)
   - Enhanced social media links with follower counts
+- **V3 Stats Dashboard** (`/admin/creators`):
+  - V3 Creator Program stats overview section
+  - Real-time metrics: submissions, active creators, redemptions
+  - Quick navigation to submissions and redemptions pages
+  - Color-coded stat cards with hover effects
+- **Rewards Management** (`/admin/rewards`):
+  - Full CRUD interface for rewards
+  - Category and status filtering
+  - Image upload support
+  - Milestone tier and leaderboard rank configuration
+- **Redemptions Management** (`/admin/redemptions`):
+  - Comprehensive redemption tracking
+  - Status workflow management
+  - Filter by status, creator, source
+  - Bulk operations support
 
 ### Creator Dashboard Enhancements
 - **Status-Based UI**:
@@ -675,6 +743,7 @@ creator/
   - Quick stats bar showing status, videos posted, time remaining, product
   - Enhanced timeline with checkmarks, progress lines, and status colors
   - Completion banners for all 3 videos submitted
+  - V3 Creator Program stats section with content stats, rewards, and quick actions
 - **Visual Enhancements**:
   - Glassmorphic welcome banner with hover effects
   - Background gradient orbs for depth
@@ -682,6 +751,12 @@ creator/
   - Enhanced countdown with start/end dates
   - Progress bars for video submissions
   - Perks grid with unlock states
+  - Gradient stat cards for V3 metrics
+- **V3 Integration**:
+  - Real-time content submission stats
+  - Leaderboard rank display
+  - Redemption status tracking
+  - Quick action links to submit, leaderboard, and rewards pages
 
 ### UI/UX Improvements
 - **Animations & Effects**:
@@ -868,6 +943,57 @@ creator/
   - Week utilities: ISO week calculations, time formatting, period utilities
   - Month utilities: Month string generation, period calculations
   - Time formatting: formatTimeRemaining, formatTimeUntilReset functions
+
+### Rewards & Redemptions Management System (Latest)
+- **Admin Rewards Management** (`/admin/rewards`):
+  - Create, edit, and manage rewards
+  - Filter by category (milestone, volume_leaderboard, gmv_leaderboard)
+  - Filter by status (active/inactive)
+  - Reward image upload support
+  - Configure cash values, store credit, and product rewards
+  - Set milestone tiers and leaderboard ranks
+- **Admin Redemptions Management** (`/admin/redemptions`):
+  - View all redemptions with comprehensive filters
+  - Update redemption status workflow (pending → approved → fulfilled)
+  - Filter by status, creator, source (milestone, competition, etc.)
+  - Bulk status update capabilities
+  - Track fulfillment progress and payment history
+- **Creator Rewards Page** (`/creator/rewards`):
+  - Browse available rewards by category
+  - View milestone rewards with tier requirements
+  - View leaderboard rewards with rank requirements
+  - Display reward images when available
+  - See redemption eligibility and status
+- **Rewards API Routes**:
+  - `/api/admin/rewards` - List and create rewards (GET, POST)
+  - `/api/admin/rewards/[id]` - Get and update individual rewards (GET, PUT)
+  - `/api/creator/rewards` - Fetch available rewards for creators (GET)
+- **Redemptions API Routes**:
+  - `/api/admin/redemptions` - List all redemptions with filters (GET)
+  - `/api/admin/redemptions/[id]` - Get and update redemption status (GET, PUT)
+  - `/api/creator/redemptions` - Fetch creator's redemption history (GET)
+- **Seed Script** (`scripts/seed-v3-rewards.ts`):
+  - Improved initialization with `getApps()` check
+  - Path resolution for service account
+  - Enhanced logging with progress indicators
+  - Better error handling with exit codes
+  - Default rewards for milestones and volume leaderboard
+
+### Dashboard V3 Stats Integration (Latest)
+- **Creator Dashboard** (`/creator/dashboard`):
+  - V3 Creator Program stats section
+  - Content Stats Card: Weekly/all-time submissions, current rank, reset countdown
+  - Rewards Card: Pending redemptions count, total earned amount
+  - Quick Actions Card: Links to submit, leaderboard, and rewards pages
+  - Real-time stats fetching from V3 APIs
+  - Loading states and error handling
+- **Admin Creators Page** (`/admin/creators`):
+  - V3 Creator Program stats overview section
+  - 6 stat cards: Weekly submissions, total submissions, active creators, pending/approved redemptions, total paid out
+  - Quick links to submissions and redemptions pages
+  - Responsive grid layout (2/3/6 columns)
+  - Color-coded cards with gradient backgrounds
+  - Loading skeleton states
 
 ### Email Verification & Application Flow Improvements (Latest)
 - **Email Verification API** (`/api/auth/send-verification/route.ts`):

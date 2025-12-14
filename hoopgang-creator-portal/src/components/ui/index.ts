@@ -20,3 +20,11 @@ export {
   EmptyStateNoNotifications 
 } from './EmptyState';
 
+// HG-401: New shared UI components
+export { AnimatedCounter } from './AnimatedCounter';
+export { LiveCountdown } from './LiveCountdown';
+export { GlowCard } from './GlowCard';
+export { FilterPill } from './FilterPill';
+export { BackgroundOrbs } from './BackgroundOrbs';
+export { Confetti } from './Confetti';
+export { SuccessToast } from './SuccessToast';
