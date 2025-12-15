@@ -255,27 +255,88 @@ export default function LeaderboardPage() {
           </GlowCard>
         )}
 
-        {/* Prize Cards */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
-          {/* 2nd Place - Silver */}
-          <div className="bg-gradient-to-br from-zinc-400/20 to-zinc-500/10 border border-zinc-400/30 rounded-2xl p-6 text-center animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-            <div className="text-4xl mb-2">🥈</div>
-            <div className="text-white font-bold text-lg">2nd Place</div>
-            <div className="text-green-400 font-bold">$25</div>
-          </div>
+        {/* Prizes Section - Flashy Display */}
+        <div className="relative mb-8 p-6 bg-zinc-900/70 rounded-2xl border-2 border-transparent overflow-hidden animate-fade-in-up"
+          style={{
+            background: 'linear-gradient(#18181b, #18181b) padding-box, linear-gradient(90deg, #eab308, #f97316, #ef4444) border-box',
+          }}
+        >
+          {/* Animated Shimmer Effect */}
+          <div 
+            className="absolute inset-0 opacity-30 pointer-events-none"
+            style={{
+              background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)',
+              animation: 'shimmer 3s ease-in-out infinite',
+            }}
+          />
           
-          {/* 1st Place - Gold */}
-          <div className="bg-gradient-to-br from-yellow-500/20 to-yellow-600/10 border border-yellow-500/30 rounded-2xl p-6 text-center animate-fade-in-up" style={{ animationDelay: '0.15s' }}>
-            <div className="text-4xl mb-2">🥇</div>
-            <div className="text-white font-bold text-lg">1st Place</div>
-            <div className="text-green-400 font-bold">$50</div>
+          {/* Header */}
+          <div className="text-center mb-6">
+            <h2 className="text-2xl font-bold inline-flex items-center gap-3">
+              <span className="text-3xl animate-bounce-subtle">🏆</span>
+              <span 
+                className="bg-gradient-to-r from-yellow-400 via-orange-400 to-yellow-400 bg-clip-text text-transparent"
+                style={{ backgroundSize: '200% auto', animation: 'shimmer-text 3s linear infinite' }}
+              >
+                PRIZES UP FOR GRABS!
+              </span>
+              <span className="text-3xl animate-bounce-subtle" style={{ animationDelay: '0.2s' }}>💰</span>
+            </h2>
           </div>
-          
-          {/* 3rd Place - Bronze */}
-          <div className="bg-gradient-to-br from-orange-500/20 to-orange-600/10 border border-orange-500/30 rounded-2xl p-6 text-center animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-            <div className="text-4xl mb-2">🥉</div>
-            <div className="text-white font-bold text-lg">3rd Place</div>
-            <div className="text-green-400 font-bold">$10</div>
+
+          {/* Prize Cards Grid */}
+          <div className="grid grid-cols-[1fr_1.3fr_1fr] gap-4 mb-4">
+            {/* 2nd Place - Silver */}
+            <div 
+              className="bg-zinc-800/80 rounded-xl p-5 text-center transition-all duration-300 hover:scale-105 cursor-default group"
+              onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 0 30px rgba(148, 163, 184, 0.4)'}
+              onMouseLeave={(e) => e.currentTarget.style.boxShadow = 'none'}
+            >
+              <div className="text-4xl mb-2 group-hover:scale-110 transition-transform">🥈</div>
+              <div className="text-slate-300 font-bold text-lg mb-1">2nd Place</div>
+              <div className="text-white font-bold text-xl">$25 Credit</div>
+            </div>
+
+            {/* 1st Place - Gold (Bigger, in middle) */}
+            <div 
+              className="bg-zinc-800/80 rounded-xl p-6 text-center transition-all duration-300 hover:scale-105 cursor-default group relative border-2"
+              style={{
+                borderColor: 'rgba(234, 179, 8, 0.5)',
+                boxShadow: '0 0 20px rgba(234, 179, 8, 0.3), inset 0 0 20px rgba(234, 179, 8, 0.1)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.boxShadow = '0 0 40px rgba(234, 179, 8, 0.6), inset 0 0 20px rgba(234, 179, 8, 0.15)';
+                e.currentTarget.style.borderColor = 'rgba(234, 179, 8, 0.8)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.boxShadow = '0 0 20px rgba(234, 179, 8, 0.3), inset 0 0 20px rgba(234, 179, 8, 0.1)';
+                e.currentTarget.style.borderColor = 'rgba(234, 179, 8, 0.5)';
+              }}
+            >
+              <div className="text-5xl mb-2 group-hover:scale-110 transition-transform">🥇</div>
+              <div className="text-yellow-400 font-bold text-xl mb-1">1st Place</div>
+              <div className="text-white font-bold text-2xl">$50 Cash</div>
+            </div>
+
+            {/* 3rd Place - Bronze */}
+            <div 
+              className="bg-zinc-800/80 rounded-xl p-5 text-center transition-all duration-300 hover:scale-105 cursor-default group"
+              onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 0 30px rgba(180, 83, 9, 0.4)'}
+              onMouseLeave={(e) => e.currentTarget.style.boxShadow = 'none'}
+            >
+              <div className="text-4xl mb-2 group-hover:scale-110 transition-transform">🥉</div>
+              <div className="text-amber-600 font-bold text-lg mb-1">3rd Place</div>
+              <div className="text-white font-bold text-xl">Free Product</div>
+            </div>
+          </div>
+
+          {/* Motivational Tagline */}
+          <div className="text-center">
+            <p className="text-zinc-400 text-sm inline-flex items-center gap-2">
+              <span className="text-lg">🔥</span>
+              Post the most content to win!
+              <span className="text-lg">🔥</span>
+            </p>
           </div>
         </div>
 

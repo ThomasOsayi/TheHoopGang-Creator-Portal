@@ -55,19 +55,21 @@ body {
   animation: float 3s ease-in-out infinite;
 }
 
-/* Gradient text shimmer effect */
+/* Shimmer overlay effect (translateX) */
 @keyframes shimmer {
-  0% {
-    background-position: -200% center;
-  }
-  100% {
-    background-position: 200% center;
-  }
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Gradient text shimmer effect (background-position) */
+@keyframes shimmer-text {
+  0% { background-position: 0% center; }
+  100% { background-position: 200% center; }
 }
 
 .animate-shimmer {
   background-size: 200% auto;
-  animation: shimmer 3s linear infinite;
+  animation: shimmer-text 3s linear infinite;
 }
 
 /* Pulse glow for CTAs */
@@ -240,11 +242,11 @@ html, body {
 /* Subtle bounce for rank changes */
 @keyframes bounce-subtle {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-2px); }
+  50% { transform: translateY(-5px); }
 }
 
 .animate-bounce-subtle {
-  animation: bounce-subtle 1s ease-in-out infinite;
+  animation: bounce-subtle 2s ease-in-out infinite;
 }
 
 /* Count up number animation */
