@@ -5,6 +5,7 @@ interface FilterPillProps {
   active: boolean;
   onClick: () => void;
   count?: number;
+  icon?: string;
 }
 
 /**

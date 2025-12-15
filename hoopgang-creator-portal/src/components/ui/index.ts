@@ -28,3 +28,4 @@ export { FilterPill } from './FilterPill';
 export { BackgroundOrbs } from './BackgroundOrbs';
 export { Confetti } from './Confetti';
 export { SuccessToast } from './SuccessToast';
+export { ClaimModal } from './ClaimModal';

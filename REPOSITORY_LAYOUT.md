@@ -290,6 +290,10 @@ creator/
 - `Button.tsx` - Reusable button component
 - `DetailRow.tsx` - Detail row display component
 - `Navbar.tsx` - Navigation bar component with THG logo image (V2 collaboration status system)
+  - Admin navigation links: Admin, Submissions, Rewards, Redemptions, Volume Admin, GMV Admin
+  - Creator navigation links: Dashboard, Submit Content, Leaderboard, Rewards
+  - Role-based link visibility
+  - Active collaboration status checking for re-application prevention
 - `Pagination.tsx` - Pagination component
 - `ProgressDots.tsx` - Progress indicator component
 - `SectionCard.tsx` - Section card container component
@@ -857,6 +861,10 @@ creator/
   - Fixed `getCreatorWithActiveCollab` return type usage (changed `activeCollaboration` to `collaboration`)
   - Fixed React namespace issue by importing `MouseEvent` type directly
   - Added navigation links for creator submit, admin submissions, admin leaderboards
+  - Added admin rewards and redemptions navigation links
+  - Added creator rewards navigation link
+  - Role-based link visibility (admin vs creator links)
+  - Active collaboration status checking for re-application prevention
   - All TypeScript compilation errors resolved for Vercel deployment
 - **Build System**:
   - All email templates compile successfully
@@ -962,8 +970,10 @@ creator/
   - Browse available rewards by category
   - View milestone rewards with tier requirements
   - View leaderboard rewards with rank requirements
-  - Display reward images when available
+  - Display reward images when available (with emoji fallback)
+  - Conditional image rendering: Shows reward image if `imageUrl` exists, otherwise displays tier emoji
   - See redemption eligibility and status
+  - Responsive card layout with hover effects
 - **Rewards API Routes**:
   - `/api/admin/rewards` - List and create rewards (GET, POST)
   - `/api/admin/rewards/[id]` - Get and update individual rewards (GET, PUT)
@@ -973,11 +983,13 @@ creator/
   - `/api/admin/redemptions/[id]` - Get and update redemption status (GET, PUT)
   - `/api/creator/redemptions` - Fetch creator's redemption history (GET)
 - **Seed Script** (`scripts/seed-v3-rewards.ts`):
-  - Improved initialization with `getApps()` check
-  - Path resolution for service account
-  - Enhanced logging with progress indicators
+  - Improved initialization with `getApps()` check to prevent duplicate initialization
+  - Path resolution for service account using `path.resolve()`
+  - Enhanced logging with progress indicators and emojis
   - Better error handling with exit codes
-  - Default rewards for milestones and volume leaderboard
+  - Default rewards for milestones (100k, 500k, 1m views) and volume leaderboard (top 3 ranks)
+  - Batch write operations for efficient Firestore updates
+  - Professional reward descriptions
 
 ### Dashboard V3 Stats Integration (Latest)
 - **Creator Dashboard** (`/creator/dashboard`):
@@ -986,14 +998,28 @@ creator/
   - Rewards Card: Pending redemptions count, total earned amount
   - Quick Actions Card: Links to submit, leaderboard, and rewards pages
   - Real-time stats fetching from V3 APIs
+  - Fetches volume stats from `/api/submissions/volume/stats`
+  - Fetches leaderboard rank from `/api/leaderboard` for current week
+  - Fetches redemption stats from `/api/creator/redemptions`
+  - Weekly reset countdown timer (updates every minute using `formatTimeUntilReset`)
   - Loading states and error handling
+  - Gradient card designs with hover effects
+  - Conditional rendering based on collaboration status
 - **Admin Creators Page** (`/admin/creators`):
   - V3 Creator Program stats overview section
   - 6 stat cards: Weekly submissions, total submissions, active creators, pending/approved redemptions, total paid out
+  - Real-time stats fetching from V3 APIs (submissions, leaderboard, redemptions)
+  - Fetches total submissions from `/api/admin/submissions`
+  - Fetches weekly submissions filtered by `weekOf` parameter
+  - Fetches active creators from `/api/leaderboard` for current week
+  - Fetches redemption stats from `/api/admin/redemptions`
+  - Calculates total rewards value from fulfilled redemptions (cash amounts only)
   - Quick links to submissions and redemptions pages
   - Responsive grid layout (2/3/6 columns)
   - Color-coded cards with gradient backgrounds
-  - Loading skeleton states
+  - Dynamic styling based on stat values (yellow for pending, blue for approved)
+  - Loading skeleton states with pulse animation
+  - Error handling for failed API requests
 
 ### Email Verification & Application Flow Improvements (Latest)
 - **Email Verification API** (`/api/auth/send-verification/route.ts`):
