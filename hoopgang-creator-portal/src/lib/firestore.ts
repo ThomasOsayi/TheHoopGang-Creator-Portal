@@ -636,7 +636,12 @@ export async function updateCollaboration(
       }
     }
   }
-  
+
+  // Auto-set completedAt when collaboration is marked as completed
+  if (data.status === 'completed' && !data.completedAt) {
+    data.completedAt = new Date();
+  }
+
   // Convert Date objects to Timestamps for Firestore
   const updateData: Record<string, unknown> = {
     ...data,

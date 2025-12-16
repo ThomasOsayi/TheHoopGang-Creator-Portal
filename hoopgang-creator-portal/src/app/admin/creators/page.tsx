@@ -267,7 +267,7 @@ export default function AdminCreatorsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [lastDocs, setLastDocs] = useState<any[]>([]);
   const [hasMore, setHasMore] = useState(false);
-  const PAGE_SIZE = 5;
+  const PAGE_SIZE = 10;
   
   // Modal state
   const [reviewingCreator, setReviewingCreator] = useState<CreatorWithCollab | null>(null);
@@ -792,7 +792,7 @@ export default function AdminCreatorsPage() {
                 </thead>
                 <tbody>
                   {loading ? (
-                    Array.from({ length: 5 }).map((_, i) => (
+                    Array.from({ length: 10 }).map((_, i) => (
                       <tr key={i} className="border-b border-zinc-800/50">
                         <td colSpan={7} className="py-4 px-4">
                           <div className="h-10 bg-zinc-800/50 rounded animate-pulse" />

@@ -193,6 +193,7 @@ export interface Collaboration {
   internalNotes?: string;
   
   // Metadata
+  completedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
