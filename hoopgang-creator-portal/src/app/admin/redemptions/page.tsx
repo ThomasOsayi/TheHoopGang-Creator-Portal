@@ -1,48 +1,274 @@
 // src/app/admin/redemptions/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
-import { Navbar } from '@/components/ui';
+import { 
+  Navbar, 
+  AnimatedCounter,
+  FilterPill,
+  SuccessAnimation 
+} from '@/components/ui';
+import { ProtectedRoute } from '@/components/auth';
 import { auth } from '@/lib/firebase';
-import { Redemption, RedemptionStatus, RedemptionSource, CashMethod } from '@/types';
+import { Redemption, RedemptionStatus, RedemptionSource } from '@/types';
 
+// ============================================
+// Types
+// ============================================
 interface EnrichedRedemption extends Redemption {
   creatorName?: string;
+  creatorHandle?: string;
   creatorEmail?: string;
+  rewardIcon?: string;
+  rewardValue?: string;
 }
 
+type StatusFilterType = 'all' | RedemptionStatus;
+type SourceFilterType = 'all' | RedemptionSource;
+
+// ============================================
+// Status Badge Component
+// ============================================
+function StatusBadge({ status }: { status: RedemptionStatus }) {
+  const config: Record<RedemptionStatus, { bg: string; text: string; border: string; label: string; icon: string }> = {
+    pending: { bg: 'bg-yellow-500/20', text: 'text-yellow-400', border: 'border-yellow-500/30', label: 'Pending', icon: '⏳' },
+    approved: { bg: 'bg-blue-500/20', text: 'text-blue-400', border: 'border-blue-500/30', label: 'Approved', icon: '✓' },
+    fulfilled: { bg: 'bg-green-500/20', text: 'text-green-400', border: 'border-green-500/30', label: 'Fulfilled', icon: '📦' },
+    rejected: { bg: 'bg-red-500/20', text: 'text-red-400', border: 'border-red-500/30', label: 'Rejected', icon: '✕' },
+  };
+
+  const style = config[status] || config.pending;
+
+  return (
+    <span className={`px-3 py-1.5 rounded-full text-xs font-medium ${style.bg} ${style.text} border ${style.border} inline-flex items-center gap-1.5`}>
+      <span>{style.icon}</span>
+      {style.label}
+    </span>
+  );
+}
+
+// ============================================
+// Source Badge Component
+// ============================================
+function SourceBadge({ source }: { source: RedemptionSource }) {
+  const config: Record<string, { bg: string; text: string; label: string; icon: string }> = {
+    volume_win: { bg: 'bg-blue-500/10', text: 'text-blue-400', label: 'Volume Win', icon: '🏆' },
+    gmv_win: { bg: 'bg-green-500/10', text: 'text-green-400', label: 'GMV Win', icon: '💰' },
+    milestone_submission: { bg: 'bg-purple-500/10', text: 'text-purple-400', label: 'Milestone', icon: '⭐' },
+    competition_win: { bg: 'bg-orange-500/10', text: 'text-orange-400', label: 'Competition', icon: '🎯' },
+    manual: { bg: 'bg-zinc-500/10', text: 'text-zinc-400', label: 'Manual', icon: '✏️' },
+  };
+
+  // Handle source mapping
+  const sourceKey = source === 'milestone_submission' ? 'milestone_submission' : source;
+  const style = config[sourceKey] || config.manual;
+
+  return (
+    <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${style.bg} ${style.text} inline-flex items-center gap-1`}>
+      <span>{style.icon}</span>
+      {style.label}
+    </span>
+  );
+}
+
+// ============================================
+// Stat Card Component
+// ============================================
+interface StatCardProps {
+  label: string;
+  value: number;
+  color: 'white' | 'yellow' | 'blue' | 'green' | 'red';
+  isHighlighted?: boolean;
+  onClick?: () => void;
+  isActive?: boolean;
+}
+
+function StatCard({ label, value, color, isHighlighted, onClick, isActive }: StatCardProps) {
+  const colorClasses: Record<string, string> = {
+    white: 'text-white',
+    yellow: 'text-yellow-400',
+    blue: 'text-blue-400',
+    green: 'text-green-400',
+    red: 'text-red-400',
+  };
+
+  return (
+    <button
+      onClick={onClick}
+      className={`relative bg-zinc-900/50 rounded-2xl p-5 transition-all duration-300 cursor-pointer text-left w-full
+        ${isHighlighted && value > 0 
+          ? 'bg-yellow-500/10 border-2 border-yellow-500/30 hover:border-yellow-500/50' 
+          : `border border-zinc-800 hover:border-zinc-700 ${isActive ? 'border-orange-500' : ''}`
+        }`}
+      style={isHighlighted && value > 0 ? { boxShadow: '0 0 25px -5px rgba(234, 179, 8, 0.3)' } : {}}
+    >
+      <div className={`text-3xl font-bold mb-1 ${colorClasses[color]}`}>
+        <AnimatedCounter value={value} />
+      </div>
+      <div className={`text-sm ${isHighlighted && value > 0 ? 'text-yellow-400/70' : 'text-zinc-500'}`}>
+        {label}
+      </div>
+    </button>
+  );
+}
+
+// ============================================
+// Redemption Row Component
+// ============================================
+interface RedemptionRowProps {
+  redemption: EnrichedRedemption;
+  onApprove: () => void;
+  onReject: () => void;
+  onFulfill: () => void;
+  onView: () => void;
+}
+
+function RedemptionRow({ redemption, onApprove, onReject, onFulfill, onView }: RedemptionRowProps) {
+  const needsAction = redemption.status === 'pending' || redemption.status === 'approved';
+
+  const formatDate = (date: Date): { date: string; time: string } => {
+    const d = new Date(date);
+    return {
+      date: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      time: d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+    };
+  };
+
+  const dateInfo = formatDate(redemption.createdAt);
+
+  // Get reward icon based on reward name or type
+  const getRewardIcon = () => {
+    const name = redemption.rewardName?.toLowerCase() || '';
+    if (name.includes('cash') || name.includes('$')) return '💵';
+    if (name.includes('credit') || name.includes('store')) return '🎁';
+    if (name.includes('product') || name.includes('free')) return '👕';
+    if (name.includes('milestone') || name.includes('bonus')) return '⭐';
+    if (name.includes('gmv') || name.includes('winner')) return '🏆';
+    return '💰';
+  };
+
+  return (
+    <tr className={`border-b border-zinc-800/50 transition-all duration-200 hover:bg-zinc-800/30 ${needsAction ? 'bg-yellow-500/5' : ''}`}>
+      {/* Creator */}
+      <td className="py-4 px-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center text-white font-bold">
+            {(redemption.creatorName || 'U').charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <div className="text-white font-medium">{redemption.creatorName || 'Unknown'}</div>
+            <div className="text-zinc-500 text-sm">@{redemption.creatorHandle || 'unknown'}</div>
+          </div>
+        </div>
+      </td>
+
+      {/* Reward */}
+      <td className="py-4 px-4">
+        <div className="flex items-center gap-2">
+          <span className="text-xl">{getRewardIcon()}</span>
+          <div>
+            <div className="text-white">{redemption.rewardName}</div>
+            <div className="text-zinc-500 text-sm">
+              {redemption.cashAmount ? `$${redemption.cashAmount.toFixed(2)}` : redemption.rewardValue || ''}
+            </div>
+          </div>
+        </div>
+      </td>
+
+      {/* Source */}
+      <td className="py-4 px-4">
+        <SourceBadge source={redemption.source} />
+      </td>
+
+      {/* Status */}
+      <td className="py-4 px-4">
+        <StatusBadge status={redemption.status} />
+      </td>
+
+      {/* Date */}
+      <td className="py-4 px-4">
+        <div className="text-zinc-300">{dateInfo.date}</div>
+        <div className="text-zinc-500 text-xs">{dateInfo.time}</div>
+      </td>
+
+      {/* Actions */}
+      <td className="py-4 px-4">
+        <div className="flex items-center gap-2">
+          {redemption.status === 'pending' && (
+            <>
+              <button
+                onClick={onApprove}
+                className="px-3 py-1.5 bg-blue-500/20 text-blue-400 rounded-lg text-sm font-medium hover:bg-blue-500/30 transition-colors"
+              >
+                Approve
+              </button>
+              <button
+                onClick={onReject}
+                className="px-3 py-1.5 bg-zinc-800 text-zinc-400 rounded-lg text-sm font-medium hover:bg-red-500/20 hover:text-red-400 transition-colors"
+              >
+                Reject
+              </button>
+            </>
+          )}
+          {redemption.status === 'approved' && (
+            <button
+              onClick={onFulfill}
+              className="px-3 py-1.5 bg-green-500/20 text-green-400 rounded-lg text-sm font-medium hover:bg-green-500/30 transition-colors"
+            >
+              Mark Fulfilled
+            </button>
+          )}
+          {(redemption.status === 'fulfilled' || redemption.status === 'rejected') && (
+            <button
+              onClick={onView}
+              className="px-3 py-1.5 bg-zinc-800 text-zinc-400 rounded-lg text-sm font-medium hover:bg-zinc-700 transition-colors"
+            >
+              View Details
+            </button>
+          )}
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+// ============================================
+// Main Page Component
+// ============================================
 export default function AdminRedemptionsPage() {
   const { user, isAdmin, loading: authLoading } = useAuth();
   const router = useRouter();
 
+  // Data state
   const [redemptions, setRedemptions] = useState<EnrichedRedemption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Filters
-  const [statusFilter, setStatusFilter] = useState<RedemptionStatus | ''>('');
-  const [sourceFilter, setSourceFilter] = useState<RedemptionSource | ''>('');
+  // Filter state
+  const [statusFilter, setStatusFilter] = useState<StatusFilterType>('all');
+  const [sourceFilter, setSourceFilter] = useState<SourceFilterType>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Process modal state
+  // Modal state
+  const [showApproveModal, setShowApproveModal] = useState(false);
+  const [showFulfillModal, setShowFulfillModal] = useState(false);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedRedemption, setSelectedRedemption] = useState<EnrichedRedemption | null>(null);
-  const [processing, setProcessing] = useState(false);
 
-  // Fulfillment form state
-  const [fulfillmentType, setFulfillmentType] = useState<'cash' | 'store_credit' | 'product' | 'mixed'>('cash');
-  const [cashAmount, setCashAmount] = useState<number | ''>('');
-  const [cashMethod, setCashMethod] = useState<CashMethod>('paypal');
-  const [cashHandle, setCashHandle] = useState('');
-  const [storeCreditCode, setStoreCreditCode] = useState('');
-  const [trackingNumber, setTrackingNumber] = useState('');
-  const [notes, setNotes] = useState('');
+  // Form state
+  const [fulfillmentNotes, setFulfillmentNotes] = useState('');
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  // Bulk selection
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [bulkProcessing, setBulkProcessing] = useState(false);
+  // Success animation
+  const [successAnimation, setSuccessAnimation] = useState<{ icon: string; message: string } | null>(null);
 
+  // ============================================
+  // Auth Check
+  // ============================================
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/login');
@@ -54,6 +280,9 @@ export default function AdminRedemptionsPage() {
     }
   }, [user, isAdmin, authLoading, router]);
 
+  // ============================================
+  // Data Fetching
+  // ============================================
   const getAuthToken = async (): Promise<string | null> => {
     const currentUser = auth.currentUser;
     if (!currentUser) return null;
@@ -68,21 +297,24 @@ export default function AdminRedemptionsPage() {
       const token = await getAuthToken();
       if (!token) return;
 
-      const params = new URLSearchParams();
-      if (statusFilter) params.set('status', statusFilter);
-      if (sourceFilter) params.set('source', sourceFilter);
-
-      const response = await fetch(`/api/admin/redemptions?${params.toString()}`, {
+      const response = await fetch('/api/admin/redemptions', {
         headers: { Authorization: `Bearer ${token}` },
       });
 
       if (!response.ok) throw new Error('Failed to fetch redemptions');
 
       const data = await response.json();
-      setRedemptions(data.redemptions);
+      
+      // Enrich with handle from email or creator name
+      const enriched = (data.redemptions || []).map((r: EnrichedRedemption) => ({
+        ...r,
+        creatorHandle: r.creatorHandle || r.creatorEmail?.split('@')[0] || 'unknown',
+      }));
+      
+      setRedemptions(enriched);
     } catch (err) {
       console.error('Error loading redemptions:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load redemptions');
+      setError(err instanceof Error ? err.message : 'Failed to load');
     } finally {
       setLoading(false);
     }
@@ -92,666 +324,760 @@ export default function AdminRedemptionsPage() {
     if (user && isAdmin) {
       loadRedemptions();
     }
-  }, [user, isAdmin, statusFilter, sourceFilter]);
+  }, [user, isAdmin]);
 
-  // Client-side search filter
-  const filteredRedemptions = redemptions.filter((r) => {
-    if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      r.rewardName.toLowerCase().includes(query) ||
-      r.creatorName?.toLowerCase().includes(query) ||
-      r.creatorEmail?.toLowerCase().includes(query)
-    );
-  });
+  // ============================================
+  // Computed Values
+  // ============================================
+  const stats = useMemo(() => ({
+    total: redemptions.length,
+    pending: redemptions.filter(r => r.status === 'pending').length,
+    approved: redemptions.filter(r => r.status === 'approved').length,
+    fulfilled: redemptions.filter(r => r.status === 'fulfilled').length,
+    rejected: redemptions.filter(r => r.status === 'rejected').length,
+  }), [redemptions]);
 
-  const openProcessModal = (redemption: EnrichedRedemption) => {
+  const filteredRedemptions = useMemo(() => {
+    return redemptions.filter(r => {
+      // Status filter
+      if (statusFilter !== 'all' && r.status !== statusFilter) return false;
+      
+      // Source filter
+      if (sourceFilter !== 'all' && r.source !== sourceFilter) return false;
+      
+      // Search filter
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const matchesName = r.creatorName?.toLowerCase().includes(query);
+        const matchesHandle = r.creatorHandle?.toLowerCase().includes(query);
+        const matchesReward = r.rewardName?.toLowerCase().includes(query);
+        if (!matchesName && !matchesHandle && !matchesReward) return false;
+      }
+      
+      return true;
+    });
+  }, [redemptions, statusFilter, sourceFilter, searchQuery]);
+
+  // ============================================
+  // Handlers
+  // ============================================
+  const handleApprove = (redemption: EnrichedRedemption) => {
     setSelectedRedemption(redemption);
-    // Pre-fill based on existing data
-    setCashAmount(redemption.cashAmount || '');
-    setCashMethod(redemption.cashMethod || 'paypal');
-    setCashHandle(redemption.cashHandle || '');
-    setStoreCreditCode(redemption.storeCreditCode || '');
-    setTrackingNumber(redemption.trackingNumber || '');
-    setNotes(redemption.notes || '');
-    // Guess fulfillment type from reward
-    if (redemption.cashAmount) setFulfillmentType('cash');
-    else if (redemption.storeCreditCode) setFulfillmentType('store_credit');
-    else if (redemption.productShipped) setFulfillmentType('product');
-    else setFulfillmentType('cash');
+    setShowApproveModal(true);
   };
 
-  const closeModal = () => {
-    setSelectedRedemption(null);
-    setCashAmount('');
-    setCashMethod('paypal');
-    setCashHandle('');
-    setStoreCreditCode('');
-    setTrackingNumber('');
-    setNotes('');
-  };
-
-  const handleApprove = async () => {
+  const confirmApprove = async () => {
     if (!selectedRedemption) return;
-    await updateRedemptionStatus(selectedRedemption.id, 'approved');
-  };
-
-  const handleReject = async () => {
-    if (!selectedRedemption) return;
-    if (!confirm('Are you sure you want to reject this redemption?')) return;
-    await updateRedemptionStatus(selectedRedemption.id, 'rejected');
-  };
-
-  const handleFulfill = async () => {
-    if (!selectedRedemption) return;
-
-    // Validation
-    if (fulfillmentType === 'cash' || fulfillmentType === 'mixed') {
-      if (!cashAmount || !cashHandle.trim()) {
-        alert('Please enter cash amount and payment handle');
-        return;
-      }
-    }
-    if (fulfillmentType === 'store_credit' || fulfillmentType === 'mixed') {
-      if (!storeCreditCode.trim()) {
-        alert('Please enter a store credit code');
-        return;
-      }
-    }
-    if (fulfillmentType === 'product') {
-      if (!trackingNumber.trim()) {
-        alert('Please enter a tracking number');
-        return;
-      }
-    }
-
-    const fulfillmentDetails: Record<string, unknown> = {
-      notes: notes.trim() || undefined,
-    };
-
-    if (fulfillmentType === 'cash' || fulfillmentType === 'mixed') {
-      fulfillmentDetails.cashAmount = cashAmount;
-      fulfillmentDetails.cashMethod = cashMethod;
-      fulfillmentDetails.cashHandle = cashHandle.trim();
-    }
-    if (fulfillmentType === 'store_credit' || fulfillmentType === 'mixed') {
-      fulfillmentDetails.storeCreditCode = storeCreditCode.trim();
-    }
-    if (fulfillmentType === 'product' || fulfillmentType === 'mixed') {
-      fulfillmentDetails.productShipped = true;
-      if (trackingNumber.trim()) {
-        fulfillmentDetails.trackingNumber = trackingNumber.trim();
-      }
-    }
-
-    await updateRedemptionStatus(selectedRedemption.id, 'fulfilled', fulfillmentDetails);
-  };
-
-  const updateRedemptionStatus = async (
-    id: string,
-    status: RedemptionStatus,
-    fulfillmentDetails?: Record<string, unknown>
-  ) => {
-    setProcessing(true);
+    
+    setIsProcessing(true);
     try {
       const token = await getAuthToken();
       if (!token) throw new Error('Not authenticated');
 
-      const response = await fetch(`/api/admin/redemptions/${id}`, {
+      const response = await fetch(`/api/admin/redemptions/${selectedRedemption.id}`, {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ status, ...fulfillmentDetails }),
+        body: JSON.stringify({ status: 'approved' }),
       });
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to update');
+      if (!response.ok) throw new Error('Failed to approve');
 
-      closeModal();
+      setShowApproveModal(false);
+      setSelectedRedemption(null);
+      setSuccessAnimation({ icon: '✅', message: 'Redemption Approved!' });
       await loadRedemptions();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to update redemption');
+      alert(err instanceof Error ? err.message : 'Failed to approve');
     } finally {
-      setProcessing(false);
+      setIsProcessing(false);
     }
   };
 
-  const handleBulkApprove = async () => {
-    if (selectedIds.size === 0) return;
-    if (!confirm(`Approve ${selectedIds.size} selected redemptions?`)) return;
+  const handleFulfill = (redemption: EnrichedRedemption) => {
+    setSelectedRedemption(redemption);
+    setFulfillmentNotes('');
+    setShowFulfillModal(true);
+  };
 
-    setBulkProcessing(true);
+  const confirmFulfill = async () => {
+    if (!selectedRedemption) return;
+    
+    setIsProcessing(true);
     try {
       const token = await getAuthToken();
       if (!token) throw new Error('Not authenticated');
 
-      for (const id of selectedIds) {
-        await fetch(`/api/admin/redemptions/${id}`, {
-          method: 'PUT',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ status: 'approved' }),
-        });
-      }
+      const response = await fetch(`/api/admin/redemptions/${selectedRedemption.id}`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          status: 'fulfilled',
+          notes: fulfillmentNotes.trim() || undefined,
+        }),
+      });
 
-      setSelectedIds(new Set());
+      if (!response.ok) throw new Error('Failed to fulfill');
+
+      setShowFulfillModal(false);
+      setSelectedRedemption(null);
+      setFulfillmentNotes('');
+      setSuccessAnimation({ icon: '📦', message: 'Marked as Fulfilled!' });
       await loadRedemptions();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Bulk approve failed');
+      alert(err instanceof Error ? err.message : 'Failed to fulfill');
     } finally {
-      setBulkProcessing(false);
+      setIsProcessing(false);
     }
   };
 
-  const toggleSelectAll = () => {
-    if (selectedIds.size === filteredRedemptions.length) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(filteredRedemptions.map((r) => r.id)));
+  const handleReject = (redemption: EnrichedRedemption) => {
+    setSelectedRedemption(redemption);
+    setRejectionReason('');
+    setShowRejectModal(true);
+  };
+
+  const confirmReject = async () => {
+    if (!selectedRedemption || !rejectionReason.trim()) return;
+    
+    setIsProcessing(true);
+    try {
+      const token = await getAuthToken();
+      if (!token) throw new Error('Not authenticated');
+
+      const response = await fetch(`/api/admin/redemptions/${selectedRedemption.id}`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          status: 'rejected',
+          notes: rejectionReason.trim(),
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to reject');
+
+      setShowRejectModal(false);
+      setSelectedRedemption(null);
+      setRejectionReason('');
+      setSuccessAnimation({ icon: '🚫', message: 'Redemption Rejected' });
+      await loadRedemptions();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to reject');
+    } finally {
+      setIsProcessing(false);
     }
   };
 
-  const toggleSelect = (id: string) => {
-    const newSet = new Set(selectedIds);
-    if (newSet.has(id)) {
-      newSet.delete(id);
-    } else {
-      newSet.add(id);
-    }
-    setSelectedIds(newSet);
+  const handleView = (redemption: EnrichedRedemption) => {
+    setSelectedRedemption(redemption);
+    setShowDetailsModal(true);
   };
 
-  const getStatusBadge = (status: RedemptionStatus) => {
-    switch (status) {
-      case 'pending':
-        return { label: 'Pending', class: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' };
-      case 'approved':
-        return { label: 'Approved', class: 'bg-blue-500/20 text-blue-400 border-blue-500/30' };
-      case 'fulfilled':
-        return { label: 'Fulfilled', class: 'bg-green-500/20 text-green-400 border-green-500/30' };
-      case 'rejected':
-        return { label: 'Rejected', class: 'bg-red-500/20 text-red-400 border-red-500/30' };
-      default:
-        return { label: status, class: 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30' };
-    }
+  const handleStatCardClick = (status: StatusFilterType) => {
+    setStatusFilter(prev => prev === status ? 'all' : status);
   };
 
-  const getSourceLabel = (source: RedemptionSource): string => {
-    switch (source) {
-      case 'milestone_submission':
-        return 'Milestone';
-      case 'volume_win':
-        return 'Volume LB';
-      case 'gmv_win':
-        return 'GMV LB';
-      case 'competition_win':
-        return 'Competition';
-      default:
-        return source;
-    }
+  // Get reward icon for modals
+  const getRewardIcon = (redemption: EnrichedRedemption | null) => {
+    if (!redemption) return '💰';
+    const name = redemption.rewardName?.toLowerCase() || '';
+    if (name.includes('cash') || name.includes('$')) return '💵';
+    if (name.includes('credit') || name.includes('store')) return '🎁';
+    if (name.includes('product') || name.includes('free')) return '👕';
+    if (name.includes('milestone') || name.includes('bonus')) return '⭐';
+    if (name.includes('gmv') || name.includes('winner')) return '🏆';
+    return '💰';
   };
 
-  const formatDate = (date: Date): string => {
-    return new Date(date).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
+  // ============================================
+  // Render Loading
+  // ============================================
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900">
-        <Navbar />
-        <div className="flex items-center justify-center h-[80vh]">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
+      <ProtectedRoute allowedRoles={['admin']}>
+        <div className="min-h-screen bg-zinc-950">
+          <Navbar />
+          <div className="flex items-center justify-center h-[80vh]">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500" />
+          </div>
         </div>
-      </div>
+      </ProtectedRoute>
     );
   }
 
+  // ============================================
+  // Main Render
+  // ============================================
   return (
-    <div className="min-h-screen bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900">
-      <Navbar />
-
-      {/* Background orbs */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 -left-32 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-orange-600/10 rounded-full blur-3xl" />
-      </div>
-
-      <main className="relative z-10 max-w-7xl mx-auto px-4 py-8 pt-24">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-white mb-2">💰 Redemptions</h1>
-            <p className="text-zinc-400">Process and fulfill reward redemptions</p>
-          </div>
-          {selectedIds.size > 0 && (
-            <div className="flex items-center gap-3">
-              <span className="text-zinc-400 text-sm">{selectedIds.size} selected</span>
-              <button
-                onClick={handleBulkApprove}
-                disabled={bulkProcessing}
-                className="px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 font-medium rounded-lg transition-colors text-sm"
-              >
-                {bulkProcessing ? 'Processing...' : 'Approve Selected'}
-              </button>
-            </div>
-          )}
+    <ProtectedRoute allowedRoles={['admin']}>
+      <div className="min-h-screen bg-zinc-950 relative overflow-hidden">
+        {/* Background Gradient Orbs */}
+        <div className="fixed inset-0 pointer-events-none overflow-hidden">
+          <div className="absolute -top-40 -right-40 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl" />
+          <div className="absolute top-1/2 -left-40 w-80 h-80 bg-orange-500/5 rounded-full blur-3xl" />
         </div>
 
-        {/* Filters */}
-        <div className="mb-6 p-4 bg-zinc-800/50 backdrop-blur-sm rounded-xl border border-zinc-700/50">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Search */}
-            <div className="lg:col-span-2">
-              <input
-                type="text"
-                placeholder="Search by creator or reward..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-zinc-900/50 border border-zinc-700 rounded-lg px-4 py-2.5 text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500 transition-colors"
-              />
-            </div>
+        <Navbar />
 
-            {/* Status Filter */}
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as RedemptionStatus | '')}
-              className="bg-zinc-900/50 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-orange-500 transition-colors"
-            >
-              <option value="">All Statuses</option>
-              <option value="pending">Pending</option>
-              <option value="approved">Approved</option>
-              <option value="fulfilled">Fulfilled</option>
-              <option value="rejected">Rejected</option>
-            </select>
-
-            {/* Source Filter */}
-            <select
-              value={sourceFilter}
-              onChange={(e) => setSourceFilter(e.target.value as RedemptionSource | '')}
-              className="bg-zinc-900/50 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-orange-500 transition-colors"
-            >
-              <option value="">All Sources</option>
-              <option value="milestone_submission">Milestone</option>
-              <option value="volume_win">Volume Leaderboard</option>
-              <option value="gmv_win">GMV Leaderboard</option>
-              <option value="competition_win">Competition</option>
-            </select>
+        <main className="relative max-w-7xl mx-auto px-4 sm:px-6 py-8 pt-24">
+          {/* Header */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+              <span>🎁</span> Redemptions
+            </h1>
+            <p className="text-zinc-400 mt-1">Manage reward redemptions from competitions and milestones</p>
           </div>
-        </div>
 
-        {/* Stats Row */}
-        <div className="mb-6 grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div className="bg-zinc-800/50 backdrop-blur-sm rounded-xl border border-zinc-700/50 p-4">
-            <div className="text-2xl font-bold text-white">{redemptions.length}</div>
-            <div className="text-zinc-400 text-sm">Total</div>
+          {/* Stats Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+            <StatCard
+              label="Total"
+              value={stats.total}
+              color="white"
+              onClick={() => handleStatCardClick('all')}
+              isActive={statusFilter === 'all'}
+            />
+            <StatCard
+              label="Pending"
+              value={stats.pending}
+              color="yellow"
+              isHighlighted={true}
+              onClick={() => handleStatCardClick('pending')}
+              isActive={statusFilter === 'pending'}
+            />
+            <StatCard
+              label="Approved"
+              value={stats.approved}
+              color="blue"
+              onClick={() => handleStatCardClick('approved')}
+              isActive={statusFilter === 'approved'}
+            />
+            <StatCard
+              label="Fulfilled"
+              value={stats.fulfilled}
+              color="green"
+              onClick={() => handleStatCardClick('fulfilled')}
+              isActive={statusFilter === 'fulfilled'}
+            />
+            <StatCard
+              label="Rejected"
+              value={stats.rejected}
+              color="red"
+              onClick={() => handleStatCardClick('rejected')}
+              isActive={statusFilter === 'rejected'}
+            />
           </div>
-          <div className="bg-zinc-800/50 backdrop-blur-sm rounded-xl border border-zinc-700/50 p-4">
-            <div className="text-2xl font-bold text-yellow-400">
-              {redemptions.filter((r) => r.status === 'pending').length}
-            </div>
-            <div className="text-zinc-400 text-sm">Pending</div>
-          </div>
-          <div className="bg-zinc-800/50 backdrop-blur-sm rounded-xl border border-zinc-700/50 p-4">
-            <div className="text-2xl font-bold text-blue-400">
-              {redemptions.filter((r) => r.status === 'approved').length}
-            </div>
-            <div className="text-zinc-400 text-sm">Approved</div>
-          </div>
-          <div className="bg-zinc-800/50 backdrop-blur-sm rounded-xl border border-zinc-700/50 p-4">
-            <div className="text-2xl font-bold text-green-400">
-              {redemptions.filter((r) => r.status === 'fulfilled').length}
-            </div>
-            <div className="text-zinc-400 text-sm">Fulfilled</div>
-          </div>
-        </div>
 
-        {/* Table */}
-        <div className="bg-zinc-800/50 backdrop-blur-sm rounded-xl border border-zinc-700/50 overflow-hidden">
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-orange-500"></div>
-            </div>
-          ) : error ? (
-            <div className="text-center py-12">
-              <p className="text-red-400">{error}</p>
-              <button
-                onClick={loadRedemptions}
-                className="mt-4 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors"
-              >
-                Retry
-              </button>
-            </div>
-          ) : filteredRedemptions.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="text-4xl mb-4">💰</div>
-              <p className="text-zinc-400">No redemptions found</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-zinc-700/50">
-                    <th className="text-left py-4 px-4">
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.size === filteredRedemptions.length && filteredRedemptions.length > 0}
-                        onChange={toggleSelectAll}
-                        className="w-4 h-4 rounded border-zinc-600 bg-zinc-800 text-orange-500 focus:ring-orange-500"
-                      />
-                    </th>
-                    <th className="text-left py-4 px-4 text-zinc-400 font-medium text-sm">Creator</th>
-                    <th className="text-left py-4 px-4 text-zinc-400 font-medium text-sm">Reward</th>
-                    <th className="text-left py-4 px-4 text-zinc-400 font-medium text-sm">Source</th>
-                    <th className="text-left py-4 px-4 text-zinc-400 font-medium text-sm">Status</th>
-                    <th className="text-left py-4 px-4 text-zinc-400 font-medium text-sm">Created</th>
-                    <th className="text-left py-4 px-4 text-zinc-400 font-medium text-sm">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredRedemptions.map((redemption) => {
-                    const statusBadge = getStatusBadge(redemption.status);
-                    return (
-                      <tr
-                        key={redemption.id}
-                        className="border-b border-zinc-700/30 hover:bg-zinc-700/20 transition-colors"
-                      >
-                        <td className="py-4 px-4">
-                          <input
-                            type="checkbox"
-                            checked={selectedIds.has(redemption.id)}
-                            onChange={() => toggleSelect(redemption.id)}
-                            className="w-4 h-4 rounded border-zinc-600 bg-zinc-800 text-orange-500 focus:ring-orange-500"
-                          />
-                        </td>
-                        <td className="py-4 px-4">
-                          <div>
-                            <div className="text-white font-medium">{redemption.creatorName || 'Unknown'}</div>
-                            <div className="text-zinc-500 text-sm">{redemption.creatorEmail || ''}</div>
-                          </div>
-                        </td>
-                        <td className="py-4 px-4">
-                          <span className="text-white">{redemption.rewardName}</span>
-                        </td>
-                        <td className="py-4 px-4">
-                          <span className="text-zinc-400 text-sm">{getSourceLabel(redemption.source)}</span>
-                        </td>
-                        <td className="py-4 px-4">
-                          <span
-                            className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium border ${statusBadge.class}`}
-                          >
-                            {statusBadge.label}
-                          </span>
-                        </td>
-                        <td className="py-4 px-4">
-                          <span className="text-zinc-400 text-sm">{formatDate(redemption.createdAt)}</span>
-                        </td>
-                        <td className="py-4 px-4">
-                          <button
-                            onClick={() => openProcessModal(redemption)}
-                            className="px-3 py-1.5 bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 rounded-lg text-sm font-medium transition-colors"
-                          >
-                            {redemption.status === 'pending'
-                              ? 'Process'
-                              : redemption.status === 'approved'
-                              ? 'Fulfill'
-                              : 'View'}
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </main>
-
-      {/* Process Redemption Modal */}
-      {selectedRedemption && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={closeModal} />
-          <div className="relative bg-zinc-900 border border-zinc-700 rounded-2xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-white">Process Redemption</h3>
-              <button onClick={closeModal} className="p-2 text-zinc-400 hover:text-white rounded-lg">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            {/* Redemption Info */}
-            <div className="mb-6 p-4 bg-zinc-800/50 rounded-xl space-y-2">
-              <div className="flex justify-between">
-                <span className="text-zinc-400">Creator:</span>
-                <span className="text-white">{selectedRedemption.creatorName || 'Unknown'}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-zinc-400">Reward:</span>
-                <span className="text-white">{selectedRedemption.rewardName}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-zinc-400">Source:</span>
-                <span className="text-white">{getSourceLabel(selectedRedemption.source)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-zinc-400">Status:</span>
-                <span className={getStatusBadge(selectedRedemption.status).class.replace('border', 'px-2 py-0.5 rounded text-xs')}>
-                  {getStatusBadge(selectedRedemption.status).label}
-                </span>
-              </div>
-            </div>
-
-            {/* Actions based on status */}
-            {selectedRedemption.status === 'pending' && (
-              <div className="space-y-4">
-                <p className="text-zinc-400 text-sm">Review this redemption request:</p>
-                <div className="flex gap-3">
-                  <button
-                    onClick={handleReject}
-                    disabled={processing}
-                    className="flex-1 px-4 py-3 bg-red-500/20 hover:bg-red-500/30 text-red-400 font-medium rounded-lg transition-colors"
-                  >
-                    Reject
-                  </button>
-                  <button
-                    onClick={handleApprove}
-                    disabled={processing}
-                    className="flex-1 px-4 py-3 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 font-medium rounded-lg transition-colors"
-                  >
-                    {processing ? 'Processing...' : 'Approve'}
-                  </button>
+          {/* Table Section */}
+          <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl overflow-hidden">
+            {/* Filters Header */}
+            <div className="p-6 border-b border-zinc-800">
+              {/* Search */}
+              <div className="relative max-w-md mb-4">
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
                 </div>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search by name, handle, or reward..."
+                  className="w-full bg-zinc-800/50 border border-zinc-700 rounded-xl pl-10 pr-4 py-2.5 text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all"
+                />
               </div>
-            )}
 
-            {(selectedRedemption.status === 'approved' || selectedRedemption.status === 'pending') && (
-              <div className="space-y-4 mt-6 pt-6 border-t border-zinc-700/50">
-                <h4 className="text-white font-semibold">Fulfillment Details</h4>
+              {/* Status Filters */}
+              <div className="flex flex-wrap gap-2 mb-3">
+                <FilterPill
+                  label="All"
+                  active={statusFilter === 'all'}
+                  onClick={() => setStatusFilter('all')}
+                  count={stats.total}
+                  color="orange"
+                />
+                <FilterPill
+                  label="⏳ Pending"
+                  active={statusFilter === 'pending'}
+                  onClick={() => setStatusFilter('pending')}
+                  count={stats.pending}
+                  color="yellow"
+                />
+                <FilterPill
+                  label="✓ Approved"
+                  active={statusFilter === 'approved'}
+                  onClick={() => setStatusFilter('approved')}
+                  count={stats.approved}
+                  color="blue"
+                />
+                <FilterPill
+                  label="📦 Fulfilled"
+                  active={statusFilter === 'fulfilled'}
+                  onClick={() => setStatusFilter('fulfilled')}
+                  count={stats.fulfilled}
+                  color="green"
+                />
+                <FilterPill
+                  label="✕ Rejected"
+                  active={statusFilter === 'rejected'}
+                  onClick={() => setStatusFilter('rejected')}
+                  count={stats.rejected}
+                  color="red"
+                />
+              </div>
 
-                {/* Fulfillment Type */}
-                <div>
-                  <label className="block text-zinc-400 text-sm mb-2">Fulfillment Type</label>
-                  <select
-                    value={fulfillmentType}
-                    onChange={(e) => setFulfillmentType(e.target.value as typeof fulfillmentType)}
-                    className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
-                  >
-                    <option value="cash">Cash Payment</option>
-                    <option value="store_credit">Store Credit</option>
-                    <option value="product">Product Shipment</option>
-                    <option value="mixed">Mixed (Multiple)</option>
-                  </select>
-                </div>
+              {/* Source Filters */}
+              <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-zinc-800">
+                <span className="text-zinc-500 text-sm mr-2">Source:</span>
+                <FilterPill
+                  label="All Sources"
+                  active={sourceFilter === 'all'}
+                  onClick={() => setSourceFilter('all')}
+                  color="orange"
+                />
+                <FilterPill
+                  label="🏆 Volume Win"
+                  active={sourceFilter === 'volume_win'}
+                  onClick={() => setSourceFilter('volume_win')}
+                />
+                <FilterPill
+                  label="💰 GMV Win"
+                  active={sourceFilter === 'gmv_win'}
+                  onClick={() => setSourceFilter('gmv_win')}
+                />
+                <FilterPill
+                  label="⭐ Milestone"
+                  active={sourceFilter === 'milestone_submission'}
+                  onClick={() => setSourceFilter('milestone_submission')}
+                />
+                <FilterPill
+                  label="✏️ Manual"
+                  active={sourceFilter === 'manual' as SourceFilterType}
+                  onClick={() => setSourceFilter('manual' as SourceFilterType)}
+                />
+              </div>
+            </div>
 
-                {/* Cash Fields */}
-                {(fulfillmentType === 'cash' || fulfillmentType === 'mixed') && (
-                  <div className="space-y-3 p-4 bg-zinc-800/30 rounded-lg">
-                    <h5 className="text-zinc-300 text-sm font-medium">💵 Cash Payment</h5>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-zinc-500 text-xs mb-1">Amount ($)</label>
-                        <input
-                          type="number"
-                          min="0"
-                          value={cashAmount}
-                          onChange={(e) => setCashAmount(e.target.value ? parseFloat(e.target.value) : '')}
-                          placeholder="25"
-                          className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2.5 text-white placeholder-zinc-600 focus:outline-none focus:border-orange-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-zinc-500 text-xs mb-1">Method</label>
-                        <select
-                          value={cashMethod}
-                          onChange={(e) => setCashMethod(e.target.value as CashMethod)}
-                          className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-orange-500"
-                        >
-                          <option value="paypal">PayPal</option>
-                          <option value="venmo">Venmo</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-zinc-500 text-xs mb-1">
-                        {cashMethod === 'paypal' ? 'PayPal Email' : 'Venmo Handle'}
-                      </label>
-                      <input
-                        type="text"
-                        value={cashHandle}
-                        onChange={(e) => setCashHandle(e.target.value)}
-                        placeholder={cashMethod === 'paypal' ? 'creator@email.com' : '@username'}
-                        className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2.5 text-white placeholder-zinc-600 focus:outline-none focus:border-orange-500"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* Store Credit Fields */}
-                {(fulfillmentType === 'store_credit' || fulfillmentType === 'mixed') && (
-                  <div className="space-y-3 p-4 bg-zinc-800/30 rounded-lg">
-                    <h5 className="text-zinc-300 text-sm font-medium">🏷️ Store Credit</h5>
-                    <div>
-                      <label className="block text-zinc-500 text-xs mb-1">Discount Code</label>
-                      <input
-                        type="text"
-                        value={storeCreditCode}
-                        onChange={(e) => setStoreCreditCode(e.target.value)}
-                        placeholder="CREATOR10OFF"
-                        className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2.5 text-white placeholder-zinc-600 focus:outline-none focus:border-orange-500"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* Product Fields */}
-                {(fulfillmentType === 'product' || fulfillmentType === 'mixed') && (
-                  <div className="space-y-3 p-4 bg-zinc-800/30 rounded-lg">
-                    <h5 className="text-zinc-300 text-sm font-medium">📦 Product Shipment</h5>
-                    <div>
-                      <label className="block text-zinc-500 text-xs mb-1">Tracking Number</label>
-                      <input
-                        type="text"
-                        value={trackingNumber}
-                        onChange={(e) => setTrackingNumber(e.target.value)}
-                        placeholder="1Z999AA10123456784"
-                        className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2.5 text-white placeholder-zinc-600 focus:outline-none focus:border-orange-500"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* Notes */}
-                <div>
-                  <label className="block text-zinc-400 text-sm mb-2">Internal Notes (optional)</label>
-                  <textarea
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Any notes about this fulfillment..."
-                    rows={2}
-                    className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500 resize-none"
-                  />
-                </div>
-
-                {/* Fulfill Button */}
+            {/* Table */}
+            {loading ? (
+              <div className="flex items-center justify-center py-16">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500" />
+              </div>
+            ) : error ? (
+              <div className="text-center py-16">
+                <p className="text-red-400 mb-4">{error}</p>
                 <button
-                  onClick={handleFulfill}
-                  disabled={processing}
-                  className="w-full px-4 py-3 bg-green-500 hover:bg-green-600 disabled:bg-zinc-700 text-white font-semibold rounded-lg transition-colors"
+                  onClick={loadRedemptions}
+                  className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
                 >
-                  {processing ? 'Processing...' : '✓ Mark as Fulfilled'}
+                  Retry
                 </button>
               </div>
+            ) : redemptions.length === 0 ? (
+              /* Empty State */
+              <div className="py-16 text-center">
+                <div className="relative inline-block mb-6">
+                  <div className="text-7xl animate-bounce">🎁</div>
+                  <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-16 h-4 bg-zinc-800 rounded-full blur-md" />
+                </div>
+                <h2 className="text-2xl font-bold text-white mb-3">No Redemptions Yet</h2>
+                <p className="text-zinc-400 mb-6 max-w-lg mx-auto">
+                  Redemptions are created automatically when creators win competitions or hit milestone thresholds. They'll appear here for you to approve and fulfill.
+                </p>
+                <div className="grid grid-cols-3 gap-4 max-w-lg mx-auto">
+                  <div className="p-4 bg-zinc-800/50 rounded-xl">
+                    <div className="text-2xl mb-2">🏆</div>
+                    <div className="text-zinc-400 text-sm">Volume Competition Wins</div>
+                  </div>
+                  <div className="p-4 bg-zinc-800/50 rounded-xl">
+                    <div className="text-2xl mb-2">💰</div>
+                    <div className="text-zinc-400 text-sm">GMV Leaderboard Wins</div>
+                  </div>
+                  <div className="p-4 bg-zinc-800/50 rounded-xl">
+                    <div className="text-2xl mb-2">⭐</div>
+                    <div className="text-zinc-400 text-sm">Milestone Achievements</div>
+                  </div>
+                </div>
+              </div>
+            ) : filteredRedemptions.length === 0 ? (
+              /* No Results State */
+              <div className="py-16 text-center">
+                <div className="text-4xl mb-3">🔍</div>
+                <p className="text-zinc-400">No redemptions match your filters</p>
+                <button
+                  onClick={() => { setStatusFilter('all'); setSourceFilter('all'); setSearchQuery(''); }}
+                  className="mt-3 text-orange-400 hover:text-orange-300 text-sm"
+                >
+                  Clear filters
+                </button>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-zinc-800 bg-zinc-900/50">
+                      <th className="py-3 px-4 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Creator</th>
+                      <th className="py-3 px-4 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Reward</th>
+                      <th className="py-3 px-4 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Source</th>
+                      <th className="py-3 px-4 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Status</th>
+                      <th className="py-3 px-4 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Date</th>
+                      <th className="py-3 px-4 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredRedemptions.map((redemption) => (
+                      <RedemptionRow
+                        key={redemption.id}
+                        redemption={redemption}
+                        onApprove={() => handleApprove(redemption)}
+                        onReject={() => handleReject(redemption)}
+                        onFulfill={() => handleFulfill(redemption)}
+                        onView={() => handleView(redemption)}
+                      />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
 
-            {/* Fulfilled View */}
-            {selectedRedemption.status === 'fulfilled' && (
+            {/* Table Footer */}
+            {filteredRedemptions.length > 0 && (
+              <div className="px-6 py-4 border-t border-zinc-800 bg-zinc-900/30">
+                <span className="text-zinc-500 text-sm">
+                  Showing {filteredRedemptions.length} of {redemptions.length} redemptions
+                </span>
+              </div>
+            )}
+          </div>
+        </main>
+
+        {/* APPROVE MODAL */}
+        {showApproveModal && selectedRedemption && (
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-6 animate-fade-in">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-md w-full animate-scale-in">
+              <div className="text-center mb-6">
+                <div className="text-5xl mb-4">✅</div>
+                <h3 className="text-xl font-bold text-white mb-2">Approve Redemption?</h3>
+                <p className="text-zinc-400">This will approve the reward for fulfillment.</p>
+              </div>
+
+              {/* Redemption preview */}
+              <div className="bg-zinc-800/50 rounded-xl p-4 mb-6">
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="text-2xl">{getRewardIcon(selectedRedemption)}</span>
+                  <div>
+                    <div className="text-white font-medium">{selectedRedemption.rewardName}</div>
+                    <div className="text-zinc-500 text-sm">
+                      {selectedRedemption.cashAmount ? `$${selectedRedemption.cashAmount.toFixed(2)}` : ''}
+                    </div>
+                  </div>
+                </div>
+                <div className="text-zinc-400 text-sm">
+                  For: <span className="text-white">{selectedRedemption.creatorName}</span> (@{selectedRedemption.creatorHandle})
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowApproveModal(false)}
+                  disabled={isProcessing}
+                  className="flex-1 py-3 bg-zinc-800 text-zinc-300 rounded-xl font-medium hover:bg-zinc-700 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmApprove}
+                  disabled={isProcessing}
+                  className="flex-1 py-3 bg-blue-500 text-white rounded-xl font-medium hover:bg-blue-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isProcessing ? (
+                    <>
+                      <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      Approving...
+                    </>
+                  ) : (
+                    'Approve'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* FULFILL MODAL */}
+        {showFulfillModal && selectedRedemption && (
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-6 animate-fade-in">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-md w-full animate-scale-in">
+              <div className="flex items-center gap-3 mb-6">
+                <span className="text-3xl">📦</span>
+                <h3 className="text-xl font-bold text-white">Mark as Fulfilled</h3>
+              </div>
+
+              {/* Redemption preview */}
+              <div className="bg-zinc-800/50 rounded-xl p-4 mb-4">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">{getRewardIcon(selectedRedemption)}</span>
+                  <div>
+                    <div className="text-white font-medium">{selectedRedemption.rewardName}</div>
+                    <div className="text-zinc-500 text-sm">For: {selectedRedemption.creatorName}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <label className="text-zinc-400 text-sm block mb-2">Fulfillment Notes (optional)</label>
+                <textarea
+                  value={fulfillmentNotes}
+                  onChange={(e) => setFulfillmentNotes(e.target.value)}
+                  placeholder="e.g., PayPal transfer sent, tracking #12345..."
+                  rows={3}
+                  className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-green-500 resize-none"
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowFulfillModal(false)}
+                  disabled={isProcessing}
+                  className="flex-1 py-3 bg-zinc-800 text-zinc-300 rounded-xl font-medium hover:bg-zinc-700 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmFulfill}
+                  disabled={isProcessing}
+                  className="flex-1 py-3 bg-green-500 text-white rounded-xl font-medium hover:bg-green-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isProcessing ? (
+                    <>
+                      <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      Processing...
+                    </>
+                  ) : (
+                    'Mark Fulfilled'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* REJECT MODAL */}
+        {showRejectModal && selectedRedemption && (
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-6 animate-fade-in">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-md w-full animate-scale-in">
+              <div className="flex items-center gap-3 mb-6">
+                <span className="text-3xl">🚫</span>
+                <h3 className="text-xl font-bold text-white">Reject Redemption</h3>
+              </div>
+
+              {/* Redemption preview */}
+              <div className="bg-zinc-800/50 rounded-xl p-4 mb-4">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">{getRewardIcon(selectedRedemption)}</span>
+                  <div>
+                    <div className="text-white font-medium">{selectedRedemption.rewardName}</div>
+                    <div className="text-zinc-500 text-sm">For: {selectedRedemption.creatorName}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <label className="text-zinc-400 text-sm block mb-2">
+                  Rejection Reason <span className="text-red-400">*</span>
+                </label>
+                <textarea
+                  value={rejectionReason}
+                  onChange={(e) => setRejectionReason(e.target.value)}
+                  placeholder="Why is this redemption being rejected?"
+                  rows={3}
+                  className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-red-500 resize-none"
+                />
+              </div>
+
+              {/* Quick reasons */}
+              <div className="flex flex-wrap gap-2 mb-6">
+                <button
+                  onClick={() => setRejectionReason('Duplicate entry')}
+                  className="px-3 py-1.5 bg-zinc-800 text-zinc-400 rounded-lg text-xs hover:bg-zinc-700 transition-colors"
+                >
+                  Duplicate
+                </button>
+                <button
+                  onClick={() => setRejectionReason('Creator ineligible')}
+                  className="px-3 py-1.5 bg-zinc-800 text-zinc-400 rounded-lg text-xs hover:bg-zinc-700 transition-colors"
+                >
+                  Ineligible
+                </button>
+                <button
+                  onClick={() => setRejectionReason('Fraudulent activity detected')}
+                  className="px-3 py-1.5 bg-zinc-800 text-zinc-400 rounded-lg text-xs hover:bg-zinc-700 transition-colors"
+                >
+                  Fraud
+                </button>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowRejectModal(false)}
+                  disabled={isProcessing}
+                  className="flex-1 py-3 bg-zinc-800 text-zinc-300 rounded-xl font-medium hover:bg-zinc-700 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmReject}
+                  disabled={isProcessing || !rejectionReason.trim()}
+                  className="flex-1 py-3 bg-red-500 text-white rounded-xl font-medium hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isProcessing ? (
+                    <>
+                      <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      Rejecting...
+                    </>
+                  ) : (
+                    'Reject'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* DETAILS MODAL */}
+        {showDetailsModal && selectedRedemption && (
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-6 animate-fade-in">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-md w-full animate-scale-in">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-white">Redemption Details</h3>
+                <button
+                  onClick={() => setShowDetailsModal(false)}
+                  className="p-2 text-zinc-400 hover:text-white transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
               <div className="space-y-4">
-                <h4 className="text-white font-semibold">Fulfillment Record</h4>
-                <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-xl space-y-2">
-                  {selectedRedemption.cashAmount && (
-                    <div className="flex justify-between">
-                      <span className="text-zinc-400">Cash Sent:</span>
-                      <span className="text-green-400">
-                        ${selectedRedemption.cashAmount} via {selectedRedemption.cashMethod}
-                      </span>
+                {/* Reward */}
+                <div className="bg-zinc-800/50 rounded-xl p-4">
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl">{getRewardIcon(selectedRedemption)}</span>
+                    <div>
+                      <div className="text-white font-medium text-lg">{selectedRedemption.rewardName}</div>
+                      <div className="text-zinc-400">
+                        {selectedRedemption.cashAmount ? `$${selectedRedemption.cashAmount.toFixed(2)}` : selectedRedemption.rewardValue || ''}
+                      </div>
                     </div>
-                  )}
-                  {selectedRedemption.cashHandle && (
-                    <div className="flex justify-between">
-                      <span className="text-zinc-400">To:</span>
-                      <span className="text-white">{selectedRedemption.cashHandle}</span>
-                    </div>
-                  )}
-                  {selectedRedemption.storeCreditCode && (
-                    <div className="flex justify-between">
-                      <span className="text-zinc-400">Store Credit:</span>
-                      <span className="text-blue-400">{selectedRedemption.storeCreditCode}</span>
-                    </div>
-                  )}
-                  {selectedRedemption.productShipped && (
-                    <div className="flex justify-between">
-                      <span className="text-zinc-400">Product:</span>
-                      <span className="text-orange-400">
-                        Shipped {selectedRedemption.trackingNumber ? `(${selectedRedemption.trackingNumber})` : ''}
-                      </span>
-                    </div>
-                  )}
+                  </div>
+                </div>
+
+                {/* Details */}
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-zinc-500">Creator</span>
+                    <span className="text-white">{selectedRedemption.creatorName}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-zinc-500">Source</span>
+                    <SourceBadge source={selectedRedemption.source} />
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-zinc-500">Status</span>
+                    <StatusBadge status={selectedRedemption.status} />
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-zinc-500">Requested</span>
+                    <span className="text-white">
+                      {new Date(selectedRedemption.createdAt).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                      })} at {new Date(selectedRedemption.createdAt).toLocaleTimeString('en-US', {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                      })}
+                    </span>
+                  </div>
                   {selectedRedemption.fulfilledAt && (
-                    <div className="flex justify-between pt-2 border-t border-green-500/20">
-                      <span className="text-zinc-400">Fulfilled:</span>
-                      <span className="text-zinc-300">{formatDate(selectedRedemption.fulfilledAt)}</span>
+                    <div className="flex justify-between">
+                      <span className="text-zinc-500">Fulfilled</span>
+                      <span className="text-green-400">
+                        {new Date(selectedRedemption.fulfilledAt).toLocaleDateString()}
+                      </span>
                     </div>
                   )}
-                  {selectedRedemption.notes && (
-                    <div className="pt-2 border-t border-green-500/20">
-                      <span className="text-zinc-400 text-sm">Notes:</span>
-                      <p className="text-zinc-300 text-sm mt-1">{selectedRedemption.notes}</p>
+                  {selectedRedemption.notes && selectedRedemption.status === 'rejected' && (
+                    <div className="pt-3 border-t border-zinc-800">
+                      <span className="text-zinc-500 text-sm">Rejection Reason:</span>
+                      <p className="text-red-400 mt-1">{selectedRedemption.notes}</p>
+                    </div>
+                  )}
+                  {selectedRedemption.notes && selectedRedemption.status === 'fulfilled' && (
+                    <div className="pt-3 border-t border-zinc-800">
+                      <span className="text-zinc-500 text-sm">Fulfillment Notes:</span>
+                      <p className="text-zinc-300 mt-1">{selectedRedemption.notes}</p>
                     </div>
                   )}
                 </div>
               </div>
-            )}
 
-            {/* Rejected View */}
-            {selectedRedemption.status === 'rejected' && (
-              <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl">
-                <p className="text-red-400">This redemption was rejected.</p>
-              </div>
-            )}
+              <button
+                onClick={() => setShowDetailsModal(false)}
+                className="w-full mt-6 py-3 bg-zinc-800 text-zinc-300 rounded-xl font-medium hover:bg-zinc-700 transition-colors"
+              >
+                Close
+              </button>
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+
+        {/* Success Animation */}
+        {successAnimation !== null && (
+          <SuccessAnimation
+            icon={successAnimation.icon}
+            message={successAnimation.message}
+            onComplete={() => setSuccessAnimation(null)}
+          />
+        )}
+
+        {/* Global Styles */}
+        <style jsx global>{`
+          @keyframes fade-in {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+          @keyframes scale-in {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+          }
+          .animate-fade-in {
+            animation: fade-in 0.2s ease-out;
+          }
+          .animate-scale-in {
+            animation: scale-in 0.2s ease-out;
+          }
+        `}</style>
+      </div>
+    </ProtectedRoute>
   );
 }
