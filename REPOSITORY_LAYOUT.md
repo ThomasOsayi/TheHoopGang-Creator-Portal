@@ -1035,3 +1035,30 @@ creator/
   - Better UX: User data available immediately upon login
   - Improved error handling for Firestore fetch failures
 
+### TypeScript Fixes & UI Improvements (Latest)
+- **Dashboard Page** (`/creator/dashboard/page.tsx`):
+  - Fixed TypeScript errors in `getTimelineSteps` function
+  - Resolved type inference issue with timeline steps array
+  - Changed from `as const` assertions to explicit type annotations
+  - Steps array now properly typed to allow status modifications
+  - All 7 TypeScript errors resolved
+- **Globals CSS** (`globals.css`):
+  - Migrated custom glow shadow utilities to Tailwind v4 `@utility` directive
+  - Updated `.shadow-glow-*` classes to use `@utility` syntax
+  - Enables proper variant support (hover:, focus:, etc.) for custom utilities
+  - All 7 glow shadow utilities updated (orange, green, blue, amber, purple, yellow, red)
+- **Leaderboard Page** (`/creator/leaderboard/page.tsx`):
+  - Fixed TypeScript error: `Property 'name' does not exist on type 'UserData'`
+  - Changed to use `creatorName` from leaderboard entry instead of `userData.name`
+  - Added `creatorName` to `userStats` state to store creator name from entry
+  - Removed Past Winners tab functionality (simplified to current week only)
+  - Removed `PastWinner` interface, `pastWinners` state, and `loadPastWinners` function
+  - Removed tab switcher UI and past winners rendering section
+  - Swapped positions of 1st and 2nd place prize cards (2nd place now left, 1st place center)
+  - Maintained animation delays for smooth transitions
+- **Rewards Page** (`/creator/rewards/page.tsx`):
+  - Fixed TypeScript errors: `FilterPill` component doesn't accept `icon` prop
+  - Removed `icon` prop from all 5 FilterPill component calls
+  - All linter errors resolved
+  - Filter pills now work correctly without icon support
+

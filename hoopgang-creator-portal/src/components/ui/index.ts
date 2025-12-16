@@ -1,3 +1,6 @@
+// src/components/ui/index.ts
+
+// Existing exports
 export { default as StatusBadge } from './StatusBadge';
 export { default as StatCard } from './StatCard';
 export { default as SectionCard } from './SectionCard';
@@ -20,7 +23,7 @@ export {
   EmptyStateNoNotifications 
 } from './EmptyState';
 
-// HG-401: New shared UI components
+// HG-401: Creator-facing shared UI components
 export { AnimatedCounter } from './AnimatedCounter';
 export { LiveCountdown } from './LiveCountdown';
 export { GlowCard } from './GlowCard';
@@ -29,3 +32,10 @@ export { BackgroundOrbs } from './BackgroundOrbs';
 export { Confetti } from './Confetti';
 export { SuccessToast } from './SuccessToast';
 export { ClaimModal } from './ClaimModal';
+
+// HOOP-101: Admin portal shared UI components
+import { SuccessAnimation } from './SuccessAnimation';
+import { ConfirmModal } from './ConfirmModal';
+import { SourceBadge } from './SourceBadge';
+
+export { SuccessAnimation, ConfirmModal, SourceBadge };
