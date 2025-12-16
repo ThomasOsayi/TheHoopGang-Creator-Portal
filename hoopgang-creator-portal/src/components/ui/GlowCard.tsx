@@ -10,6 +10,8 @@ interface GlowCardProps {
   className?: string;
   noPadding?: boolean;
   delay?: string;
+  urgent?: boolean;
+  active?: boolean;
 }
 
 const glowColorClasses: Record<GlowColor, string> = {
@@ -31,15 +33,20 @@ export function GlowCard({
   className,
   noPadding = false,
   delay = '0s',
+  urgent = false,
+  active = false,
 }: GlowCardProps) {
   return (
     <div
       className={cn(
-        "bg-zinc-900/50 border border-zinc-800 rounded-2xl",
+        "bg-zinc-900/50 border rounded-2xl",
         "transition-all duration-300 ease-out",
         "hover:scale-[1.01] hover:-translate-y-1",
         "animate-fade-in-up",
         glowColorClasses[glowColor],
+        urgent && "border-yellow-500/50 bg-yellow-500/5 animate-pulse",
+        active && "border-orange-500/70 bg-orange-500/10 ring-2 ring-orange-500/30",
+        !urgent && !active && "border-zinc-800",
         !noPadding && "p-6",
         className
       )}
