@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
     const decodedToken = await adminAuth.verifyIdToken(token);
     const adminId = decodedToken.uid;
 
-    const { type = 'volume', name, durationDays = 7 } = await request.json();
+    const { type = 'volume', name, durationDays = 7, prizes } = await request.json();
 
     // Check for existing active competition
     const existing = await getActiveCompetition(type);
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const competitionId = await startCompetition(type, name, durationDays, adminId);
+    const competitionId = await startCompetition(type, name, durationDays, adminId, prizes);
 
     return NextResponse.json({
       success: true,

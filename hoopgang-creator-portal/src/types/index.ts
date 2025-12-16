@@ -349,6 +349,12 @@ export interface Competition {
   finalizedBy: string | null;
   durationDays: number;
   winners: CompetitionWinner[];
+  prizes?: {
+    first: string;
+    second: string;
+    third: string;
+  };
+  leaderboardSnapshot?: LeaderboardEntry[];
   createdAt: Date;
   updatedAt: Date;
 }

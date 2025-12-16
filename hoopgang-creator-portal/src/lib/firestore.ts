@@ -1460,7 +1460,8 @@ export async function startCompetition(
   type: 'volume' | 'gmv',
   name: string,
   durationDays: number = 7,
-  adminId: string
+  adminId: string,
+  prizes?: { first: string; second: string; third: string }
 ): Promise<string> {
   // Check if there's already an active competition
   const existing = await getActiveCompetition(type);
@@ -1482,6 +1483,7 @@ export async function startCompetition(
     finalizedBy: null,
     durationDays,
     winners: [],
+    prizes: prizes || undefined,
     createdAt: Timestamp.fromDate(now),
     updatedAt: Timestamp.fromDate(now),
   });
