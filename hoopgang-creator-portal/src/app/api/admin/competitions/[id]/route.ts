@@ -5,7 +5,7 @@ import { adminDb, adminAuth } from '@/lib/firebase-admin';
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const authHeader = request.headers.get('Authorization');
@@ -16,7 +16,7 @@ export async function PATCH(
     const token = authHeader.split('Bearer ')[1];
     await adminAuth.verifyIdToken(token);
 
-    const competitionId = params.id;
+    const { id: competitionId } = await params;
     const { name, prizes } = await request.json();
 
     const updateData: Record<string, any> = {
