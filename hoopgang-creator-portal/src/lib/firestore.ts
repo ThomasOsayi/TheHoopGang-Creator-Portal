@@ -22,6 +22,7 @@ import {
   Creator,
   CreatorApplicationInput,
   CreatorStatus,
+  CreatorSource,
   ContentSubmission,
   DashboardStats,
   StatusHistoryEntry,
@@ -46,17 +47,25 @@ import {
   Competition,
   CompetitionStatus,
   CompetitionWinner,
+  TiktokCreatorImport,
+  TiktokImportStatus,
+  ImportBatch,
+  TiktokLookupResult,
+  ShippingAddress,
 } from '@/types';
 import { generateCreatorId, MAX_CONTENT_SUBMISSIONS } from './constants';
 
+// ===== COLLECTION NAMES =====
 const CREATORS_COLLECTION = 'creators';
-
-// ===== V3 COLLECTION NAMES =====
 const V3_SUBMISSIONS_COLLECTION = 'v3ContentSubmissions';
 const LEADERBOARD_COLLECTION = 'leaderboardEntries';
 const REWARDS_COLLECTION = 'rewards';
 const REDEMPTIONS_COLLECTION = 'redemptions';
 const COMPETITIONS_COLLECTION = 'competitions';
+
+// ===== NEW: TIKTOK IMPORT COLLECTIONS =====
+const TIKTOK_IMPORTS_COLLECTION = 'tiktokCreatorImports';
+const IMPORT_BATCHES_COLLECTION = 'importBatches';
 
 /**
  * Recursively converts Firestore Timestamps to JavaScript Dates
@@ -141,8 +150,354 @@ export async function generateSequentialCreatorId(): Promise<string> {
   return `CRT-${year}-${paddedCount}`;
 }
 
+// ============================================================
+// TIKTOK CREATOR IMPORT FUNCTIONS
+// ============================================================
+
+/**
+ * Normalizes a TikTok username for consistent matching
+ * - Lowercases
+ * - Trims whitespace
+ * - Removes @ prefix if present
+ */
+export function normalizeTiktokUsername(username: string): string {
+  return username
+    .toLowerCase()
+    .trim()
+    .replace(/^@/, '');
+}
+
+/**
+ * Masks a name for privacy (shows first letter + asterisks)
+ * "Kanii Lemons" -> "K**** L*****"
+ */
+export function maskName(fullName: string): string {
+  return fullName
+    .split(' ')
+    .map(part => {
+      if (part.length <= 1) return part;
+      return part[0] + '*'.repeat(part.length - 1);
+    })
+    .join(' ');
+}
+
+/**
+ * Masks a street address for privacy
+ * "1983 GAINSBOROUGH DR" -> "1983 G****** DR"
+ */
+export function maskAddress(street: string): string {
+  const parts = street.split(' ');
+  return parts
+    .map((part, index) => {
+      // Keep numbers and short words intact
+      if (/^\d+$/.test(part) || part.length <= 2) return part;
+      // Mask longer words
+      return part[0] + '*'.repeat(Math.min(part.length - 1, 6));
+    })
+    .join(' ');
+}
+
+/**
+ * Creates a single TikTok creator import record from CSV data
+ */
+export async function createTiktokImport(
+  data: Omit<TiktokCreatorImport, 'id' | 'status' | 'importedAt'>
+): Promise<string> {
+  const docRef = await addDoc(collection(db, TIKTOK_IMPORTS_COLLECTION), {
+    ...data,
+    tiktokUsername: normalizeTiktokUsername(data.tiktokUsername),
+    status: 'available' as TiktokImportStatus,
+    importedAt: serverTimestamp(),
+  });
+  return docRef.id;
+}
+
+/**
+ * Creates multiple TikTok import records in a batch (more efficient for CSV imports)
+ */
+export async function createTiktokImportsBatch(
+  imports: Omit<TiktokCreatorImport, 'id' | 'status' | 'importedAt'>[],
+  batchId: string
+): Promise<{ created: number; duplicates: string[] }> {
+  const batch = writeBatch(db);
+  const duplicates: string[] = [];
+  let created = 0;
+
+  for (const importData of imports) {
+    const normalizedUsername = normalizeTiktokUsername(importData.tiktokUsername);
+    
+    // Check if username already exists
+    const existingQuery = query(
+      collection(db, TIKTOK_IMPORTS_COLLECTION),
+      where('tiktokUsername', '==', normalizedUsername),
+      limit(1)
+    );
+    const existing = await getDocs(existingQuery);
+    
+    if (!existing.empty) {
+      duplicates.push(importData.tiktokUsernameOriginal);
+      continue;
+    }
+
+    const docRef = doc(collection(db, TIKTOK_IMPORTS_COLLECTION));
+    batch.set(docRef, {
+      ...importData,
+      tiktokUsername: normalizedUsername,
+      status: 'available' as TiktokImportStatus,
+      importedAt: Timestamp.now(),
+      importBatchId: batchId,
+    });
+    created++;
+  }
+
+  if (created > 0) {
+    await batch.commit();
+  }
+
+  return { created, duplicates };
+}
+
+/**
+ * Looks up a TikTok creator by username (for signup flow)
+ * Returns masked data for privacy
+ */
+export async function lookupTiktokCreator(username: string): Promise<TiktokLookupResult> {
+  const normalizedUsername = normalizeTiktokUsername(username);
+  
+  const q = query(
+    collection(db, TIKTOK_IMPORTS_COLLECTION),
+    where('tiktokUsername', '==', normalizedUsername),
+    limit(1)
+  );
+  
+  const snapshot = await getDocs(q);
+  
+  if (snapshot.empty) {
+    return { found: false };
+  }
+  
+  const docSnap = snapshot.docs[0];
+  const data = docSnap.data() as TiktokCreatorImport;
+  
+  // Check if already claimed
+  if (data.status === 'claimed') {
+    return {
+      found: true,
+      alreadyClaimed: true,
+    };
+  }
+  
+  // Return masked data
+  return {
+    found: true,
+    importId: docSnap.id,
+    maskedName: maskName(data.fullName),
+    maskedAddress: maskAddress(data.shippingAddress.street),
+    maskedCity: `${data.shippingAddress.city}, ${data.shippingAddress.state} ${data.shippingAddress.zipCode}`,
+    sizeOrdered: data.sizeOrdered,
+    alreadyClaimed: false,
+  };
+}
+
+/**
+ * Gets a TikTok import by ID (for claiming process)
+ */
+export async function getTiktokImportById(importId: string): Promise<TiktokCreatorImport | null> {
+  const docRef = doc(db, TIKTOK_IMPORTS_COLLECTION, importId);
+  const docSnap = await getDoc(docRef);
+  
+  if (!docSnap.exists()) return null;
+  
+  return convertTimestamps<TiktokCreatorImport>({
+    id: docSnap.id,
+    ...docSnap.data(),
+  });
+}
+
+/**
+ * Claims a TikTok import (marks it as used by a creator)
+ */
+export async function claimTiktokImport(
+  importId: string,
+  userId: string
+): Promise<TiktokCreatorImport | null> {
+  const docRef = doc(db, TIKTOK_IMPORTS_COLLECTION, importId);
+  
+  // Use transaction to prevent race conditions
+  const result = await runTransaction(db, async (transaction) => {
+    const docSnap = await transaction.get(docRef);
+    
+    if (!docSnap.exists()) {
+      throw new Error('Import not found');
+    }
+    
+    const data = docSnap.data();
+    
+    if (data.status === 'claimed') {
+      throw new Error('This TikTok account has already been claimed');
+    }
+    
+    if (data.status === 'expired') {
+      throw new Error('This import has expired');
+    }
+    
+    transaction.update(docRef, {
+      status: 'claimed',
+      claimedByUid: userId,
+      claimedAt: Timestamp.now(),
+    });
+    
+    return {
+      id: docSnap.id,
+      ...data,
+      status: 'claimed' as TiktokImportStatus,
+      claimedByUid: userId,
+      claimedAt: new Date(),
+    };
+  });
+  
+  return convertTimestamps<TiktokCreatorImport>(result);
+}
+
+/**
+ * Gets all TikTok imports (admin view)
+ */
+export async function getAllTiktokImports(filters?: {
+  status?: TiktokImportStatus;
+  batchId?: string;
+  limit?: number;
+  lastDoc?: any;
+}): Promise<{ imports: TiktokCreatorImport[]; lastDoc: any; hasMore: boolean }> {
+  const pageLimit = filters?.limit || 20;
+  
+  let q = query(
+    collection(db, TIKTOK_IMPORTS_COLLECTION),
+    orderBy('importedAt', 'desc'),
+    limit(pageLimit + 1)
+  );
+  
+  if (filters?.status) {
+    q = query(q, where('status', '==', filters.status));
+  }
+  
+  if (filters?.batchId) {
+    q = query(q, where('importBatchId', '==', filters.batchId));
+  }
+  
+  if (filters?.lastDoc) {
+    q = query(q, startAfter(filters.lastDoc));
+  }
+  
+  const snapshot = await getDocs(q);
+  const docs = snapshot.docs;
+  const hasMore = docs.length > pageLimit;
+  const resultDocs = hasMore ? docs.slice(0, pageLimit) : docs;
+  
+  const imports = resultDocs.map(doc =>
+    convertTimestamps<TiktokCreatorImport>({ id: doc.id, ...doc.data() })
+  );
+  
+  return {
+    imports,
+    lastDoc: resultDocs[resultDocs.length - 1] || null,
+    hasMore,
+  };
+}
+
+/**
+ * Gets import statistics for admin dashboard
+ */
+export async function getTiktokImportStats(): Promise<{
+  total: number;
+  available: number;
+  claimed: number;
+  expired: number;
+}> {
+  const allQuery = query(collection(db, TIKTOK_IMPORTS_COLLECTION));
+  const allSnapshot = await getDocs(allQuery);
+  
+  let available = 0;
+  let claimed = 0;
+  let expired = 0;
+  
+  allSnapshot.docs.forEach(doc => {
+    const status = doc.data().status as TiktokImportStatus;
+    if (status === 'available') available++;
+    else if (status === 'claimed') claimed++;
+    else if (status === 'expired') expired++;
+  });
+  
+  return {
+    total: allSnapshot.size,
+    available,
+    claimed,
+    expired,
+  };
+}
+
+// ============================================================
+// IMPORT BATCH FUNCTIONS
+// ============================================================
+
+/**
+ * Creates an import batch record for auditing
+ */
+export async function createImportBatch(
+  data: Omit<ImportBatch, 'id' | 'importedAt'>
+): Promise<string> {
+  const docRef = await addDoc(collection(db, IMPORT_BATCHES_COLLECTION), {
+    ...data,
+    importedAt: serverTimestamp(),
+  });
+  return docRef.id;
+}
+
+/**
+ * Updates an import batch with final counts
+ */
+export async function updateImportBatch(
+  batchId: string,
+  data: Partial<ImportBatch>
+): Promise<void> {
+  const docRef = doc(db, IMPORT_BATCHES_COLLECTION, batchId);
+  await updateDoc(docRef, data);
+}
+
+/**
+ * Gets recent import batches (admin view)
+ */
+export async function getImportBatches(limitCount: number = 10): Promise<ImportBatch[]> {
+  const q = query(
+    collection(db, IMPORT_BATCHES_COLLECTION),
+    orderBy('importedAt', 'desc'),
+    limit(limitCount)
+  );
+  
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(doc =>
+    convertTimestamps<ImportBatch>({ id: doc.id, ...doc.data() })
+  );
+}
+
+/**
+ * Gets a single import batch by ID
+ */
+export async function getImportBatchById(batchId: string): Promise<ImportBatch | null> {
+  const docRef = doc(db, IMPORT_BATCHES_COLLECTION, batchId);
+  const docSnap = await getDoc(docRef);
+  
+  if (!docSnap.exists()) return null;
+  
+  return convertTimestamps<ImportBatch>({ id: docSnap.id, ...docSnap.data() });
+}
+
+// ============================================================
+// CREATOR CRUD (UPDATED WITH SOURCE TRACKING)
+// ============================================================
+
 /**
  * Creates a new creator document in Firestore (V2 - profile only)
+ * UPDATED: Now includes source tracking for TikTok vs Instagram onboarding
  */
 export async function createCreator(
   data: CreatorApplicationInput,
@@ -163,8 +518,11 @@ export async function createCreator(
     },
   ];
 
+  // Determine source (default to 'instagram' if not specified)
+  const source: CreatorSource = data.source || 'instagram';
+
   // V2: Creator is profile-only, no collaboration data
-  const creatorData = {
+  const creatorData: Record<string, any> = {
     // Profile fields from application
     fullName: data.fullName,
     email: data.email,
@@ -188,10 +546,88 @@ export async function createCreator(
     activeCollaborationId: null,
     totalCollaborations: 0,
     
+    // V3 Source tracking
+    source,
+    
     // Metadata
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
     ...(userId && { userId }),
+  };
+
+  // Add TikTok-specific fields if source is tiktok
+  if (source === 'tiktok') {
+    if (data.tiktokImportId) {
+      creatorData.tiktokImportId = data.tiktokImportId;
+    }
+    if (data.tiktokUsername) {
+      creatorData.tiktokUsername = normalizeTiktokUsername(data.tiktokUsername);
+    }
+  }
+
+  const docRef = await addDoc(collection(db, CREATORS_COLLECTION), creatorData);
+  
+  // Update the document with its own ID
+  await updateDoc(docRef, { id: docRef.id });
+
+  return docRef.id;
+}
+
+/**
+ * Creates a creator from a TikTok import (streamlined flow)
+ * This is used when TikTok creators claim their import
+ */
+export async function createCreatorFromTiktokImport(
+  tiktokImport: TiktokCreatorImport,
+  email: string,
+  userId: string
+): Promise<string> {
+  const now = Timestamp.now();
+  const creatorId = await generateSequentialCreatorId();
+  
+  // TikTok creators won't have Instagram stats initially - set to 0
+  const initialFollowerHistory = [
+    {
+      date: now.toDate(),
+      instagramFollowers: 0,
+      tiktokFollowers: 0, // We don't have this from TikTok Shop CSV
+      source: 'application' as const,
+    },
+  ];
+
+  const creatorData = {
+    // Profile fields (from TikTok import)
+    fullName: tiktokImport.fullName,
+    email,
+    instagramHandle: '', // Not available from TikTok
+    instagramFollowers: 0,
+    tiktokHandle: tiktokImport.tiktokUsernameOriginal,
+    tiktokFollowers: 0, // Not available from TikTok Shop CSV
+    bestContentUrl: '', // Not available from TikTok
+    shippingAddress: tiktokImport.shippingAddress,
+    
+    // These fields aren't collected in TikTok flow
+    whyCollab: 'Joined via TikTok Shop',
+    previousBrands: false,
+    agreedToTerms: true, // Implicit agreement by using TikTok Shop
+    
+    // V2 fields
+    id: '', // Will be set after document creation
+    creatorId,
+    userId,
+    followerHistory: initialFollowerHistory,
+    isBlocked: false,
+    activeCollaborationId: null,
+    totalCollaborations: 0,
+    
+    // V3 Source tracking
+    source: 'tiktok' as CreatorSource,
+    tiktokImportId: tiktokImport.id,
+    tiktokUsername: tiktokImport.tiktokUsername,
+    
+    // Metadata
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
   };
 
   const docRef = await addDoc(collection(db, CREATORS_COLLECTION), creatorData);
@@ -261,10 +697,33 @@ export async function getCreatorByUserId(userId: string): Promise<Creator | null
 }
 
 /**
+ * Fetches a creator by TikTok username (for TikTok flow)
+ */
+export async function getCreatorByTiktokUsername(tiktokUsername: string): Promise<Creator | null> {
+  const normalizedUsername = normalizeTiktokUsername(tiktokUsername);
+  
+  const q = query(
+    collection(db, CREATORS_COLLECTION),
+    where('tiktokUsername', '==', normalizedUsername),
+    where('source', '==', 'tiktok')
+  );
+  
+  const snapshot = await getDocs(q);
+  
+  if (snapshot.empty) {
+    return null;
+  }
+  
+  const docSnap = snapshot.docs[0];
+  return convertTimestamps<Creator>({ id: docSnap.id, ...docSnap.data() });
+}
+
+/**
  * Fetches creators with pagination support
  */
 export async function getAllCreators(filters?: {
   status?: CreatorStatus;
+  source?: CreatorSource;
   minFollowers?: number;
   search?: string;
   limit?: number;
@@ -307,13 +766,17 @@ export async function getAllCreators(filters?: {
     })
   );
 
-  // Client-side filtering for minFollowers and search
+  // Client-side filtering for minFollowers, search, and source
   if (filters?.minFollowers) {
     creators = creators.filter(
       (creator) =>
         creator.instagramFollowers >= filters.minFollowers! ||
         creator.tiktokFollowers >= filters.minFollowers!
     );
+  }
+
+  if (filters?.source) {
+    creators = creators.filter((creator) => creator.source === filters.source);
   }
 
   if (filters?.search) {
@@ -324,7 +787,8 @@ export async function getAllCreators(filters?: {
         creator.email.toLowerCase().includes(searchLower) ||
         creator.instagramHandle.toLowerCase().includes(searchLower) ||
         creator.tiktokHandle.toLowerCase().includes(searchLower) ||
-        creator.creatorId.toLowerCase().includes(searchLower)
+        creator.creatorId.toLowerCase().includes(searchLower) ||
+        (creator.tiktokUsername && creator.tiktokUsername.toLowerCase().includes(searchLower))
     );
   }
 
@@ -678,6 +1142,7 @@ export async function updateCollaboration(
  */
 export async function getAllCreatorsWithCollabs(filters?: {
   status?: CollaborationStatus;
+  source?: CreatorSource;
   limit?: number;
   lastDoc?: Parameters<typeof startAfter>[0];
 }): Promise<{ creators: CreatorWithCollab[]; lastDoc: Parameters<typeof startAfter>[0] | null; hasMore: boolean }> {
@@ -685,6 +1150,7 @@ export async function getAllCreatorsWithCollabs(filters?: {
   const { creators, lastDoc, hasMore } = await getAllCreators({
     limit: filters?.limit,
     lastDoc: filters?.lastDoc,
+    source: filters?.source,
   });
   
   // Join active collaborations

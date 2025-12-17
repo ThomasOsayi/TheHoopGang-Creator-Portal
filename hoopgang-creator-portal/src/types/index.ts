@@ -28,6 +28,10 @@ export type Size = 'S' | 'M' | 'L' | 'XL' | 'XXL';
 
 export type Carrier = 'yanwen';
 
+// ===== CREATOR ONBOARDING SOURCE =====
+export type CreatorSource = 'instagram' | 'tiktok';
+export type TiktokImportStatus = 'available' | 'claimed' | 'expired';
+
 export interface ContentSubmission {
   url: string;
   submittedAt: Date;
@@ -86,6 +90,11 @@ export interface Creator {
   activeCollaborationId?: string;        // Current active collab ID
   totalCollaborations: number;           // Count of all collabs
   
+  // V3 Source Tracking
+  source: CreatorSource;                 // 'instagram' | 'tiktok'
+  tiktokImportId?: string;               // Reference to tiktokCreatorImports doc (if source === 'tiktok')
+  tiktokUsername?: string;               // TikTok Shop username (if source === 'tiktok')
+  
   // Metadata
   createdAt: Date;
   updatedAt: Date;
@@ -123,6 +132,11 @@ export interface CreatorApplicationInput {
   whyCollab: string;
   previousBrands: boolean;
   agreedToTerms: boolean;
+  
+  // V3 Source Tracking
+  source?: CreatorSource;                // Defaults to 'instagram' if not provided
+  tiktokImportId?: string;               // Only for TikTok flow
+  tiktokUsername?: string;               // Only for TikTok flow
 }
 
 export interface DashboardStats {
@@ -196,6 +210,94 @@ export interface Collaboration {
   completedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
+}
+
+// ===== TIKTOK CREATOR IMPORT SYSTEM =====
+
+/**
+ * Represents a creator imported from TikTok Shop CSV export
+ * These records are created when admin uploads CSV, then claimed by creators during signup
+ */
+export interface TiktokCreatorImport {
+  id: string;                           // Firestore doc ID
+  
+  // TikTok identity
+  tiktokUsername: string;               // Normalized (lowercase, trimmed, no @)
+  tiktokUsernameOriginal: string;       // Original casing from CSV
+  
+  // Personal info from CSV
+  fullName: string;                     // "Kanii Lemons"
+  phone: string;                        // "(+1)7062557007"
+  
+  // Shipping address (pre-filled from CSV)
+  shippingAddress: ShippingAddress;
+  
+  // Product info from their TikTok Shop order
+  productOrdered: string;               // "THG CROPPED SWEATPANTS"
+  sizeOrdered: Size;                    // "L", "M", "XL"
+  orderId: string;                      // TikTok order ID for reference
+  orderDate: Date;
+  
+  // Claim tracking
+  status: TiktokImportStatus;
+  claimedByUid?: string;                // Firebase Auth UID if claimed
+  claimedAt?: Date;
+  
+  // Import metadata
+  importedAt: Date;
+  importBatchId: string;                // Groups imports together for auditing
+}
+
+/**
+ * Tracks a batch of TikTok creator imports (for admin auditing)
+ */
+export interface ImportBatch {
+  id: string;                           // Firestore doc ID
+  
+  // Import stats
+  fileName: string;                     // Original CSV filename
+  totalRows: number;                    // Total rows in CSV
+  importedCount: number;                // Successfully imported
+  duplicateCount: number;               // Skipped (username already exists)
+  errorCount: number;                   // Failed rows
+  
+  // Errors for debugging
+  errors?: {
+    row: number;
+    reason: string;
+  }[];
+  
+  // Metadata
+  importedBy: string;                   // Admin user ID
+  importedAt: Date;
+}
+
+/**
+ * Result returned from CSV import API
+ */
+export interface TiktokImportResult {
+  success: boolean;
+  batchId: string;
+  totalRows: number;
+  imported: number;
+  duplicates: number;
+  errors: {
+    row: number;
+    reason: string;
+  }[];
+}
+
+/**
+ * Result from TikTok username lookup (public-facing, masked data)
+ */
+export interface TiktokLookupResult {
+  found: boolean;
+  importId?: string;                    // Used when claiming
+  maskedName?: string;                  // "K**** L*****"
+  maskedAddress?: string;               // "1983 G****** DR"
+  maskedCity?: string;                  // "Atlanta, GA 30341"
+  sizeOrdered?: Size;
+  alreadyClaimed?: boolean;
 }
 
 // ===== V3 CONTENT SUBMISSION & REWARDS SYSTEM =====
