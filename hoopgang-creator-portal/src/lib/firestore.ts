@@ -371,23 +371,32 @@ export async function getAllTiktokImports(filters?: {
 }): Promise<{ imports: TiktokCreatorImport[]; lastDoc: any; hasMore: boolean }> {
   const pageLimit = filters?.limit || 20;
   
-  let q = query(
-    collection(db, TIKTOK_IMPORTS_COLLECTION),
-    orderBy('importedAt', 'desc'),
-    limit(pageLimit + 1)
-  );
+  // Build query constraints array - order matters!
+  // where clauses must come before orderBy
+  const constraints: any[] = [];
   
+  // Add filter constraints FIRST
   if (filters?.status) {
-    q = query(q, where('status', '==', filters.status));
+    constraints.push(where('status', '==', filters.status));
   }
   
   if (filters?.batchId) {
-    q = query(q, where('importBatchId', '==', filters.batchId));
+    constraints.push(where('importBatchId', '==', filters.batchId));
   }
   
+  // Then add orderBy
+  constraints.push(orderBy('importedAt', 'desc'));
+  
+  // Then pagination
   if (filters?.lastDoc) {
-    q = query(q, startAfter(filters.lastDoc));
+    constraints.push(startAfter(filters.lastDoc));
   }
+  
+  // Finally limit
+  constraints.push(limit(pageLimit + 1));
+  
+  // Build the query with all constraints
+  const q = query(collection(db, TIKTOK_IMPORTS_COLLECTION), ...constraints);
   
   const snapshot = await getDocs(q);
   const docs = snapshot.docs;
