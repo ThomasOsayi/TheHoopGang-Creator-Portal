@@ -7,6 +7,7 @@ import {
   getDocs,
   addDoc,
   updateDoc,
+  deleteDoc,
   query,
   where,
   orderBy,
@@ -433,6 +434,34 @@ export async function getTiktokImportStats(): Promise<{
     claimed,
     expired,
   };
+}
+
+/**
+ * Updates a TikTok import record (admin editing)
+ */
+export async function updateTiktokImport(
+  importId: string,
+  data: Partial<Pick<TiktokCreatorImport, 
+    'fullName' | 'phone' | 'shippingAddress' | 'productOrdered' | 'sizeOrdered' | 'status'
+  >>
+): Promise<void> {
+  const docRef = doc(db, TIKTOK_IMPORTS_COLLECTION, importId);
+  
+  const updateData: Record<string, unknown> = {
+    ...data,
+    updatedAt: serverTimestamp(),
+  };
+
+  await updateDoc(docRef, updateData);
+}
+
+/**
+ * Deletes a TikTok import record
+ * Note: Should only be called on 'available' or 'expired' imports, not 'claimed'
+ */
+export async function deleteTiktokImport(importId: string): Promise<void> {
+  const docRef = doc(db, TIKTOK_IMPORTS_COLLECTION, importId);
+  await deleteDoc(docRef);
 }
 
 // ============================================================

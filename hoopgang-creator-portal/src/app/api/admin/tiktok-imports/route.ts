@@ -8,6 +8,9 @@ import {
   getImportBatches,
   getAllTiktokImports,
   getTiktokImportStats,
+  getTiktokImportById,
+  updateTiktokImport,
+  deleteTiktokImport,
   normalizeTiktokUsername,
 } from '@/lib/firestore';
 import {
@@ -376,6 +379,7 @@ export async function POST(request: NextRequest) {
  * - status: 'available' | 'claimed' | 'expired'
  * - batchId: Filter by specific batch
  * - limit: Number of results (default: 20)
+ * - id: Get single import by ID
  */
 export async function GET(request: NextRequest) {
   try {
@@ -385,6 +389,19 @@ export async function GET(request: NextRequest) {
     const batchId = searchParams.get('batchId');
     const limitParam = searchParams.get('limit');
     const limit = limitParam ? parseInt(limitParam, 10) : 20;
+    const id = searchParams.get('id');
+
+    // Get single import by ID
+    if (id) {
+      const importDoc = await getTiktokImportById(id);
+      if (!importDoc) {
+        return NextResponse.json(
+          { error: 'Import not found' },
+          { status: 404 }
+        );
+      }
+      return NextResponse.json({ import: importDoc });
+    }
 
     // Return stats
     if (view === 'stats') {
@@ -414,6 +431,121 @@ export async function GET(request: NextRequest) {
     console.error('Error fetching TikTok imports:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to fetch imports' },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * PUT /api/admin/tiktok-imports
+ * Updates a TikTok import record
+ * 
+ * Body:
+ * {
+ *   id: string,
+ *   fullName?: string,
+ *   phone?: string,
+ *   shippingAddress?: ShippingAddress,
+ *   productOrdered?: string,
+ *   sizeOrdered?: Size,
+ *   status?: TiktokImportStatus
+ * }
+ */
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { id, ...updateData } = body;
+
+    if (!id) {
+      return NextResponse.json(
+        { error: 'Import ID is required' },
+        { status: 400 }
+      );
+    }
+
+    // Verify import exists
+    const existingImport = await getTiktokImportById(id);
+    if (!existingImport) {
+      return NextResponse.json(
+        { error: 'Import not found' },
+        { status: 404 }
+      );
+    }
+
+    // Prevent editing claimed imports (optional - remove if you want to allow)
+    if (existingImport.status === 'claimed' && updateData.status !== 'claimed') {
+      // Allow status changes even on claimed, but warn about other edits
+      console.warn('Editing a claimed import:', id);
+    }
+
+    // Update the import
+    await updateTiktokImport(id, updateData);
+
+    // Fetch and return updated import
+    const updatedImport = await getTiktokImportById(id);
+
+    return NextResponse.json({
+      success: true,
+      import: updatedImport,
+    });
+
+  } catch (error) {
+    console.error('Error updating TikTok import:', error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Failed to update import' },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * DELETE /api/admin/tiktok-imports
+ * Deletes a TikTok import record
+ * 
+ * Query params:
+ * - id: Import ID to delete
+ */
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json(
+        { error: 'Import ID is required' },
+        { status: 400 }
+      );
+    }
+
+    // Verify import exists
+    const existingImport = await getTiktokImportById(id);
+    if (!existingImport) {
+      return NextResponse.json(
+        { error: 'Import not found' },
+        { status: 404 }
+      );
+    }
+
+    // Prevent deleting claimed imports
+    if (existingImport.status === 'claimed') {
+      return NextResponse.json(
+        { error: 'Cannot delete a claimed import. The creator has already registered with this data.' },
+        { status: 400 }
+      );
+    }
+
+    // Delete the import
+    await deleteTiktokImport(id);
+
+    return NextResponse.json({
+      success: true,
+      message: 'Import deleted successfully',
+    });
+
+  } catch (error) {
+    console.error('Error deleting TikTok import:', error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Failed to delete import' },
       { status: 500 }
     );
   }
