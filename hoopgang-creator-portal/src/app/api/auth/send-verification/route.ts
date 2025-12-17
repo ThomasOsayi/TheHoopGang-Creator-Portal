@@ -34,9 +34,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate verification link using Firebase Admin
-    // ✅ Fixed: Use correct production domain as fallback
     const verificationLink = await adminAuth.generateEmailVerificationLink(email, {
-      url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://creators.hoopgang.com'}/apply`,
+      url: 'https://thehoopgang.xyz/apply',
+      handleCodeInApp: true,
     });
 
     // Render React component to HTML using JSX

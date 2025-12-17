@@ -8,6 +8,7 @@ const REWARDS_COLLECTION = 'rewards';
 
 // Reward types for the new simplified model
 type RewardType = 'cash' | 'credit' | 'product' | 'custom';
+type RewardCategory = 'milestone' | 'volume_leaderboard' | 'gmv_leaderboard';
 
 interface RewardDocument {
   id: string;
@@ -17,6 +18,9 @@ interface RewardDocument {
   value: string;
   icon: string;
   isActive: boolean;
+  category: RewardCategory;
+  milestoneTier?: '100k' | '500k' | '1m';
+  leaderboardRank?: number;
   timesAwarded: number;
   timesRedeemed: number;
   createdAt: Date;
@@ -115,6 +119,9 @@ export async function GET(req: NextRequest) {
         value: migratedData.value || '',
         icon: migratedData.icon || getDefaultIcon(migratedData.type || 'custom'),
         isActive: migratedData.isActive !== false,
+        category: migratedData.category || 'milestone',
+        milestoneTier: migratedData.milestoneTier,
+        leaderboardRank: migratedData.leaderboardRank,
         timesAwarded: migratedData.timesAwarded || 0,
         timesRedeemed: migratedData.timesRedeemed || 0,
         createdAt: rawData.createdAt,
@@ -158,6 +165,14 @@ export async function POST(req: NextRequest) {
     if (!body.value?.trim()) {
       return NextResponse.json({ error: 'Value is required' }, { status: 400 });
     }
+    // Validate category
+    const validCategories: RewardCategory[] = ['milestone', 'volume_leaderboard', 'gmv_leaderboard'];
+    if (!body.category || !validCategories.includes(body.category)) {
+      return NextResponse.json(
+        { error: 'Valid category is required (milestone, volume_leaderboard, gmv_leaderboard)' },
+        { status: 400 }
+      );
+    }
 
     // Validate type
     const validTypes: RewardType[] = ['cash', 'credit', 'product', 'custom'];
@@ -171,10 +186,19 @@ export async function POST(req: NextRequest) {
       value: body.value.trim(),
       icon: body.icon || getDefaultIcon(type),
       isActive: body.isActive !== false, // Default to true
+      category: body.category,
       timesAwarded: 0,
       timesRedeemed: 0,
       createdAt: Timestamp.now(),
     };
+
+    // Optional fields for milestone/leaderboard rewards
+    if (body.category === 'milestone' && body.milestoneTier) {
+      rewardData.milestoneTier = body.milestoneTier;
+    }
+    if ((body.category === 'volume_leaderboard' || body.category === 'gmv_leaderboard') && body.leaderboardRank) {
+      rewardData.leaderboardRank = body.leaderboardRank;
+    }
 
     const docRef = await addDoc(collection(db, REWARDS_COLLECTION), rewardData);
 

@@ -1,32 +1,78 @@
 # Repository Layout Summary
 
-## Project Structure
+## High-level layout summary
 
-### Repository Root
-```
-TheHoopGang-Creator-Portal/
-├── hoopgang-creator-portal/     # Next.js app (see below)
-├── README.md                   # Repository documentation
-└── REPOSITORY_LAYOUT.md         # This file
-```
+### Root (`TheHoopGang-Creator-Portal/`)
 
-### App Root (`hoopgang-creator-portal/`) Configuration Files
-```
-hoopgang-creator-portal/
-├── eslint.config.mjs          # ESLint configuration
-├── next.config.ts              # Next.js configuration
-├── package.json                # Project dependencies and scripts
-├── package-lock.json           # Dependency lock file
-├── postcss.config.mjs          # PostCSS configuration
-├── tsconfig.json               # TypeScript configuration
-├── firestore.indexes.json      # Firestore composite indexes configuration
-├── firebase.json               # Firebase configuration
-├── firestore.rules             # Firestore security rules
-├── scripts/                    # Utility scripts
-│   ├── seed-v3-rewards.ts      # Script to seed default rewards
-│   └── migrate-to-collaborations.ts  # Migration script
-└── README.md                   # Project documentation
-```
+- **`README.md`** – Repository documentation
+- **`REPOSITORY_LAYOUT.md`** – This layout and architecture overview
+- **`hoopgang-creator-portal/`** – Next.js app + Firebase config and source
+
+### App root (`hoopgang-creator-portal/`)
+
+- **Config & tooling**
+  - `.firebaserc`, `.gitignore`, `eslint.config.mjs`, `firebase.json`, `firestore.indexes.json`, `firestore.rules`
+  - `next.config.ts`, `postcss.config.mjs`, `package.json`, `package-lock.json`, `tsconfig.json`, `README.md`
+- **`public/`** – Static assets
+  - **`images/creators/`** – Creator photos
+  - **`images/products/`** – Product hero image
+  - `THG_logo_gradient.png`, `THG_logo_orange.png`, `THG_logo_white.png`, and core SVG icons
+- **`scripts/`**
+  - `migrate-to-collaborations.ts`
+  - `seed-v3-rewards.ts`
+- **`src/`**
+  - `app/` – All Next.js routes (pages + API)
+  - `components/` – Shared React UI and feature components
+  - `lib/` – Firebase, email, tracking, and general utilities
+  - `types/` – TypeScript models for creators, rewards, competitions, etc.
+
+### App routes (`src/app/`)
+
+- **Root & auth**
+  - `page.tsx` – Marketing / landing page
+  - `layout.tsx`, `globals.css`, icon files (`favicon.ico`, `android-icon.png`, `apple-icon.png`)
+  - `login/page.tsx`, `apply/page.tsx`, `forgot-password/page.tsx`
+- **Creator-facing pages**
+  - `creator/dashboard/page.tsx`
+  - `creator/submit/page.tsx`
+  - `creator/leaderboard/page.tsx`
+  - `creator/rewards/page.tsx`
+  - `creator/submissions/page.tsx`
+  - `creator/request-product/page.tsx`
+- **Admin pages**
+  - `admin/creators/page.tsx`, `admin/creators/[id]/page.tsx`
+  - `admin/submissions/page.tsx`, `admin/submissions/[id]/page.tsx`
+  - `admin/rewards/page.tsx`, `admin/redemptions/page.tsx`
+  - `admin/leaderboard/volume/page.tsx`, `admin/leaderboard/gmv/page.tsx`
+- **API routes (`src/app/api/`)**
+  - `admin/competitions/...` – Create, end, and finalize competitions
+  - `admin/leaderboard/...` – Volume & GMV leaderboards, bulk operations, finalization
+  - `admin/rewards/...` – Reward CRUD
+  - `admin/redemptions/...` – Redemption listing and status updates
+  - `admin/submissions/...` – Submission listing and review
+  - `auth/send-verification/route.ts` – Email verification sender
+  - `competitions/active/route.ts` – Public active competition endpoint
+  - `creator/rewards/route.ts`, `creator/rewards/stats/route.ts`, `creator/redemptions/route.ts`, `creator/stats/route.ts`
+  - `email/send/route.ts`, `leaderboard/route.ts`
+  - `submissions/history/route.ts`, `submissions/volume/...`, `submissions/volume/milestone/...`, `submissions/volume/milestone/stats/...`
+  - `tracking/route.ts`, `webhooks/tracking/route.ts`
+
+### Components & shared code
+
+- **`src/components/auth/`**
+  - `ProtectedRoute.tsx`, `index.ts`
+- **`src/components/creators/`**
+  - `CreatorTable.tsx`, `FilterBar.tsx`, `ApplicationReviewModal.tsx`, `index.ts`
+- **`src/components/ui/`**
+  - Buttons, cards, badges, and layout: `Button.tsx`, `SectionCard.tsx`, `StatCard.tsx`, `StatusBadge.tsx`, `SourceBadge.tsx`, `GlowCard.tsx`, `Navbar.tsx`
+  - Feedback & animation: `Toast.tsx`, `SuccessToast.tsx`, `SuccessAnimation.tsx`, `Confetti.tsx`, `AnimatedCounter.tsx`, `LiveCountdown.tsx`
+  - Data display & structure: `DetailRow.tsx`, `EmptyState.tsx`, `StarRating.tsx`, `Pagination.tsx`, `ProgressDots.tsx`, `Skeleton.tsx`, `FilterPill.tsx`, `PackageStatusCard.tsx`
+  - Tracking & rewards UX: `TrackingStatus.tsx`, `TrackingProgress.tsx`, `ClaimModal.tsx`, `ConfirmModal.tsx`, `BackgroundOrbs.tsx`
+  - `index.ts` – Barrel exports
+- **`src/lib/`**
+  - Firebase client/admin setup, Firestore helpers, tracking utilities, email system (`email-layout.tsx`, `send-email.ts`, templates), constants, and `week-utils.ts`
+- **`src/types/`**
+  - `index.ts` – Core domain models (creators, submissions, competitions, leaderboards, rewards, redemptions, stats)
 
 ---
 
@@ -183,14 +229,17 @@ api/
 │   │                           # - Supports includeEnded parameter
 │   ├── creator/
 │   │   ├── rewards/
-│   │   │   └── route.ts        # Creator rewards API
-│   │   │                       # - GET: Fetch available rewards for creators
+│   │   │   ├── route.ts        # Creator rewards API
+│   │   │   │                   # - GET: Fetch available rewards for creators
+│   │   │   └── stats/
+│   │   │       └── route.ts    # Creator rewards stats API
+│   │   │                       # - GET: Fetch reward/earnings statistics for creators
 │   │   ├── redemptions/
 │   │   │   └── route.ts        # Creator redemptions API
 │   │   │                       # - GET: Fetch creator's redemption history
 │   │   └── stats/
 │   │       └── route.ts        # Creator stats API
-│   │                           # - GET: Fetch creator statistics
+│   │                           # - GET: Fetch overall creator statistics
 │   ├── email/
 │   │   └── send/
 │   │       └── route.ts        # General email sending endpoint
@@ -287,19 +336,33 @@ creator/
 - `index.ts` - Component exports
 
 #### UI Components (`ui/`)
+- `AnimatedCounter.tsx` - Animated number/stat display component
+- `BackgroundOrbs.tsx` - Decorative gradient orb background for pages
 - `Button.tsx` - Reusable button component
+- `ClaimModal.tsx` - Modal for claiming rewards or related actions
+- `Confetti.tsx` - Confetti animation for success states
+- `ConfirmModal.tsx` - Confirmation dialog component
 - `DetailRow.tsx` - Detail row display component
+- `EmptyState.tsx` - Empty state display for lists and pages
+- `FilterPill.tsx` - Filter pill chip component
+- `GlowCard.tsx` - Glassmorphic/glow card wrapper
+- `LiveCountdown.tsx` - Live-updating countdown timer
 - `Navbar.tsx` - Navigation bar component with THG logo image (V2 collaboration status system)
   - Admin navigation links: Admin, Submissions, Rewards, Redemptions, Volume Admin, GMV Admin
   - Creator navigation links: Dashboard, Submit Content, Leaderboard, Rewards
   - Role-based link visibility
   - Active collaboration status checking for re-application prevention
+- `PackageStatusCard.tsx` - Package/shipping status summary card
 - `Pagination.tsx` - Pagination component
 - `ProgressDots.tsx` - Progress indicator component
 - `SectionCard.tsx` - Section card container component
+- `Skeleton.tsx` - Skeleton loading placeholders
+- `SourceBadge.tsx` - Badge component for content/source types
 - `StarRating.tsx` - Star rating display component
 - `StatCard.tsx` - Statistics card component
 - `StatusBadge.tsx` - Status badge component
+- `SuccessAnimation.tsx` - Success animation wrapper
+- `SuccessToast.tsx` - Pre-styled success toast component
 - `Toast.tsx` - Toast notification component
 - `TrackingStatus.tsx` - Tracking status display component with events and delete (refresh removed)
 - `TrackingProgress.tsx` - Horizontal visual stepper for shipping progress
@@ -426,10 +489,10 @@ creator/
 - Admin Submissions: Review and manage submissions
 - Admin Leaderboards: Finalize and manage leaderboards
 
-### Components (22 files)
+### Components (33 files)
 - Auth: 2 files
-- Creators: 4 components (including ApplicationReviewModal)
-- UI: 16 files (including TrackingStatus, TrackingProgress)
+- Creators: 4 files (3 components + barrel export)
+- UI: 27 files (buttons, cards, badges, animations, tracking UI, etc.)
 
 ### Libraries (10+ files)
 - Authentication context

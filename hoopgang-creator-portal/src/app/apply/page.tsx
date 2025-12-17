@@ -3,10 +3,11 @@
 'use client';
 
 import { useState, FormEvent, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { auth } from '@/lib/firebase';
+import { applyActionCode } from 'firebase/auth';
 import { CreatorApplicationInput, Size } from '@/types';
 import { SIZES } from '@/lib/constants';
 import { createCreator, getCreatorByUserId, createCollaboration } from '@/lib/firestore';
@@ -15,13 +16,15 @@ import { useToast } from '@/components/ui';
 
 export default function ApplyPage() {
   const router = useRouter();
-  const { signUp, user, refreshUserData } = useAuth(); // ✅ Add refreshUserData
+  const searchParams = useSearchParams();
+  const { signUp, user, refreshUserData } = useAuth();
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [verificationStep, setVerificationStep] = useState<'account' | 'verify-pending' | 'application'>('account');
   const [verifyingEmail, setVerifyingEmail] = useState(false);
+  const [autoVerifying, setAutoVerifying] = useState(false);
 
   // Redirect based on creator state (V2 model)
   useEffect(() => {
@@ -94,6 +97,49 @@ export default function ApplyPage() {
     
     loadUserData();
   }, [user]);
+
+  // Handle email verification from URL (when user clicks link in email)
+  useEffect(() => {
+    const mode = searchParams.get('mode');
+    const oobCode = searchParams.get('oobCode');
+    
+    // Only process if we have verification parameters and not already verifying
+    if (mode === 'verifyEmail' && oobCode && !autoVerifying) {
+      setAutoVerifying(true);
+      setError(null);
+      
+      applyActionCode(auth, oobCode)
+        .then(async () => {
+          // Verification successful - reload user to get updated status
+          if (auth.currentUser) {
+            await auth.currentUser.reload();
+          }
+          
+          showToast('Email verified successfully!', 'success');
+          
+          // Clean the URL and redirect
+          // Small delay to show success state
+          setTimeout(() => {
+            window.location.href = '/apply';
+          }, 1000);
+        })
+        .catch((err: any) => {
+          console.error('Auto-verification error:', err);
+          setAutoVerifying(false);
+          
+          if (err.code === 'auth/invalid-action-code') {
+            setError('This verification link has expired or already been used. Please request a new one.');
+          } else if (err.code === 'auth/expired-action-code') {
+            setError('This verification link has expired. Please request a new one.');
+          } else {
+            setError('Failed to verify email. Please try again or request a new link.');
+          }
+          
+          // Still show verify-pending so user can resend
+          setVerificationStep('verify-pending');
+        });
+    }
+  }, [searchParams, autoVerifying, showToast]);
 
   const [formData, setFormData] = useState<CreatorApplicationInput>({
     fullName: '',
@@ -468,7 +514,15 @@ export default function ApplyPage() {
 
         {/* Form Card */}
         <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl p-8 hover:border-white/20 transition-all duration-300">
-          {success ? (
+          {autoVerifying ? (
+            <div className="text-center py-16">
+              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-orange-500/20 border border-orange-500/30 mb-6">
+                <div className="w-10 h-10 border-3 border-orange-500 border-t-transparent rounded-full animate-spin" />
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-2">Verifying Your Email...</h2>
+              <p className="text-white/60">Please wait a moment</p>
+            </div>
+          ) : success ? (
             <div className="text-center py-16">
               <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-500/20 border border-green-500/30 mb-6">
                 <span className="text-5xl">🎉</span>

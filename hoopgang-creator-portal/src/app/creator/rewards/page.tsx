@@ -29,6 +29,8 @@ interface RewardItem {
   categoryColor: 'gold' | 'purple' | 'blue' | 'green';
   available: boolean;
   filter: RewardFilter;
+  milestoneTier?: string;
+  leaderboardRank?: number;
 }
 
 // Category color mapping
@@ -39,25 +41,106 @@ const categoryColors = {
   green: { bg: 'bg-green-500/20', text: 'text-green-400', border: 'border-green-500/30', glow: 'rgba(34, 197, 94, 0.3)' },
 };
 
-// Static rewards catalog
-const REWARDS_CATALOG: RewardItem[] = [
-  // Leaderboard Rewards
-  { id: 'lb-1', title: '1st Place', subtitle: 'Weekly competition winner', value: '$50 Cash', icon: '🥇', category: 'Leaderboard', categoryColor: 'gold', available: false, filter: 'leaderboard' },
-  { id: 'lb-2', title: '2nd Place', subtitle: 'Weekly runner-up', value: '$25 Cash', icon: '🥈', category: 'Leaderboard', categoryColor: 'gold', available: false, filter: 'leaderboard' },
-  { id: 'lb-3', title: '3rd Place', subtitle: 'Weekly third place', value: '$10 Cash', icon: '🥉', category: 'Leaderboard', categoryColor: 'gold', available: false, filter: 'leaderboard' },
-  // Milestone Rewards
-  { id: 'ms-100k', title: 'Breakout', subtitle: 'Single video hits 100K views', value: '$10 Credit', icon: '🔥', category: 'Milestone', categoryColor: 'purple', available: false, filter: 'milestone' },
-  { id: 'ms-500k', title: 'Semi-Viral', subtitle: 'Single video hits 500K views', value: '$25 + Product', icon: '⚡', category: 'Milestone', categoryColor: 'purple', available: false, filter: 'milestone' },
-  { id: 'ms-1m', title: 'Viral King', subtitle: 'Single video hits 1M+ views', value: '$50 + Merch', icon: '👑', category: 'Milestone', categoryColor: 'purple', available: false, filter: 'milestone' },
-  // Volume Rewards
-  { id: 'vol-10', title: 'Starter', subtitle: 'Submit 10 TikToks', value: '$5 Credit', icon: '🎯', category: 'Volume', categoryColor: 'blue', available: false, filter: 'volume' },
-  { id: 'vol-25', title: 'Consistent', subtitle: 'Submit 25 TikToks', value: '$15 Credit', icon: '🚀', category: 'Volume', categoryColor: 'blue', available: false, filter: 'volume' },
-  { id: 'vol-50', title: 'Power Creator', subtitle: 'Submit 50 TikToks', value: '$30 + Merch', icon: '💎', category: 'Volume', categoryColor: 'blue', available: false, filter: 'volume' },
-  // Bonus Rewards
-  { id: 'bonus-first', title: 'First Post', subtitle: 'Submit your first TikTok', value: '$5 Credit', icon: '🌟', category: 'Bonus', categoryColor: 'green', available: false, filter: 'bonus' },
-  { id: 'bonus-week', title: 'Perfect Week', subtitle: 'Post every day for a week', value: '$20 Bonus', icon: '📅', category: 'Bonus', categoryColor: 'green', available: false, filter: 'bonus' },
-  { id: 'bonus-referral', title: 'Referral Pro', subtitle: 'Refer 3 accepted creators', value: '$25 Cash', icon: '🤝', category: 'Bonus', categoryColor: 'green', available: false, filter: 'bonus' },
-];
+// Helper to map API category to filter and color
+function mapCategoryToFilterAndColor(category: string): { filter: RewardFilter; color: 'gold' | 'purple' | 'blue' | 'green'; displayName: string } {
+  switch (category) {
+    case 'milestone':
+      return { filter: 'milestone', color: 'purple', displayName: 'Milestone' };
+    case 'volume_leaderboard':
+      return { filter: 'leaderboard', color: 'gold', displayName: 'Leaderboard' };
+    case 'gmv_leaderboard':
+      return { filter: 'leaderboard', color: 'gold', displayName: 'Leaderboard' };
+    default:
+      return { filter: 'bonus', color: 'green', displayName: 'Bonus' };
+  }
+}
+
+// Helper to get icon based on reward type or milestone tier
+function getRewardIcon(reward: any): string {
+  // If reward has a custom icon, use it
+  if (reward.icon && reward.icon.trim()) {
+    return reward.icon;
+  }
+  
+  // Milestone tier icons
+  if (reward.milestoneTier) {
+    switch (reward.milestoneTier) {
+      case '100k': return '🔥';
+      case '500k': return '⚡';
+      case '1m': return '👑';
+    }
+  }
+  
+  // Leaderboard rank icons
+  if (reward.leaderboardRank) {
+    switch (reward.leaderboardRank) {
+      case 1: return '🥇';
+      case 2: return '🥈';
+      case 3: return '🥉';
+    }
+  }
+  
+  // Type-based icons
+  if (reward.type) {
+    switch (reward.type) {
+      case 'cash': return '💵';
+      case 'credit': return '🎁';
+      case 'product': return '👕';
+      case 'custom': return '✨';
+    }
+  }
+  
+  return '🎁';
+}
+
+// Helper to format reward value for display
+function formatRewardValue(reward: any): string {
+  // If value is already set (new schema), use it
+  if (reward.value && reward.value.trim()) {
+    return reward.value;
+  }
+  
+  // Build value string from old schema fields
+  const parts: string[] = [];
+  if (reward.cashValue) {
+    parts.push(`$${reward.cashValue}`);
+  }
+  if (reward.storeCreditValue) {
+    parts.push(`$${reward.storeCreditValue} Credit`);
+  }
+  if (reward.productName) {
+    parts.push(reward.productName);
+  }
+  
+  return parts.length > 0 ? parts.join(' + ') : 'Reward';
+}
+
+// Helper to generate subtitle
+function getRewardSubtitle(reward: any): string {
+  if (reward.description && reward.description.trim()) {
+    return reward.description;
+  }
+  
+  // Generate based on milestone tier
+  if (reward.milestoneTier) {
+    switch (reward.milestoneTier) {
+      case '100k': return 'Single video hits 100K views';
+      case '500k': return 'Single video hits 500K views';
+      case '1m': return 'Single video hits 1M+ views';
+    }
+  }
+  
+  // Generate based on leaderboard rank
+  if (reward.leaderboardRank) {
+    switch (reward.leaderboardRank) {
+      case 1: return 'Weekly competition winner';
+      case 2: return 'Weekly runner-up';
+      case 3: return 'Weekly third place';
+    }
+  }
+  
+  return '';
+}
 
 // Reward Card Component
 function RewardCard({ 
@@ -103,7 +186,7 @@ function RewardCard({
       {/* Bottom Info */}
       <div className="text-center">
         <h3 className="text-white font-bold text-lg mb-0.5">{reward.title}</h3>
-        <p className="text-zinc-500 text-sm mb-3">{reward.subtitle}</p>
+        <p className="text-zinc-500 text-sm mb-3 line-clamp-2">{reward.subtitle}</p>
         
         {/* Price Tag */}
         <div className={`inline-block px-4 py-2 rounded-xl font-bold text-sm ${colors.bg} ${colors.text} ${colors.border} border`}>
@@ -120,13 +203,14 @@ export default function CreatorRewardsPage() {
   
   const [creator, setCreator] = useState<Creator | null>(null);
   const [loading, setLoading] = useState(true);
+  const [rewardsLoading, setRewardsLoading] = useState(true);
   
   // Tab and filter state
   const [activeTab, setActiveTab] = useState<TabType>('shop');
   const [activeFilter, setActiveFilter] = useState<RewardFilter>('all');
   
-  // Rewards state (with earned status from API)
-  const [rewards, setRewards] = useState<RewardItem[]>(REWARDS_CATALOG);
+  // Rewards state - now fetched from API
+  const [rewards, setRewards] = useState<RewardItem[]>([]);
   
   // Stats
   const [stats, setStats] = useState({
@@ -148,6 +232,64 @@ export default function CreatorRewardsPage() {
     const currentUser = auth.currentUser;
     if (!currentUser) return null;
     return currentUser.getIdToken();
+  };
+
+  // Load rewards from API
+  const loadRewards = async () => {
+    setRewardsLoading(true);
+    try {
+      const token = await getAuthToken();
+      if (!token) return;
+
+      const response = await fetch('/api/creator/rewards', {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Handle both grouped response and flat array
+        let allRewards: any[] = [];
+        
+        if (data.rewards) {
+          // Flat array response (new format)
+          allRewards = data.rewards;
+        } else if (data.milestone || data.volume_leaderboard || data.gmv_leaderboard) {
+          // Grouped response (old format)
+          allRewards = [
+            ...(data.milestone || []),
+            ...(data.volume_leaderboard || []),
+            ...(data.gmv_leaderboard || []),
+          ];
+        }
+        
+        // Transform API rewards to RewardItem format
+        const transformedRewards: RewardItem[] = allRewards.map((reward: any) => {
+          const { filter, color, displayName } = mapCategoryToFilterAndColor(reward.category);
+          
+          return {
+            id: reward.id,
+            title: reward.name || 'Reward',
+            subtitle: getRewardSubtitle(reward),
+            value: formatRewardValue(reward),
+            icon: getRewardIcon(reward),
+            category: displayName,
+            categoryColor: color,
+            available: false, // Will be updated by stats API
+            filter: filter,
+            milestoneTier: reward.milestoneTier,
+            leaderboardRank: reward.leaderboardRank,
+          };
+        });
+        
+        setRewards(transformedRewards);
+      }
+    } catch (error) {
+      console.error('Error loading rewards:', error);
+      showToast('Failed to load rewards', 'error');
+    } finally {
+      setRewardsLoading(false);
+    }
   };
 
   // Load creator stats and earned rewards
@@ -228,6 +370,7 @@ export default function CreatorRewardsPage() {
 
     if (user) {
       loadCreator();
+      loadRewards();
       loadCreatorStats();
       loadRedemptions();
     }
@@ -279,7 +422,6 @@ export default function CreatorRewardsPage() {
     volume: rewards.filter(r => r.filter === 'volume').length,
     bonus: rewards.filter(r => r.filter === 'bonus').length,
   };
-
 
   const getStatusBadge = (status: RedemptionStatus) => {
     switch (status) {
@@ -440,42 +582,70 @@ export default function CreatorRewardsPage() {
                 onClick={() => setActiveFilter('milestone')}
                 count={filterCounts.milestone}
               />
-              <FilterPill 
-                label="Volume" 
-                active={activeFilter === 'volume'} 
-                onClick={() => setActiveFilter('volume')}
-                count={filterCounts.volume}
-              />
-              <FilterPill 
-                label="Bonus" 
-                active={activeFilter === 'bonus'} 
-                onClick={() => setActiveFilter('bonus')}
-                count={filterCounts.bonus}
-              />
+              {filterCounts.volume > 0 && (
+                <FilterPill 
+                  label="Volume" 
+                  active={activeFilter === 'volume'} 
+                  onClick={() => setActiveFilter('volume')}
+                  count={filterCounts.volume}
+                />
+              )}
+              {filterCounts.bonus > 0 && (
+                <FilterPill 
+                  label="Bonus" 
+                  active={activeFilter === 'bonus'} 
+                  onClick={() => setActiveFilter('bonus')}
+                  count={filterCounts.bonus}
+                />
+              )}
             </div>
 
             {/* Rewards Grid - 4 columns on large screens */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-              {filteredRewards.map((reward) => (
-                <RewardCard 
-                  key={reward.id} 
-                  reward={reward}
-                  onClick={() => handleCardClick(reward)}
-                />
-              ))}
-            </div>
-
-            {/* Empty State */}
-            {filteredRewards.length === 0 && (
+            {rewardsLoading ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+                {[...Array(8)].map((_, i) => (
+                  <div key={i} className="aspect-square bg-zinc-900/70 border border-zinc-800 rounded-2xl animate-pulse">
+                    <div className="p-5 h-full flex flex-col">
+                      <div className="flex-1 flex items-center justify-center">
+                        <div className="w-16 h-16 bg-zinc-800 rounded-full" />
+                      </div>
+                      <div className="space-y-2">
+                        <div className="h-5 bg-zinc-800 rounded w-3/4 mx-auto" />
+                        <div className="h-4 bg-zinc-800 rounded w-1/2 mx-auto" />
+                        <div className="h-8 bg-zinc-800 rounded w-2/3 mx-auto" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : filteredRewards.length === 0 ? (
               <div className="text-center py-16">
                 <div className="text-5xl mb-4">🔍</div>
-                <div className="text-zinc-400 text-lg">No rewards match this filter</div>
-                <button 
-                  onClick={() => setActiveFilter('all')}
-                  className="mt-4 text-orange-400 hover:text-orange-300 font-medium"
-                >
-                  View all rewards →
-                </button>
+                <div className="text-zinc-400 text-lg">
+                  {rewards.length === 0 
+                    ? 'No rewards available yet' 
+                    : 'No rewards match this filter'}
+                </div>
+                {rewards.length === 0 ? (
+                  <p className="text-zinc-500 mt-2">Check back soon for new rewards!</p>
+                ) : (
+                  <button 
+                    onClick={() => setActiveFilter('all')}
+                    className="mt-4 text-orange-400 hover:text-orange-300 font-medium"
+                  >
+                    View all rewards →
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+                {filteredRewards.map((reward) => (
+                  <RewardCard 
+                    key={reward.id} 
+                    reward={reward}
+                    onClick={() => handleCardClick(reward)}
+                  />
+                ))}
               </div>
             )}
 
