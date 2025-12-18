@@ -136,7 +136,6 @@ export function Navbar() {
     { href: '/creator/dashboard', label: 'Dashboard', icon: '🎯', show: isVerifiedCreator },
     // V3: Only show Submit Content if approved OR TikTok creator
     { href: '/creator/submit', label: 'Submit Content', icon: '📤', show: isVerifiedCreator && canAccessFullFeatures },
-    { href: '/creator/leaderboard', label: 'Leaderboard', icon: '🏆', show: user && (isAdmin || (userData?.creatorId && user.emailVerified)) },
     // V3: Only show Rewards if approved OR TikTok creator
     { href: '/creator/rewards', label: 'Rewards', icon: '🎁', show: isVerifiedCreator && canAccessFullFeatures },
   ].filter(link => link.show);

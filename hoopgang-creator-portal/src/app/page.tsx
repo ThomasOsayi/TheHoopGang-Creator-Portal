@@ -3,6 +3,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
+import { AnimatedCounter } from '@/components/ui';
 
 export default function HomePage() {
   return (
@@ -237,16 +238,22 @@ export default function HomePage() {
         <div className="relative max-w-7xl mx-auto px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {[
-              { value: '30K+', label: 'Global Hoopers', color: 'text-orange-400', glowColor: 'hover:shadow-orange-500/20' },
-              { value: '25+', label: 'Countries Served', color: 'text-purple-400', glowColor: 'hover:shadow-purple-500/20' },
-              { value: '4.9★', label: 'Customer Rating', color: 'text-amber-400', glowColor: 'hover:shadow-amber-500/20' },
-              { value: '100%', label: 'Refundable Gear', color: 'text-green-400', glowColor: 'hover:shadow-green-500/20' },
+              { value: 30, suffix: 'K+', label: 'Global Hoopers', color: 'text-orange-400', glowColor: 'hover:shadow-orange-500/20' },
+              { value: 25, suffix: '+', label: 'Countries Served', color: 'text-purple-400', glowColor: 'hover:shadow-purple-500/20' },
+              { value: 4.9, suffix: '★', label: 'Customer Rating', color: 'text-amber-400', glowColor: 'hover:shadow-amber-500/20', isDecimal: true },
+              { value: 100, suffix: '%', label: 'Refundable Gear', color: 'text-green-400', glowColor: 'hover:shadow-green-500/20' },
             ].map((stat, index) => (
               <div 
                 key={index} 
                 className={`text-center p-6 rounded-2xl transition-all duration-300 hover:bg-white/5 hover:shadow-[0_0_40px_-10px] ${stat.glowColor} cursor-default`}
               >
-                <p className={`text-3xl md:text-4xl font-bold ${stat.color}`}>{stat.value}</p>
+                <p className={`text-3xl md:text-4xl font-bold ${stat.color}`}>
+                  {stat.isDecimal ? (
+                    <>{stat.value}{stat.suffix}</>
+                  ) : (
+                    <AnimatedCounter value={stat.value} suffix={stat.suffix} />
+                  )}
+                </p>
                 <p className="text-white/60 text-sm mt-1">{stat.label}</p>
               </div>
             ))}
@@ -519,51 +526,6 @@ export default function HomePage() {
         </div>
       </footer>
 
-      {/* Global Styles for Animations */}
-      <style jsx global>{`
-        @keyframes shimmer-text {
-          0% { background-position: 0% center; }
-          100% { background-position: 200% center; }
-        }
-        
-        @keyframes shimmer-bg {
-          0% { transform: translateX(-100%); }
-          100% { transform: translateX(100%); }
-        }
-        
-        @keyframes float {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-10px); }
-        }
-        
-        @keyframes float-delayed {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-8px); }
-        }
-        
-        @keyframes float-slow {
-          0%, 100% { transform: translateX(-50%) translateY(0); }
-          50% { transform: translateX(-50%) translateY(-6px); }
-        }
-        
-        .animate-shimmer-text {
-          animation: shimmer-text 3s linear infinite;
-        }
-        
-        .animate-float {
-          animation: float 3s ease-in-out infinite;
-        }
-        
-        .animate-float-delayed {
-          animation: float-delayed 3s ease-in-out infinite;
-          animation-delay: 1s;
-        }
-        
-        .animate-float-slow {
-          animation: float-slow 4s ease-in-out infinite;
-          animation-delay: 0.5s;
-        }
-      `}</style>
     </div>
   );
 }
