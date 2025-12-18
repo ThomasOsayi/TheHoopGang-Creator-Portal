@@ -7,38 +7,52 @@ import { useAuth, UserRole } from '@/lib/auth-context';
 interface ProtectedRouteProps {
   children: React.ReactNode;
   allowedRoles?: UserRole[];
-  requireApplication?: boolean; // NEW: Require completed application
+  requireApplication?: boolean;
+  requireEmailVerification?: boolean; // NEW: Check email verification
 }
 
 export function ProtectedRoute({ 
   children, 
   allowedRoles,
-  requireApplication = false // Default false for backwards compatibility
+  requireApplication = false,
+  requireEmailVerification = true // Default true - creators must verify email
 }: ProtectedRouteProps) {
   const { user, userData, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
     if (!loading) {
+      // Not logged in - redirect to login
       if (!user) {
         router.push('/login');
         return;
       }
       
+      // Check email verification for creators (skip for admins)
+      if (
+        requireEmailVerification && 
+        userData?.role === 'creator' && 
+        !user.emailVerified
+      ) {
+        router.push('/verify-email');
+        return;
+      }
+      
+      // Check role permissions
       if (allowedRoles && userData && !allowedRoles.includes(userData.role)) {
         // User is logged in but doesn't have the right role
         router.push('/');
         return;
       }
 
-      // NEW: Check if application is required but not submitted
+      // Check if application is required but not submitted
       if (requireApplication && userData?.role === 'creator' && !userData.creatorId) {
         // Creator hasn't submitted application yet - redirect to apply
         router.push('/apply');
         return;
       }
     }
-  }, [user, userData, loading, allowedRoles, requireApplication, router]);
+  }, [user, userData, loading, allowedRoles, requireApplication, requireEmailVerification, router]);
 
   if (loading) {
     return (
@@ -51,15 +65,26 @@ export function ProtectedRoute({
     );
   }
 
+  // Not logged in
   if (!user) {
     return null;
   }
 
+  // Email not verified (for creators)
+  if (
+    requireEmailVerification && 
+    userData?.role === 'creator' && 
+    !user.emailVerified
+  ) {
+    return null;
+  }
+
+  // Wrong role
   if (allowedRoles && userData && !allowedRoles.includes(userData.role)) {
     return null;
   }
 
-  // NEW: Block render if application required but not submitted
+  // Application required but not submitted
   if (requireApplication && userData?.role === 'creator' && !userData.creatorId) {
     return null;
   }

@@ -15,6 +15,7 @@ import {
 import { getCreatorByUserId } from '@/lib/firestore';
 import { Creator, Redemption, RedemptionStatus } from '@/types';
 import { auth } from '@/lib/firebase';
+import { ProtectedRoute } from '@/components/auth';
 
 type RewardFilter = 'all' | 'available' | 'leaderboard' | 'milestone' | 'volume' | 'bonus';
 type TabType = 'shop' | 'history';
@@ -458,11 +459,12 @@ export default function CreatorRewardsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 relative overflow-hidden">
-      <Navbar />
-      
-      {/* Background Orbs */}
-      <BackgroundOrbs colors={['purple', 'orange', 'amber']} />
+    <ProtectedRoute allowedRoles={['creator']}>
+      <div className="min-h-screen bg-zinc-950 relative overflow-hidden">
+        <Navbar />
+        
+        {/* Background Orbs */}
+        <BackgroundOrbs colors={['purple', 'orange', 'amber']} />
 
       <main className="relative z-10 max-w-6xl mx-auto px-4 py-8">
         {/* Header */}
@@ -755,6 +757,7 @@ export default function CreatorRewardsPage() {
         reward={selectedReward}
         onSubmit={handleClaimSubmit}
       />
-    </div>
+      </div>
+    </ProtectedRoute>
   );
 }

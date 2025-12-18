@@ -327,6 +327,7 @@ function InstagramApplyContent() {
           userId: userCredential.user.uid,
           email: formData.email,
           fullName: formData.fullName,
+          source: 'instagram',
         }),
       });
 
@@ -393,6 +394,7 @@ function InstagramApplyContent() {
           userId: auth.currentUser.uid,
           email: auth.currentUser.email || formData.email,
           fullName: formData.fullName,
+          source: 'instagram',
         }),
       });
 

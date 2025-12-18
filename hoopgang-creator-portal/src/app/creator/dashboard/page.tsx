@@ -438,7 +438,7 @@ export default function CreatorDashboardPage() {
   const isActiveCollab = creator.collaboration && !['pending', 'denied'].includes(creator.collaboration.status);
 
   return (
-    <ProtectedRoute allowedRoles={['creator']} requireApplication>
+    <ProtectedRoute allowedRoles={['creator']}>
       <div className="min-h-screen bg-zinc-950 relative overflow-hidden">
         {/* Background Orbs */}
         <BackgroundOrbs colors={['orange', 'purple', 'orange']} />
@@ -850,7 +850,7 @@ export default function CreatorDashboardPage() {
           )}
 
           {/* No Active Collaboration - Can Request New */}
-          {!creator.collaboration && !creator.isBlocked && creator.totalCollaborations > 0 && (
+          {!creator.collaboration && !creator.isBlocked && creator.totalCollaborations > 0 && creator.source !== 'tiktok' && (
             <GlowCard glowColor="purple" className="mb-6 bg-gradient-to-r from-purple-500/10 to-indigo-500/10 border-purple-500/20">
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
@@ -867,6 +867,103 @@ export default function CreatorDashboardPage() {
                 </Link>
               </div>
             </GlowCard>
+          )}
+
+          {/* TikTok Creator - No Collaboration Needed */}
+          {!creator.collaboration && creator.source === 'tiktok' && !creator.isBlocked && (
+            <div className="space-y-6">
+              {/* Welcome Card for TikTok Creators */}
+              <GlowCard glowColor="purple" className="bg-gradient-to-r from-[#25F4EE]/10 to-[#FE2C55]/10 border-[#FE2C55]/20">
+                <div className="flex items-center gap-4">
+                  <div className="text-4xl">🎬</div>
+                  <div>
+                    <h2 className="text-lg font-bold text-white">Ready to Create Content!</h2>
+                    <p className="text-white/60 text-sm">
+                      Your TikTok Shop order is on its way. Start submitting content once you receive it!
+                    </p>
+                  </div>
+                </div>
+              </GlowCard>
+
+              {/* V3 Stats Grid for TikTok Creators */}
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* This Week Stats */}
+                <div className="bg-gradient-to-br from-orange-500/10 to-amber-500/5 border border-orange-500/20 rounded-2xl p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                      <span>🚀</span> This Week
+                    </h3>
+                    <div className="bg-orange-500/20 px-2 py-1 rounded-full">
+                      <LiveCountdown targetDate={weekResetDate} size="sm" />
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-zinc-400">Submissions</span>
+                      <span className="text-white font-bold text-xl">
+                        {v3StatsLoading ? <Skeleton className="w-8 h-6" /> : <AnimatedCounter value={v3Stats?.weeklySubmissions || 0} />}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-zinc-400">Your Rank</span>
+                      {v3StatsLoading ? (
+                        <Skeleton className="w-16 h-6" />
+                      ) : v3Stats?.currentRank ? (
+                        <span className="text-orange-400 font-bold text-xl">#{v3Stats.currentRank}</span>
+                      ) : (
+                        <span className="text-zinc-500">Not ranked</span>
+                      )}
+                    </div>
+                  </div>
+                  <Link href="/creator/leaderboard">
+                    <button className="w-full mt-4 py-2.5 bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 font-medium rounded-xl transition-all text-sm">
+                      View Leaderboard →
+                    </button>
+                  </Link>
+                </div>
+
+                {/* Rewards Card */}
+                <GlowCard glowColor="green">
+                  <h3 className="text-lg font-semibold text-white flex items-center gap-2 mb-4">
+                    <span>💰</span> Rewards
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-zinc-400">Pending</span>
+                      <span className={`font-semibold ${redemptionStats.pending > 0 ? 'text-yellow-400' : 'text-zinc-500'}`}>
+                        {redemptionsLoading ? <Skeleton className="w-6 h-5" /> : redemptionStats.pending}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-zinc-400">Total Earned</span>
+                      <span className="text-green-400 font-semibold">
+                        {redemptionsLoading ? <Skeleton className="w-12 h-5" /> : <>$<AnimatedCounter value={redemptionStats.totalEarned} /></>}
+                      </span>
+                    </div>
+                  </div>
+                  <Link href="/creator/rewards">
+                    <button className="w-full mt-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-medium rounded-xl transition-all text-sm">
+                      Browse Rewards →
+                    </button>
+                  </Link>
+                </GlowCard>
+
+                {/* Quick Submit Card */}
+                <GlowCard glowColor="purple">
+                  <h3 className="text-lg font-semibold text-white flex items-center gap-2 mb-4">
+                    <span>📤</span> Submit Content
+                  </h3>
+                  <p className="text-zinc-400 text-sm mb-4">
+                    Post TikToks featuring your HoopGang gear and submit them to earn rewards!
+                  </p>
+                  <Link href="/creator/submit">
+                    <Button variant="primary" className="w-full">
+                      Submit TikTok →
+                    </Button>
+                  </Link>
+                </GlowCard>
+              </div>
+            </div>
           )}
 
           {/* Past Collaborations */}

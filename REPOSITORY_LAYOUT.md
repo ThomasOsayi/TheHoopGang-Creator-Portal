@@ -19,7 +19,6 @@
   - `THG_logo_gradient.png`, `THG_logo_orange.png`, `THG_logo_white.png`, and core SVG icons
 - **`scripts/`**
   - `migrate-to-collaborations.ts`
-  - `seed-v3-rewards.ts`
 - **`src/`**
   - `app/` – All Next.js routes (pages + API)
   - `components/` – Shared React UI and feature components
@@ -31,7 +30,7 @@
 - **Root & auth**
   - `page.tsx` – Marketing / landing page
   - `layout.tsx`, `globals.css`, icon files (`favicon.ico`, `android-icon.png`, `apple-icon.png`)
-  - `login/page.tsx`, `apply/page.tsx`, `forgot-password/page.tsx`
+  - `login/page.tsx`, `apply/page.tsx`, `apply/tiktok/page.tsx`, `apply/instagram/page.tsx`, `forgot-password/page.tsx`
 - **Creator-facing pages**
   - `creator/dashboard/page.tsx`
   - `creator/submit/page.tsx`
@@ -44,13 +43,17 @@
   - `admin/submissions/page.tsx`, `admin/submissions/[id]/page.tsx`
   - `admin/rewards/page.tsx`, `admin/redemptions/page.tsx`
   - `admin/leaderboard/volume/page.tsx`, `admin/leaderboard/gmv/page.tsx`
+  - `admin/tiktok-imports/page.tsx` – TikTok creator CSV import management
 - **API routes (`src/app/api/`)**
   - `admin/competitions/...` – Create, end, and finalize competitions
   - `admin/leaderboard/...` – Volume & GMV leaderboards, bulk operations, finalization
   - `admin/rewards/...` – Reward CRUD
   - `admin/redemptions/...` – Redemption listing and status updates
   - `admin/submissions/...` – Submission listing and review
+  - `admin/tiktok-imports/route.ts` – TikTok CSV import, batch management, and creator lookup
   - `auth/send-verification/route.ts` – Email verification sender
+  - `auth/lookup-tiktok/route.ts` – Public TikTok username lookup (returns masked data)
+  - `auth/claim-tiktok/route.ts` – TikTok creator account claim endpoint
   - `competitions/active/route.ts` – Public active competition endpoint
   - `creator/rewards/route.ts`, `creator/rewards/stats/route.ts`, `creator/redemptions/route.ts`, `creator/stats/route.ts`
   - `email/send/route.ts`, `leaderboard/route.ts`
@@ -61,6 +64,8 @@
 
 - **`src/components/auth/`**
   - `ProtectedRoute.tsx`, `index.ts`
+- **`src/components/admin/`**
+  - `TiktokCsvImporter.tsx` – CSV upload and import component for TikTok creators
 - **`src/components/creators/`**
   - `CreatorTable.tsx`, `FilterBar.tsx`, `ApplicationReviewModal.tsx`, `index.ts`
 - **`src/components/ui/`**
@@ -70,9 +75,9 @@
   - Tracking & rewards UX: `TrackingStatus.tsx`, `TrackingProgress.tsx`, `ClaimModal.tsx`, `ConfirmModal.tsx`, `BackgroundOrbs.tsx`
   - `index.ts` – Barrel exports
 - **`src/lib/`**
-  - Firebase client/admin setup, Firestore helpers, tracking utilities, email system (`email-layout.tsx`, `send-email.ts`, templates), constants, and `week-utils.ts`
+  - Firebase client/admin setup, Firestore helpers (including TikTok import functions), tracking utilities, email system (`email-layout.tsx`, `send-email.ts`, templates), constants, and `week-utils.ts`
 - **`src/types/`**
-  - `index.ts` – Core domain models (creators, submissions, competitions, leaderboards, rewards, redemptions, stats)
+  - `index.ts` – Core domain models (creators, submissions, competitions, leaderboards, rewards, redemptions, stats, TikTok imports)
 
 ---
 
@@ -95,7 +100,7 @@
   - THG logo image instead of emoji
 
 #### Application Flow
-- `apply/page.tsx` - Creator application page
+- `apply/page.tsx` - General creator application page
   - THG logo image instead of emoji
   - Product selection with text input (links to store)
   - Optional height/weight fields for fit recommendations
@@ -105,6 +110,16 @@
   - Branded verification email with resend capability
   - Always loads fullName from Firestore when user exists (regardless of verification status)
   - Pre-fills form data from Firestore user document
+- `apply/tiktok/page.tsx` - TikTok-specific application flow
+  - Step 1: Username lookup (checks TikTok Shop imports)
+  - Step 2: Verify identity (shows masked shipping info for verification)
+  - Step 3: Create account and claim import record
+  - Pre-fills shipping address and product info from TikTok Shop order
+  - Integrates with TikTok creator import system
+- `apply/instagram/page.tsx` - Instagram-specific application flow
+  - Similar flow to general apply page
+  - Instagram logo branding
+  - Platform-specific application experience
 
 #### Admin Routes
 ```
@@ -133,6 +148,15 @@ admin/
 │                               # - Bulk GMV entry management
 │                               # - Monthly leaderboard view
 │                               # - GMV period selection
+├── tiktok-imports/
+│   └── page.tsx                # TikTok creator CSV import management
+│                               # - CSV upload and batch import
+│                               # - Import history and batch tracking
+│                               # - Creator import list with filtering/search
+│                               # - Edit import records (address, size, status)
+│                               # - Bulk status updates (available/claimed/expired)
+│                               # - Pagination and selection management
+│                               # - Import statistics dashboard
 ├── rewards/
 │   └── page.tsx                # Admin rewards management page
 │                               # - Create, edit, and manage rewards
@@ -192,6 +216,14 @@ api/
 │   │       └── route.ts        # Individual reward API
 │   │                           # - GET: Fetch single reward
 │   │                           # - PUT: Update reward details
+│   └── tiktok-imports/
+│       └── route.ts            # TikTok imports API
+│                               # - POST: Upload and parse CSV, create import batch
+│                               # - GET: List imports with filters (status, search, pagination)
+│                               # - PUT: Update import record
+│                               # - DELETE: Delete import record
+│                               # - CSV column mapping and validation
+│                               # - Size normalization and address parsing
 │   ├── redemptions/
 │   │   ├── route.ts            # Admin redemptions API
 │   │   │                       # - GET: Fetch all redemptions with filters
@@ -220,6 +252,19 @@ api/
 │   │                           # - Production domain fallback (creators.hoopgang.com)
 │   │                           # - Professional subject line (no emojis)
 │   │                           # - Debug logging for troubleshooting request data
+│   ├── lookup-tiktok/
+│   │   └── route.ts            # TikTok username lookup API (public)
+│   │                           # - POST: Look up TikTok creator by username
+│   │                           # - Returns masked data (name, address) for verification
+│   │                           # - Checks if already claimed
+│   │                           # - No authentication required
+│   └── claim-tiktok/
+│       └── route.ts            # TikTok creator claim API
+│                               # - POST: Claim TikTok import record and create account
+│                               # - Creates Firebase Auth account
+│                               # - Creates creator document with pre-filled data
+│                               # - Updates import status to 'claimed'
+│                               # - Links creator to TikTok import record
 │   ├── competitions/
 │   │   └── active/
 │   │       └── route.ts        # Public active competition API
@@ -329,6 +374,13 @@ creator/
 - `ProtectedRoute.tsx` - Route protection component
 - `index.ts` - Component exports
 
+#### Admin Components (`admin/`)
+- `TiktokCsvImporter.tsx` - CSV upload component for TikTok creator imports
+  - Drag-and-drop file upload
+  - CSV parsing and validation
+  - Batch import creation
+  - Error handling and reporting
+
 #### Creator Management Components (`creators/`)
 - `CreatorTable.tsx` - Table component for displaying creators with approve/deny/review actions
 - `FilterBar.tsx` - Filtering component for creators
@@ -383,6 +435,16 @@ creator/
   - Competition management functions
   - Leaderboard calculation and management
   - Rewards and redemptions system
+  - TikTok Creator Import functions:
+    - `normalizeTiktokUsername()` - Username normalization (lowercase, trim, remove @)
+    - `maskName()`, `maskAddress()` - Privacy masking for lookup API
+    - `lookupTiktokCreator()` - Public username lookup with masked data
+    - `claimTiktokCreator()` - Claim import and create creator account
+    - `createTiktokImportsBatch()` - Batch import creation from CSV
+    - `getAllTiktokImports()`, `getTiktokImportById()` - Import retrieval
+    - `updateTiktokImport()`, `deleteTiktokImport()` - Import management
+    - `getImportBatches()`, `createImportBatch()`, `updateImportBatch()` - Batch tracking
+    - `getTiktokImportStats()` - Import statistics
   - Week/month utility functions
 - `week-utils.ts` - Week and month utility functions
   - ISO week calculations (getCurrentWeek, getWeekString, etc.)
@@ -416,6 +478,9 @@ creator/
     - `height?: string` (optional)
     - `weight?: string` (optional)
     - Removed `phone` field
+    - `source: CreatorSource` - 'instagram', 'tiktok', or 'manual'
+    - `tiktokImportId?: string` - Reference to TikTok import record
+    - `tiktokUsername?: string` - TikTok Shop username
   - Shipping tracking types:
     - `ShippingStatus` - Tracking status enumeration
     - `TrackingEvent` - Individual tracking event
@@ -446,6 +511,28 @@ creator/
     - `V3VolumeStats` - Volume submission statistics
     - `V3MilestoneStats` - Milestone submission statistics
     - `V3CreatorStats` - Combined creator statistics
+  - TikTok Import types:
+    - `TiktokImportStatus` - 'available' | 'claimed' | 'expired'
+    - `TiktokCreatorImport` - TikTok creator import record from CSV
+      - TikTok identity (username, normalized/original)
+      - Personal info (fullName, phone)
+      - Shipping address (pre-filled from CSV)
+      - Product info (productOrdered, sizeOrdered, orderId, orderDate)
+      - Claim tracking (status, claimedByUid, claimedAt)
+      - Import metadata (importedAt, importBatchId)
+    - `ImportBatch` - Batch tracking for CSV imports
+      - Import stats (fileName, totalRows, importedCount, duplicateCount, errorCount)
+      - Error tracking array
+      - Metadata (importedBy, importedAt)
+    - `TiktokImportResult` - Result from CSV import API
+    - `TiktokLookupResult` - Public lookup result with masked data
+      - `found: boolean`
+      - `importId?: string` - Used when claiming
+      - `maskedName?: string` - "K**** L*****"
+      - `maskedAddress?: string` - "1983 G****** DR"
+      - `maskedCity?: string` - "Atlanta, GA 30341"
+      - `sizeOrdered?: Size`
+      - `alreadyClaimed?: boolean`
 
 ---
 
@@ -472,25 +559,32 @@ creator/
 
 ## File Statistics
 
-### Pages (13+ `page.tsx` files)
-- Root page, login, apply, forgot-password
-- Admin: creators list, creator detail, submissions list, submission review, volume leaderboard, GMV leaderboard
-- Creator: dashboard, submit, leaderboard, submissions history
+### Pages (16+ `page.tsx` files)
+- Root page, login, apply (general/tiktok/instagram), forgot-password
+- Admin: creators list, creator detail, submissions list, submission review, volume leaderboard, GMV leaderboard, TikTok imports
+- Creator: dashboard, submit, leaderboard, rewards, submissions history, request-product
 
-### API Routes (20+ files)
-- Auth: Email verification endpoint
+### API Routes (25+ files)
+- Auth: Email verification, TikTok lookup (public), TikTok claim endpoints
 - Email: Send email endpoint
 - Tracking API: POST, GET, DELETE handlers (simplified - no external API)
 - Webhooks: TrackingMore push notification handler
 - Competitions: Active competition endpoint (public)
 - Admin Competitions: Start, end, finalize competitions
+- Admin TikTok Imports: CSV import, batch management, creator lookup/update/delete
 - Submissions: Volume, milestone, history endpoints
 - Leaderboards: Volume, GMV leaderboard endpoints
 - Admin Submissions: Review and manage submissions
 - Admin Leaderboards: Finalize and manage leaderboards
+- Admin Rewards: CRUD operations for rewards
+- Admin Redemptions: List and update redemption status
+- Creator Rewards: Fetch available rewards and stats
+- Creator Redemptions: Fetch creator redemption history
+- Creator Stats: Fetch creator statistics
 
-### Components (33 files)
+### Components (34 files)
 - Auth: 2 files
+- Admin: 1 file (TiktokCsvImporter)
 - Creators: 4 files (3 components + barrel export)
 - UI: 27 files (buttons, cards, badges, animations, tracking UI, etc.)
 
@@ -673,6 +767,18 @@ creator/
     - Creator rewards browsing page
     - Reward image support
     - Status workflow management (pending → approved → fulfilled)
+
+14. **TikTok Creator Import System**
+    - CSV import from TikTok Shop orders
+    - Batch import tracking and statistics
+    - Pre-filled creator data (shipping address, product, size)
+    - Username normalization and deduplication
+    - Public username lookup with privacy masking
+    - Account claim flow for TikTok creators
+    - Import status management (available/claimed/expired)
+    - Bulk operations (edit, delete, status updates)
+    - Admin import management interface
+    - Creator source tracking (links creators to import records)
 
 ---
 
@@ -879,6 +985,45 @@ creator/
 - Content deadline automation (14 days post-delivery)
 - Simplified tracking API (removed external dependency)
 
+### TikTok Creator Import System (Latest)
+- **TikTok Import Admin Page** (`/admin/tiktok-imports`):
+  - CSV upload interface with drag-and-drop
+  - Import batch tracking and history
+  - Creator import list with filtering (status, search)
+  - Edit import records (shipping address, size, status)
+  - Bulk operations (select multiple, update status)
+  - Pagination and selection management
+  - Import statistics dashboard (total, claimed, available, expired)
+  - TikTok logo branding throughout
+- **TikTok Apply Flow** (`/apply/tiktok`):
+  - Three-step verification process
+  - Step 1: Username lookup (checks TikTok Shop imports)
+  - Step 2: Identity verification (shows masked shipping info)
+  - Step 3: Account creation and claim
+  - Pre-fills shipping address and product from order
+  - Links creator to TikTok import record via `tiktokImportId`
+- **TikTok API Routes**:
+  - `/api/admin/tiktok-imports` - CSV upload, import management, batch tracking
+  - `/api/auth/lookup-tiktok` - Public username lookup (returns masked data)
+  - `/api/auth/claim-tiktok` - Claim import and create creator account
+- **TikTok Firestore Functions**:
+  - Username normalization and masking utilities
+  - Import batch creation and tracking
+  - Lookup with privacy masking
+  - Account claim workflow
+  - Import statistics calculation
+- **TikTok Types**:
+  - `TiktokCreatorImport` - Import record structure
+  - `ImportBatch` - Batch tracking
+  - `TiktokImportStatus` - Status enumeration
+  - `TiktokLookupResult` - Public lookup response
+  - `TiktokImportResult` - CSV import response
+- **Creator Source Tracking**:
+  - `CreatorSource` type: 'instagram', 'tiktok', 'manual'
+  - `tiktokImportId` field links creator to import record
+  - `tiktokUsername` stored for reference
+  - Allows tracking of creator acquisition source
+
 ### Email System Professionalization (Latest)
 - **Email Layout Updates**:
   - Updated logo URL to use production domain (`https://creators.hoopgang.com/images/THG_logo_orange.png`)
@@ -1015,6 +1160,29 @@ creator/
   - Month utilities: Month string generation, period calculations
   - Time formatting: formatTimeRemaining, formatTimeUntilReset functions
 
+### TikTok Import & Application System (Latest)
+- **CSV Import System**:
+  - Supports TikTok Shop order export CSV format
+  - Column mapping: Order ID, Buyer Username, Recipient, Address, Product, Variation (Size)
+  - Size normalization (S, M, L, XL, XXL)
+  - Address parsing and validation
+  - Duplicate detection (by normalized username)
+  - Batch creation for auditing and tracking
+  - Error reporting with row numbers and reasons
+- **Privacy & Security**:
+  - Username lookup returns masked data only (first letter + asterisks)
+  - Masked name: "Kanii Lemons" → "K**** L*****"
+  - Masked address: "1983 GAINSBOROUGH DR" → "1983 G****** DR"
+  - Public API requires no authentication for lookup
+  - Claim endpoint requires account creation
+- **Import Management**:
+  - Status workflow: available → claimed → (optional: expired)
+  - Edit capabilities: update shipping address, size, status
+  - Bulk operations: select multiple imports, update status
+  - Search and filter: by status, username, name
+  - Pagination for large import lists
+  - Statistics tracking: total, claimed, available, expired counts
+
 ### Rewards & Redemptions Management System (Latest)
 - **Admin Rewards Management** (`/admin/rewards`):
   - Create, edit, and manage rewards
@@ -1045,14 +1213,6 @@ creator/
   - `/api/admin/redemptions` - List all redemptions with filters (GET)
   - `/api/admin/redemptions/[id]` - Get and update redemption status (GET, PUT)
   - `/api/creator/redemptions` - Fetch creator's redemption history (GET)
-- **Seed Script** (`scripts/seed-v3-rewards.ts`):
-  - Improved initialization with `getApps()` check to prevent duplicate initialization
-  - Path resolution for service account using `path.resolve()`
-  - Enhanced logging with progress indicators and emojis
-  - Better error handling with exit codes
-  - Default rewards for milestones (100k, 500k, 1m views) and volume leaderboard (top 3 ranks)
-  - Batch write operations for efficient Firestore updates
-  - Professional reward descriptions
 
 ### Dashboard V3 Stats Integration (Latest)
 - **Creator Dashboard** (`/creator/dashboard`):
@@ -1124,4 +1284,23 @@ creator/
   - Removed `icon` prop from all 5 FilterPill component calls
   - All linter errors resolved
   - Filter pills now work correctly without icon support
+
+### TikTok Integration Features (Latest)
+- **Creator Application Sources**:
+  - Three application paths: General (`/apply`), TikTok (`/apply/tiktok`), Instagram (`/apply/instagram`)
+  - Platform-specific branding and flows
+  - TikTok flow integrates with Shop import system
+  - Source tracking in creator records (`source` field)
+- **TikTok Import Collections**:
+  - `tiktokCreatorImports` - Individual creator import records
+  - `importBatches` - CSV import batch tracking
+  - Indexes for username lookup and status filtering
+- **Import Data Flow**:
+  1. Admin uploads TikTok Shop CSV via admin interface
+  2. System parses and normalizes usernames
+  3. Creates import batch and individual import records
+  4. Creators look up their username (public, masked data)
+  5. Creators verify identity using masked shipping info
+  6. Creators create account and claim import
+  7. Creator record created with pre-filled data and linked to import
 

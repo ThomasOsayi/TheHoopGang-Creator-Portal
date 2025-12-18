@@ -11,12 +11,6 @@ import {
 } from '@/lib/firestore';
 import { db } from '@/lib/firebase';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { Resend } from 'resend';
-import { render } from '@react-email/render';
-import * as React from 'react';
-import { VerifyEmailTemplate } from '@/lib/email/templates/verify-email';
-
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 /**
  * POST /api/auth/claim-tiktok
@@ -183,7 +177,7 @@ export async function POST(request: NextRequest) {
         id: firebaseUser.uid,
         email,
         role: 'creator',
-        creatorDocId: creatorId,
+        creatorId: creatorId,
         createdAt: serverTimestamp(),
       });
       
@@ -202,40 +196,13 @@ export async function POST(request: NextRequest) {
       // Non-critical, the import will just remain "available" but user is created
     }
 
-    // Step 6: Send verification email
-    try {
-      const verificationLink = await adminAuth.generateEmailVerificationLink(email, {
-        url: process.env.NEXT_PUBLIC_APP_URL 
-          ? `${process.env.NEXT_PUBLIC_APP_URL}/creator/dashboard`
-          : 'https://creators.hoopgang.com/creator/dashboard',
-        handleCodeInApp: true,
-      });
-
-      const emailHtml = await render(
-        React.createElement(VerifyEmailTemplate, {
-          creatorName: importRecord.fullName,
-          verificationLink,
-        })
-      );
-
-      await resend.emails.send({
-        from: process.env.EMAIL_FROM || 'HoopGang <team@thehoopgang.xyz>',
-        to: email,
-        subject: 'Verify your email for HoopGang',
-        html: emailHtml,
-      });
-
-      console.log('Verification email sent to:', email);
-    } catch (emailError) {
-      console.error('Failed to send verification email:', emailError);
-      // Non-critical, user can request resend later
-    }
-
     // Success!
+    // Note: Email verification is handled client-side via /api/auth/send-verification
     return NextResponse.json({
       success: true,
       creatorId,
       userId: firebaseUser.uid,
+      fullName: importRecord.fullName,
       message: 'Account created successfully! Please check your email to verify your account.',
     });
 

@@ -19,6 +19,7 @@ import { getCreatorByUserId } from '@/lib/firestore';
 import { getCurrentWeek, getWeekEnd } from '@/lib/week-utils';
 import { Creator } from '@/types';
 import { auth } from '@/lib/firebase';
+import { ProtectedRoute } from '@/components/auth';
 
 // TikTok Icon SVG Component
 function TikTokIcon({ className = "w-5 h-5" }: { className?: string }) {
@@ -251,11 +252,12 @@ export default function SubmitContentPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 relative overflow-hidden">
-      <Navbar />
-      
-      {/* Background Orbs */}
-      <BackgroundOrbs colors={['orange', 'purple', 'orange']} />
+    <ProtectedRoute allowedRoles={['creator']}>
+      <div className="min-h-screen bg-zinc-950 relative overflow-hidden">
+        <Navbar />
+        
+        {/* Background Orbs */}
+        <BackgroundOrbs colors={['orange', 'purple', 'orange']} />
       
       {/* Confetti on successful submission */}
       <Confetti show={showConfetti} />
@@ -552,6 +554,7 @@ export default function SubmitContentPage() {
           </Link>
         </div>
       </main>
-    </div>
+      </div>
+    </ProtectedRoute>
   );
 }

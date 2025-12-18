@@ -5,6 +5,8 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 import { useAuth } from '@/lib/auth-context';
 import { getCreatorByUserId } from '@/lib/firestore';
 import { useToast } from '@/components/ui';
@@ -167,6 +169,8 @@ function TiktokApplyContent() {
     setClaimLoading(true);
 
     try {
+      console.log('1. Starting claim request...');
+      
       const response = await fetch('/api/auth/claim-tiktok', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -179,26 +183,53 @@ function TiktokApplyContent() {
       });
 
       const data = await response.json();
+      console.log('2. Claim response:', { success: data.success, userId: data.userId, fullName: data.fullName });
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to create account');
       }
 
-      // Success!
-      setSuccess(true);
-      showToast('Account created! Check your email to verify.', 'success');
+      console.log('3. Signing in user...');
+      // Sign in the user on the client side
+      await signInWithEmailAndPassword(auth, email.trim(), password);
+      console.log('4. User signed in, sending verification email...');
+
+      // Send verification email via the SAME endpoint as Instagram
+      const verifyResponse = await fetch('/api/auth/send-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: data.userId,
+          email: email.trim(),
+          fullName: data.fullName, // Use from API response
+          source: 'tiktok',
+        }),
+      });
+      
+      console.log('5. Verification API response status:', verifyResponse.status);
+      const verifyData = await verifyResponse.json();
+      console.log('6. Verification API response:', verifyData);
+
+      if (!verifyResponse.ok) {
+        console.error('Failed to send verification email:', verifyData);
+        // Don't block - user can resend from verify page
+      }
 
       // Refresh auth context
       if (refreshUserData) {
         await refreshUserData();
       }
 
-      // Redirect to dashboard after a moment
+      // Success!
+      setSuccess(true);
+      showToast('Account created! Check your email to verify.', 'success');
+
+      // Redirect to email verification page
       setTimeout(() => {
-        router.push('/creator/dashboard');
+        router.push('/verify-email');
       }, 2000);
     } catch (err) {
-      console.error('Claim error:', err);
+      console.error('Error in handleCreateAccount:', err);
       setError(err instanceof Error ? err.message : 'Failed to create account');
     } finally {
       setClaimLoading(false);

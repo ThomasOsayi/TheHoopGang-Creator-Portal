@@ -93,6 +93,9 @@ export function Navbar() {
     }
   };
 
+  // Check if creator has verified email
+  const isVerifiedCreator = user && !isAdmin && userData?.creatorId && user.emailVerified;
+
   // Don't show admin link to non-admins
   const navLinks = [
     { href: '/apply', label: 'Apply', icon: '📝', show: true },
@@ -103,10 +106,10 @@ export function Navbar() {
     { href: '/admin/leaderboard/gmv', label: 'GMV Admin', icon: '💰', show: isAdmin },
     { href: '/admin/redemptions', label: 'Redemptions', icon: '💰', show: isAdmin },
     { href: '/admin/tiktok-imports', label: 'TikTok Imports', icon: '🎵', show: isAdmin },
-    { href: '/creator/dashboard', label: 'Dashboard', icon: '🎯', show: user && !isAdmin && userData?.creatorId },
-    { href: '/creator/submit', label: 'Submit Content', icon: '📤', show: user && !isAdmin && userData?.creatorId },
-    { href: '/creator/leaderboard', label: 'Leaderboard', icon: '🏆', show: user && (isAdmin || userData?.creatorId) },
-    { href: '/creator/rewards', label: 'Rewards', icon: '🎁', show: user && !isAdmin && userData?.creatorId },
+    { href: '/creator/dashboard', label: 'Dashboard', icon: '🎯', show: isVerifiedCreator },
+    { href: '/creator/submit', label: 'Submit Content', icon: '📤', show: isVerifiedCreator },
+    { href: '/creator/leaderboard', label: 'Leaderboard', icon: '🏆', show: user && (isAdmin || (userData?.creatorId && user.emailVerified)) },
+    { href: '/creator/rewards', label: 'Rewards', icon: '🎁', show: isVerifiedCreator },
   ].filter(link => link.show);
 
   return (

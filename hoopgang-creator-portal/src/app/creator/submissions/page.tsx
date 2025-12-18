@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { Navbar, AnimatedCounter, BackgroundOrbs, FilterPill } from '@/components/ui';
 import { auth } from '@/lib/firebase';
 import { V3ContentSubmission, V3SubmissionType, V3SubmissionStatus } from '@/types';
+import { ProtectedRoute } from '@/components/auth';
 
 type FilterType = 'all' | 'approved' | 'pending' | 'rejected' | 'milestone';
 
@@ -327,11 +328,12 @@ export default function SubmissionHistoryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 relative overflow-hidden">
-      <Navbar />
-      
-      {/* Background Orbs */}
-      <BackgroundOrbs colors={['blue', 'orange', 'purple']} />
+    <ProtectedRoute allowedRoles={['creator']}>
+      <div className="min-h-screen bg-zinc-950 relative overflow-hidden">
+        <Navbar />
+        
+        {/* Background Orbs */}
+        <BackgroundOrbs colors={['blue', 'orange', 'purple']} />
 
       <main className="relative z-10 max-w-5xl mx-auto px-4 py-8">
         {/* Header */}
@@ -587,6 +589,7 @@ export default function SubmissionHistoryPage() {
           </div>
         )}
       </main>
-    </div>
+      </div>
+    </ProtectedRoute>
   );
 }

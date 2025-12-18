@@ -13,17 +13,17 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     
-    // 👇 Add this debug logging
     console.log('Received verification request:', {
       userId: body.userId,
       email: body.email,
       fullName: body.fullName,
+      source: body.source,
       hasUserId: !!body.userId,
       hasEmail: !!body.email,
       hasFullName: !!body.fullName,
     });
 
-    const { userId, email, fullName } = body;
+    const { userId, email, fullName, source } = body;
 
     if (!userId || !email || !fullName) {
       console.log('Missing fields:', { userId: !!userId, email: !!email, fullName: !!fullName });
@@ -33,13 +33,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Determine redirect URL based on source
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://creators.hoopgang.com';
+    let redirectUrl: string;
+    
+    if (source === 'tiktok') {
+      // TikTok users go to dashboard (their application is already complete)
+      redirectUrl = `${baseUrl}/creator/dashboard`;
+    } else {
+      // Instagram/other users go back to their application flow
+      redirectUrl = `${baseUrl}/apply/instagram`;
+    }
+
     // Generate verification link using Firebase Admin
     const verificationLink = await adminAuth.generateEmailVerificationLink(email, {
-      url: 'https://thehoopgang.xyz/apply',
+      url: redirectUrl,
       handleCodeInApp: true,
     });
 
-    // Render React component to HTML using JSX
+    // Render React component to HTML
     const emailHtml = await render(
       React.createElement(VerifyEmailTemplate, {
         creatorName: fullName,
@@ -48,7 +60,6 @@ export async function POST(request: NextRequest) {
     );
 
     // Send branded email via Resend
-    // ✅ Fixed: Professional subject line (no emoji)
     const { error } = await resend.emails.send({
       from: process.env.EMAIL_FROM || 'HoopGang <team@thehoopgang.xyz>',
       to: email,
@@ -73,4 +84,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

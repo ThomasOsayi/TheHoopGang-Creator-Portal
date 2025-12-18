@@ -14,6 +14,7 @@ import {
   Skeleton,
 } from '@/components/ui';
 import { LeaderboardEntry } from '@/types';
+import { ProtectedRoute } from '@/components/auth';
 
 interface ActiveCompetition {
   id: string;
@@ -162,11 +163,12 @@ export default function LeaderboardPage() {
   const isCurrentUser = (creatorId: string) => userData?.creatorId === creatorId;
 
   return (
-    <div className="min-h-screen bg-zinc-950 relative overflow-hidden">
-      <Navbar />
-      
-      {/* Background Orbs */}
-      <BackgroundOrbs colors={['orange', 'purple', 'orange']} />
+    <ProtectedRoute allowedRoles={['creator']}>
+      <div className="min-h-screen bg-zinc-950 relative overflow-hidden">
+        <Navbar />
+        
+        {/* Background Orbs */}
+        <BackgroundOrbs colors={['orange', 'purple', 'orange']} />
 
       <main className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 py-8">
         {/* Header */}
@@ -451,6 +453,7 @@ export default function LeaderboardPage() {
           </GlowCard>
         )}
       </main>
-    </div>
+      </div>
+    </ProtectedRoute>
   );
 }
