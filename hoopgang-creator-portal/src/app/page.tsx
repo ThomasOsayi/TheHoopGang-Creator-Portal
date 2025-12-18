@@ -1,4 +1,5 @@
 // src/app/page.tsx
+'use client';
 
 import Link from 'next/link';
 import Image from 'next/image';
@@ -13,6 +14,7 @@ export default function HomePage() {
           {/* Gradient orbs */}
           <div className="absolute top-1/4 -left-32 w-96 h-96 bg-orange-500/20 rounded-full blur-3xl animate-pulse" />
           <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse delay-1000" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-orange-500/5 rounded-full blur-3xl" />
           
           {/* Grid pattern overlay */}
           <div 
@@ -36,10 +38,15 @@ export default function HomePage() {
                 Now accepting creator applications
               </div>
 
-              {/* Headline */}
+              {/* Headline with Shimmer Effect */}
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white leading-tight mb-6">
                 Join the{' '}
-                <span className="bg-gradient-to-r from-orange-500 via-orange-400 to-yellow-500 bg-clip-text text-transparent">
+                <span 
+                  className="bg-gradient-to-r from-orange-500 via-amber-400 to-orange-500 bg-clip-text text-transparent animate-shimmer-text"
+                  style={{
+                    backgroundSize: '200% auto',
+                  }}
+                >
                   HoopGang
                 </span>{' '}
                 Creator Squad
@@ -47,7 +54,7 @@ export default function HomePage() {
 
               {/* Subheadline */}
               <p className="text-lg sm:text-xl text-white/60 mb-8 max-w-xl mx-auto lg:mx-0">
-                Get free gear. Create fire content. Build your brand. Join 50+ basketball creators repping the freshest hoops gear on TikTok.
+                Get refundable gear. Create fire content. Build your brand. Join 50+ basketball creators repping the freshest hoops gear on TikTok.
               </p>
 
               {/* CTA Buttons */}
@@ -115,7 +122,7 @@ export default function HomePage() {
                 </div>
                 
                 {/* Floating Stats Card - Top Right */}
-                <div className="absolute -top-4 -right-4 bg-orange-500 rounded-xl p-3 shadow-lg shadow-orange-500/30">
+                <div className="absolute -top-4 -right-4 bg-orange-500 rounded-xl p-3 shadow-lg shadow-orange-500/30 animate-float">
                   <Image
                     src="/images/THG_logo_white.png"
                     alt="THG"
@@ -125,14 +132,14 @@ export default function HomePage() {
                 </div>
                 
                 {/* Floating Stats Card - Right Side */}
-                <div className="absolute top-1/4 -right-8 bg-zinc-800/90 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/10">
+                <div className="absolute top-1/4 -right-8 bg-zinc-800/90 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/10 animate-float-delayed">
                   <p className="text-orange-400 font-bold text-xl">30K+</p>
                   <p className="text-white/60 text-xs">Global Hoopers</p>
                 </div>
                 
                 {/* Floating Card - Bottom */}
-                <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-zinc-800/90 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/10">
-                  <p className="text-white font-semibold text-sm">FREE GEAR</p>
+                <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-zinc-800/90 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/10 animate-float-slow">
+                  <p className="text-white font-semibold text-sm">REFUNDABLE GEAR</p>
                   <p className="text-white/60 text-xs">No strings attached</p>
                 </div>
               </div>
@@ -159,6 +166,8 @@ export default function HomePage() {
             <p className="text-white/60 text-lg max-w-2xl mx-auto">
               From application to getting paid — here's your journey with HoopGang
             </p>
+            {/* Decorative underline */}
+            <div className="mt-4 mx-auto w-24 h-1 rounded-full bg-gradient-to-r from-transparent via-orange-500/50 to-transparent" />
           </div>
 
           {/* Steps Grid */}
@@ -174,7 +183,7 @@ export default function HomePage() {
                 step: '02',
                 icon: '📦',
                 title: 'Get Gear',
-                description: 'Once approved, we ship you free HoopGang gear — no strings attached.',
+                description: 'Once approved, we ship you refundable HoopGang gear — no strings attached.',
               },
               {
                 step: '03',
@@ -191,16 +200,19 @@ export default function HomePage() {
             ].map((item, index) => (
               <div
                 key={index}
-                className="group relative bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6 hover:bg-white/10 hover:border-orange-500/30 transition-all duration-300"
+                className="group relative bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6 transition-all duration-300 hover:bg-white/10 hover:border-orange-500/40 hover:shadow-[0_0_30px_-5px_rgba(249,115,22,0.3)] hover:-translate-y-1"
               >
                 {/* Step number */}
-                <div className="absolute -top-3 -right-3 w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                <div className="absolute -top-3 -right-3 w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-lg shadow-orange-500/30">
                   {item.step}
                 </div>
                 
-                {/* Icon */}
-                <div className="text-4xl mb-4 transition-transform group-hover:scale-110">
-                  {item.icon}
+                {/* Icon with glow on hover */}
+                <div className="relative mb-4">
+                  <div className="absolute inset-0 bg-orange-500/30 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-all duration-300" />
+                  <div className="relative text-4xl transition-transform duration-300 group-hover:scale-110">
+                    {item.icon}
+                  </div>
                 </div>
                 
                 {/* Content */}
@@ -218,25 +230,26 @@ export default function HomePage() {
       </section>
 
       {/* Stats Section */}
-      <section className="py-12 border-y border-white/10">
-        <div className="max-w-7xl mx-auto px-4">
+      <section className="py-16 border-y border-white/10 relative overflow-hidden">
+        {/* Subtle background glow */}
+        <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 via-transparent to-purple-500/5" />
+        
+        <div className="relative max-w-7xl mx-auto px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            <div className="text-center">
-              <p className="text-3xl md:text-4xl font-bold text-orange-400">30K+</p>
-              <p className="text-white/60 text-sm mt-1">Global Hoopers</p>
-            </div>
-            <div className="text-center">
-              <p className="text-3xl md:text-4xl font-bold text-white">25+</p>
-              <p className="text-white/60 text-sm mt-1">Countries Served</p>
-            </div>
-            <div className="text-center">
-              <p className="text-3xl md:text-4xl font-bold text-purple-400">4.9★</p>
-              <p className="text-white/60 text-sm mt-1">Customer Rating</p>
-            </div>
-            <div className="text-center">
-              <p className="text-3xl md:text-4xl font-bold text-white">100%</p>
-              <p className="text-white/60 text-sm mt-1">Free Gear</p>
-            </div>
+            {[
+              { value: '30K+', label: 'Global Hoopers', color: 'text-orange-400', glowColor: 'hover:shadow-orange-500/20' },
+              { value: '25+', label: 'Countries Served', color: 'text-purple-400', glowColor: 'hover:shadow-purple-500/20' },
+              { value: '4.9★', label: 'Customer Rating', color: 'text-amber-400', glowColor: 'hover:shadow-amber-500/20' },
+              { value: '100%', label: 'Refundable Gear', color: 'text-green-400', glowColor: 'hover:shadow-green-500/20' },
+            ].map((stat, index) => (
+              <div 
+                key={index} 
+                className={`text-center p-6 rounded-2xl transition-all duration-300 hover:bg-white/5 hover:shadow-[0_0_40px_-10px] ${stat.glowColor} cursor-default`}
+              >
+                <p className={`text-3xl md:text-4xl font-bold ${stat.color}`}>{stat.value}</p>
+                <p className="text-white/60 text-sm mt-1">{stat.label}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -250,49 +263,69 @@ export default function HomePage() {
               What You Get
             </h2>
             <p className="text-white/60 text-lg max-w-2xl mx-auto">
-              More than just free gear — join a community of creators leveling up together
+              More than just refundable gear — join a community of creators leveling up together
             </p>
+            {/* Decorative underline */}
+            <div className="mt-4 mx-auto w-24 h-1 rounded-full bg-gradient-to-r from-transparent via-orange-500/50 to-transparent" />
           </div>
 
-          {/* Perks Grid */}
+          {/* Perks Grid with Individual Colored Glows */}
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
               {
                 icon: '👕',
-                title: 'Free Premium Gear',
+                title: 'Refundable Premium Gear',
                 description: 'Reversible shorts, hoodies, tees — the freshest basketball apparel delivered to your door.',
+                borderColor: 'border-orange-500/20',
+                hoverBorder: 'hover:border-orange-500/40',
+                glowColor: 'hover:shadow-[0_0_30px_-5px_rgba(249,115,22,0.25)]',
               },
               {
                 icon: '⭐',
                 title: 'Get Featured',
                 description: 'Top creators get featured on @thehoopgang with 100K+ followers watching.',
+                borderColor: 'border-amber-500/20',
+                hoverBorder: 'hover:border-amber-500/40',
+                glowColor: 'hover:shadow-[0_0_30px_-5px_rgba(245,158,11,0.25)]',
               },
               {
                 icon: '🎁',
                 title: 'Early Access Drops',
                 description: 'Be the first to rock new collections before anyone else.',
+                borderColor: 'border-purple-500/20',
+                hoverBorder: 'hover:border-purple-500/40',
+                glowColor: 'hover:shadow-[0_0_30px_-5px_rgba(168,85,247,0.25)]',
               },
               {
                 icon: '💰',
                 title: 'Paid Opportunities',
                 description: 'Unlock paid collaborations and ambassador programs.',
+                borderColor: 'border-green-500/20',
+                hoverBorder: 'hover:border-green-500/40',
+                glowColor: 'hover:shadow-[0_0_30px_-5px_rgba(34,197,94,0.25)]',
               },
               {
                 icon: '🤝',
                 title: 'Creator Community',
                 description: 'Connect with other basketball content creators and grow together.',
+                borderColor: 'border-pink-500/20',
+                hoverBorder: 'hover:border-pink-500/40',
+                glowColor: 'hover:shadow-[0_0_30px_-5px_rgba(236,72,153,0.25)]',
               },
               {
                 icon: '📈',
                 title: 'Grow Your Brand',
                 description: 'Level up your content with quality gear and brand partnerships.',
+                borderColor: 'border-blue-500/20',
+                hoverBorder: 'hover:border-blue-500/40',
+                glowColor: 'hover:shadow-[0_0_30px_-5px_rgba(59,130,246,0.25)]',
               },
             ].map((perk, index) => (
               <div
                 key={index}
-                className="group bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6 hover:bg-white/10 hover:border-orange-500/30 transition-all duration-300 hover:-translate-y-1"
+                className={`group bg-zinc-900/50 backdrop-blur border ${perk.borderColor} rounded-2xl p-6 transition-all duration-300 hover:bg-zinc-900/70 ${perk.hoverBorder} ${perk.glowColor} hover:-translate-y-1`}
               >
-                <div className="w-12 h-12 bg-gradient-to-br from-orange-500/20 to-purple-500/20 rounded-xl flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">
+                <div className="w-12 h-12 bg-gradient-to-br from-orange-500/20 to-purple-500/20 rounded-xl flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform duration-300">
                   {perk.icon}
                 </div>
                 <h3 className="text-lg font-bold text-white mb-2">{perk.title}</h3>
@@ -313,80 +346,104 @@ export default function HomePage() {
             <p className="text-white/60 max-w-2xl mx-auto">
               Real creators. Real hoopers. Real community.
             </p>
+            {/* Decorative underline */}
+            <div className="mt-4 mx-auto w-24 h-1 rounded-full bg-gradient-to-r from-transparent via-orange-500/50 to-transparent" />
           </div>
           
-          {/* Masonry-style Gallery */}
+          {/* Masonry-style Gallery with Enhanced Hover Effects */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {/* Large feature image */}
-            <div className="col-span-2 md:col-span-1 md:row-span-2 relative group overflow-hidden rounded-2xl">
+            <div className="col-span-2 md:col-span-1 md:row-span-2 relative group overflow-hidden rounded-2xl cursor-pointer">
               <Image
                 src="/images/creators/team_photo.jpg"
                 alt="HoopGang Team"
                 width={408}
                 height={512}
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
               />
+              {/* Gradient overlay */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              {/* Glow border */}
+              <div className="absolute inset-0 rounded-2xl border-2 border-transparent group-hover:border-orange-500/60 transition-all duration-300 pointer-events-none group-hover:shadow-[inset_0_0_30px_rgba(249,115,22,0.2)]" />
             </div>
             
             {/* Grid images */}
-            <div className="relative group overflow-hidden rounded-2xl aspect-square">
+            <div className="relative group overflow-hidden rounded-2xl aspect-square cursor-pointer">
               <Image
                 src="/images/creators/purple_crew.jpg"
                 alt="HoopGang Crew"
                 width={406}
                 height={406}
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <div className="absolute inset-0 rounded-2xl border-2 border-transparent group-hover:border-orange-500/60 transition-all duration-300 pointer-events-none group-hover:shadow-[inset_0_0_30px_rgba(249,115,22,0.2)]" />
             </div>
             
-            <div className="relative group overflow-hidden rounded-2xl aspect-square">
+            <div className="relative group overflow-hidden rounded-2xl aspect-square cursor-pointer">
               <Image
                 src="/images/creators/outdoor_crew.jpg"
                 alt="HoopGang Outdoor"
                 width={405}
                 height={405}
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <div className="absolute inset-0 rounded-2xl border-2 border-transparent group-hover:border-orange-500/60 transition-all duration-300 pointer-events-none group-hover:shadow-[inset_0_0_30px_rgba(249,115,22,0.2)]" />
             </div>
             
-            <div className="relative group overflow-hidden rounded-2xl aspect-[3/4]">
+            <div className="relative group overflow-hidden rounded-2xl aspect-[3/4] cursor-pointer">
               <Image
                 src="/images/creators/striped_duo.jpg"
                 alt="HoopGang Duo"
                 width={642}
                 height={800}
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <div className="absolute inset-0 rounded-2xl border-2 border-transparent group-hover:border-orange-500/60 transition-all duration-300 pointer-events-none group-hover:shadow-[inset_0_0_30px_rgba(249,115,22,0.2)]" />
             </div>
             
-            <div className="relative group overflow-hidden rounded-2xl aspect-square">
+            <div className="relative group overflow-hidden rounded-2xl aspect-square cursor-pointer">
               <Image
                 src="/images/creators/creator_stretch.jpg"
                 alt="HoopGang Creator"
                 width={225}
                 height={239}
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <div className="absolute inset-0 rounded-2xl border-2 border-transparent group-hover:border-orange-500/60 transition-all duration-300 pointer-events-none group-hover:shadow-[inset_0_0_30px_rgba(249,115,22,0.2)]" />
             </div>
           </div>
         </div>
       </section>
 
-      {/* Final CTA Section */}
+      {/* Final CTA Section with Enhanced Glow */}
       <section className="py-24 px-4 sm:px-6">
         <div className="max-w-4xl mx-auto text-center">
-          <div className="bg-gradient-to-br from-orange-500/20 via-purple-500/10 to-orange-500/20 border border-orange-500/20 rounded-3xl p-8 sm:p-12 relative overflow-hidden">
+          <div 
+            className="relative border border-orange-500/30 rounded-3xl p-8 sm:p-12 overflow-hidden transition-all duration-500 hover:shadow-[0_0_80px_-20px_rgba(249,115,22,0.4)] hover:border-orange-500/50"
+            style={{
+              background: 'linear-gradient(135deg, rgba(249, 115, 22, 0.15), rgba(168, 85, 247, 0.1), rgba(249, 115, 22, 0.1))',
+              boxShadow: '0 0 60px -20px rgba(249, 115, 22, 0.3)',
+            }}
+          >
+            {/* Animated background shimmer */}
+            <div 
+              className="absolute inset-0 opacity-30 pointer-events-none"
+              style={{
+                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)',
+                animation: 'shimmer-bg 3s ease-in-out infinite',
+              }}
+            />
+            
             {/* Background decoration */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/10 rounded-full blur-3xl" />
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl" />
             
             <div className="relative">
-              <div className="mb-6">
+              <div className="mb-6 animate-float">
                 <Image
                   src="/images/THG_logo_orange.png"
                   alt="HoopGang"
@@ -399,11 +456,11 @@ export default function HomePage() {
                 Ready to Join the Squad?
               </h2>
               <p className="text-white/60 text-lg mb-8 max-w-xl mx-auto">
-                Applications are open. Get your free gear and start creating content that matters.
+                Applications are open. Get your refundable gear and start creating content that matters.
               </p>
               <Link
                 href="/apply"
-                className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-bold text-lg rounded-xl hover:shadow-xl hover:shadow-orange-500/25 transition-all duration-300 hover:scale-105"
+                className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-bold text-lg rounded-xl hover:shadow-xl hover:shadow-orange-500/30 transition-all duration-300 hover:scale-105"
               >
                 Apply Now
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -461,6 +518,52 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
+
+      {/* Global Styles for Animations */}
+      <style jsx global>{`
+        @keyframes shimmer-text {
+          0% { background-position: 0% center; }
+          100% { background-position: 200% center; }
+        }
+        
+        @keyframes shimmer-bg {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+        
+        @keyframes float {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-10px); }
+        }
+        
+        @keyframes float-delayed {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-8px); }
+        }
+        
+        @keyframes float-slow {
+          0%, 100% { transform: translateX(-50%) translateY(0); }
+          50% { transform: translateX(-50%) translateY(-6px); }
+        }
+        
+        .animate-shimmer-text {
+          animation: shimmer-text 3s linear infinite;
+        }
+        
+        .animate-float {
+          animation: float 3s ease-in-out infinite;
+        }
+        
+        .animate-float-delayed {
+          animation: float-delayed 3s ease-in-out infinite;
+          animation-delay: 1s;
+        }
+        
+        .animate-float-slow {
+          animation: float-slow 4s ease-in-out infinite;
+          animation-delay: 0.5s;
+        }
+      `}</style>
     </div>
   );
 }

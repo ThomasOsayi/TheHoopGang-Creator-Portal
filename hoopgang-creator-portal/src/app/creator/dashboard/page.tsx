@@ -540,7 +540,7 @@ export default function CreatorDashboardPage() {
               {/* Left Column - Collaboration Details (2/3 on desktop) */}
               <div className="lg:col-span-2 space-y-6">
                 {/* Your Collaboration Card */}
-                <GlowCard glowColor="orange" delay="0.1s">
+                <GlowCard glowColor="orange" delay="0.1s" className="hover:border-orange-500/30 hover:shadow-[0_0_30px_-5px_rgba(249,115,22,0.2)]">
                   <div className="flex items-center justify-between mb-6">
                     <h3 className="text-lg font-semibold text-white flex items-center gap-2">
                       <span>📦</span> Your Collaboration
@@ -677,7 +677,7 @@ export default function CreatorDashboardPage() {
               <div className="space-y-6">
                 {/* This Week Stats - With Orange Gradient Background */}
                 <div 
-                  className="bg-gradient-to-br from-orange-500/10 to-amber-500/5 border border-orange-500/20 rounded-2xl p-6 transition-all duration-300 ease-out hover:shadow-glow-orange hover:border-orange-500/40 hover:scale-[1.01] hover:-translate-y-1 animate-fade-in-up"
+                  className="bg-gradient-to-br from-orange-500/10 to-amber-500/5 border border-orange-500/20 rounded-2xl p-6 transition-all duration-300 ease-out hover:shadow-glow-orange hover:border-orange-500/40 hover:scale-[1.01] hover:-translate-y-1 hover:border-orange-500/20 hover:shadow-[0_0_20px_-5px_rgba(249,115,22,0.15)] animate-fade-in-up"
                   style={{ animationDelay: '0.3s' }}
                 >
                   <div className="flex items-center justify-between mb-4">
@@ -741,7 +741,7 @@ export default function CreatorDashboardPage() {
                 </div>
 
                 {/* Rewards Summary */}
-                <GlowCard glowColor="green" delay="0.4s">
+                <GlowCard glowColor="green" delay="0.4s" className="hover:border-green-500/20 hover:shadow-[0_0_20px_-5px_rgba(34,197,94,0.15)]">
                   <h3 className="text-lg font-semibold text-white flex items-center gap-2 mb-4">
                     <span>💰</span> Rewards
                   </h3>
@@ -779,7 +779,7 @@ export default function CreatorDashboardPage() {
                 </GlowCard>
 
                 {/* Pro Tips */}
-                <GlowCard glowColor="purple" delay="0.5s">
+                <GlowCard glowColor="purple" delay="0.5s" className="hover:border-purple-500/20 hover:shadow-[0_0_20px_-5px_rgba(168,85,247,0.15)]">
                   <h3 className="text-lg font-semibold text-white flex items-center gap-2 mb-4">
                     <span className="animate-pulse">💡</span> Pro Tips
                   </h3>

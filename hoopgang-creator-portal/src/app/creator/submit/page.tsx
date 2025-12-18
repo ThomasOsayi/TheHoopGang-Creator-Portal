@@ -324,7 +324,7 @@ export default function SubmitContentPage() {
 
         {/* Stats Row - 3 Large Cards */}
         <div className="grid grid-cols-3 gap-4 mb-8">
-          <GlowCard glowColor="orange" delay="0.1s" className="text-center py-8">
+          <GlowCard glowColor="orange" delay="0.1s" className="text-center py-8 hover:border-green-500/30 hover:shadow-[0_0_25px_-5px_rgba(34,197,94,0.25)]">
             <div className="text-4xl font-bold text-white mb-2">
               {statsLoading ? (
                 <Skeleton className="w-12 h-10 mx-auto" />
@@ -335,7 +335,7 @@ export default function SubmitContentPage() {
             <div className="text-zinc-400">This Week</div>
           </GlowCard>
           
-          <GlowCard glowColor="orange" delay="0.15s" className="text-center py-8 border-orange-500/30">
+          <GlowCard glowColor="orange" delay="0.15s" className="text-center py-8 border-orange-500/30 hover:border-amber-500/30 hover:shadow-[0_0_25px_-5px_rgba(245,158,11,0.25)]">
             <div className="text-4xl font-bold text-orange-400 mb-2">
               {statsLoading ? (
                 <Skeleton className="w-16 h-10 mx-auto" />
@@ -353,7 +353,7 @@ export default function SubmitContentPage() {
             )}
           </GlowCard>
           
-          <GlowCard glowColor="orange" delay="0.2s" className="text-center py-8">
+          <GlowCard glowColor="orange" delay="0.2s" className="text-center py-8 hover:border-blue-500/30 hover:shadow-[0_0_25px_-5px_rgba(59,130,246,0.25)]">
             <div className="text-4xl font-bold text-white mb-2">
               {statsLoading ? (
                 <Skeleton className="w-12 h-10 mx-auto" />
@@ -466,38 +466,32 @@ export default function SubmitContentPage() {
 
           <div className="space-y-3">
             <Link href="/creator/milestones" className="block">
-              <div className="flex items-center justify-between p-4 bg-zinc-800/30 rounded-xl hover:bg-zinc-800/50 transition-colors">
+              <div className="flex items-center justify-between p-3 bg-zinc-800/30 rounded-xl transition-all duration-300 hover:bg-zinc-800/50 hover:translate-x-1">
                 <div className="flex items-center gap-3">
-                  <div className="text-2xl">🥉</div>
-                  <div>
-                    <div className="text-white font-medium">100K Views</div>
-                  </div>
+                  <span className="text-2xl">🥉</span>
+                  <span className="text-white">100K Views</span>
                 </div>
-                <span className="text-green-400">$10 store credit</span>
+                <span className="text-green-400 font-medium">$10 store credit</span>
               </div>
             </Link>
 
             <Link href="/creator/milestones" className="block">
-              <div className="flex items-center justify-between p-4 bg-zinc-800/30 rounded-xl hover:bg-zinc-800/50 transition-colors">
+              <div className="flex items-center justify-between p-3 bg-zinc-800/30 rounded-xl transition-all duration-300 hover:bg-zinc-800/50 hover:translate-x-1">
                 <div className="flex items-center gap-3">
-                  <div className="text-2xl">🥈</div>
-                  <div>
-                    <div className="text-white font-medium">500K Views</div>
-                  </div>
+                  <span className="text-2xl">🥈</span>
+                  <span className="text-white">500K Views</span>
                 </div>
-                <span className="text-green-400">$25 + free product</span>
+                <span className="text-green-400 font-medium">$25 + free product</span>
               </div>
             </Link>
 
             <Link href="/creator/milestones" className="block">
-              <div className="flex items-center justify-between p-4 bg-zinc-800/30 rounded-xl hover:bg-zinc-800/50 transition-colors">
+              <div className="flex items-center justify-between p-3 bg-zinc-800/30 rounded-xl transition-all duration-300 hover:bg-zinc-800/50 hover:translate-x-1">
                 <div className="flex items-center gap-3">
-                  <div className="text-2xl">🥇</div>
-                  <div>
-                    <div className="text-white font-medium">1M+ Views</div>
-                  </div>
+                  <span className="text-2xl">🥇</span>
+                  <span className="text-white">1M+ Views</span>
                 </div>
-                <span className="text-green-400">$50 + merch pack</span>
+                <span className="text-green-400 font-medium">$50 + merch pack</span>
               </div>
             </Link>
           </div>
