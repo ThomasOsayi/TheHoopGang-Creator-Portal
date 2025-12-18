@@ -1,7 +1,7 @@
 // src/app/creator/leaderboard/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -13,8 +13,9 @@ import {
   BackgroundOrbs,
   Skeleton,
 } from '@/components/ui';
-import { LeaderboardEntry } from '@/types';
+import { LeaderboardEntry, CreatorSource, CollaborationStatus } from '@/types';
 import { ProtectedRoute } from '@/components/auth';
+import { getCreatorWithActiveCollab } from '@/lib/firestore';
 
 interface ActiveCompetition {
   id: string;
@@ -25,6 +26,7 @@ interface ActiveCompetition {
   endedAt?: string;
   durationDays: number;
   totalCreators?: number;
+  prizes?: { first: string; second: string; third: string };
   winners?: Array<{ rank: number; creatorId: string; creatorName: string; prize: number }>;
 }
 
@@ -39,6 +41,13 @@ export default function LeaderboardPage() {
   // Competition state
   const [activeCompetition, setActiveCompetition] = useState<ActiveCompetition | null>(null);
   const [competitionLoading, setCompetitionLoading] = useState(true);
+  
+  // Creator source and status for feature restrictions
+  const [creatorSource, setCreatorSource] = useState<CreatorSource | null>(null);
+  const [collabStatus, setCollabStatus] = useState<CollaborationStatus | null>(null);
+  
+  // Pending modal state
+  const [showPendingModal, setShowPendingModal] = useState(false);
   
   // Current user's stats
   const [userStats, setUserStats] = useState<{
@@ -60,6 +69,48 @@ export default function LeaderboardPage() {
       router.push('/login');
     }
   }, [user, authLoading, router]);
+
+  // Fetch creator data for source/status check
+  useEffect(() => {
+    const fetchCreatorData = async () => {
+      if (user && userData?.role === 'creator' && userData?.creatorId) {
+        try {
+          const result = await getCreatorWithActiveCollab(userData.creatorId);
+          if (result) {
+            setCreatorSource(result.source || null);
+            if (result.collaboration) {
+              setCollabStatus(result.collaboration.status);
+            } else {
+              setCollabStatus(null);
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching creator data:', error);
+        }
+      }
+    };
+    fetchCreatorData();
+  }, [user, userData]);
+
+  // Check if creator is pending Instagram user
+  const isPendingInstagramCreator = useMemo(() => {
+    // TikTok creators always have access
+    if (creatorSource === 'tiktok') return false;
+    
+    // Instagram creators need approved+ status
+    if (!collabStatus) return true; // No collab = pending
+    
+    const activeStatuses: CollaborationStatus[] = ['approved', 'shipped', 'delivered', 'completed'];
+    return !activeStatuses.includes(collabStatus);
+  }, [creatorSource, collabStatus]);
+
+  // Handle Submit Content click
+  const handleSubmitContentClick = (e: React.MouseEvent) => {
+    if (isPendingInstagramCreator) {
+      e.preventDefault();
+      setShowPendingModal(true);
+    }
+  };
 
   // Fetch active competition
   useEffect(() => {
@@ -286,8 +337,8 @@ export default function LeaderboardPage() {
             </h2>
           </div>
 
-          {/* Prize Cards Grid */}
-          <div className="grid grid-cols-[1fr_1.3fr_1fr] gap-4 mb-4">
+          {/* Prize Cards Grid - 1st place in middle, bigger */}
+          <div className="grid grid-cols-[1fr_1.5fr_1fr] gap-4 mb-4">
             {/* 2nd Place - Silver */}
             <div 
               className="bg-zinc-800/80 rounded-xl p-5 text-center transition-all duration-300 hover:scale-105 cursor-default group"
@@ -296,12 +347,14 @@ export default function LeaderboardPage() {
             >
               <div className="text-4xl mb-2 group-hover:scale-110 transition-transform">🥈</div>
               <div className="text-slate-300 font-bold text-lg mb-1">2nd Place</div>
-              <div className="text-white font-bold text-xl">$25 Credit</div>
+              <div className="text-white font-bold text-xl">
+                {activeCompetition?.prizes?.second || '$25 Credit'}
+              </div>
             </div>
 
             {/* 1st Place - Gold (Bigger, in middle) */}
             <div 
-              className="bg-zinc-800/80 rounded-xl p-6 text-center transition-all duration-300 hover:scale-105 cursor-default group relative border-2"
+              className="bg-zinc-800/80 rounded-xl p-7 text-center transition-all duration-300 hover:scale-105 cursor-default group relative border-2"
               style={{
                 borderColor: 'rgba(234, 179, 8, 0.5)',
                 boxShadow: '0 0 20px rgba(234, 179, 8, 0.3), inset 0 0 20px rgba(234, 179, 8, 0.1)',
@@ -315,9 +368,11 @@ export default function LeaderboardPage() {
                 e.currentTarget.style.borderColor = 'rgba(234, 179, 8, 0.5)';
               }}
             >
-              <div className="text-5xl mb-2 group-hover:scale-110 transition-transform">🥇</div>
+              <div className="text-6xl mb-3 group-hover:scale-110 transition-transform">🥇</div>
               <div className="text-yellow-400 font-bold text-xl mb-1">1st Place</div>
-              <div className="text-white font-bold text-2xl">$50 Cash</div>
+              <div className="text-white font-bold text-2xl">
+                {activeCompetition?.prizes?.first || '$50 Cash'}
+              </div>
             </div>
 
             {/* 3rd Place - Bronze */}
@@ -328,7 +383,9 @@ export default function LeaderboardPage() {
             >
               <div className="text-4xl mb-2 group-hover:scale-110 transition-transform">🥉</div>
               <div className="text-amber-600 font-bold text-lg mb-1">3rd Place</div>
-              <div className="text-white font-bold text-xl">Free Product</div>
+              <div className="text-white font-bold text-xl">
+                {activeCompetition?.prizes?.third || 'Free Product'}
+              </div>
             </div>
           </div>
 
@@ -445,14 +502,75 @@ export default function LeaderboardPage() {
             <div className="text-4xl mb-3">🚀</div>
             <h3 className="text-xl font-bold text-white mb-2">Want to climb the ranks?</h3>
             <p className="text-zinc-400 mb-6">Submit more TikToks to increase your position!</p>
-            <Link href="/creator/submit">
-              <button className="px-8 py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-orange-500/25">
+            
+            {isPendingInstagramCreator ? (
+              <button 
+                onClick={handleSubmitContentClick}
+                className="px-8 py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-orange-500/25"
+              >
                 Submit Content →
               </button>
-            </Link>
+            ) : (
+              <Link href="/creator/submit">
+                <button className="px-8 py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-orange-500/25">
+                  Submit Content →
+                </button>
+              </Link>
+            )}
           </GlowCard>
         )}
       </main>
+
+      {/* Pending Application Modal */}
+      {showPendingModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div 
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            onClick={() => setShowPendingModal(false)}
+          />
+          
+          <div className="relative bg-zinc-900/95 backdrop-blur-md border border-white/10 rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-2xl shadow-black/50 animate-in fade-in zoom-in-95 duration-200">
+            <button
+              onClick={() => setShowPendingModal(false)}
+              className="absolute top-4 right-4 text-white/40 hover:text-white transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            
+            <div className="text-5xl sm:text-6xl text-center mb-4">⏳</div>
+            
+            <h3 className="text-lg sm:text-xl font-bold text-white text-center mb-3">
+              Application Under Review
+            </h3>
+            
+            <p className="text-white/60 text-sm sm:text-base text-center mb-2">
+              Your application is still being reviewed by our team. Once approved, you'll be able to submit content and start earning rewards!
+            </p>
+            
+            <p className="text-white/40 text-xs sm:text-sm text-center mb-6">
+              We typically review applications within 24-48 hours.
+            </p>
+            
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={() => setShowPendingModal(false)}
+                className="flex-1 px-4 py-3 bg-white/10 text-white font-medium rounded-xl hover:bg-white/20 transition-all duration-200"
+              >
+                Got It
+              </button>
+              <Link
+                href="/creator/dashboard"
+                onClick={() => setShowPendingModal(false)}
+                className="flex-1 px-4 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-medium rounded-xl hover:shadow-lg hover:shadow-orange-500/25 transition-all duration-200 text-center"
+              >
+                Go to Dashboard
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
       </div>
     </ProtectedRoute>
   );

@@ -253,11 +253,11 @@ export default function SubmitContentPage() {
 
   return (
     <ProtectedRoute allowedRoles={['creator']}>
-      <div className="min-h-screen bg-zinc-950 relative overflow-hidden">
-        <Navbar />
-        
-        {/* Background Orbs */}
-        <BackgroundOrbs colors={['orange', 'purple', 'orange']} />
+    <div className="min-h-screen bg-zinc-950 relative overflow-hidden">
+      <Navbar />
+      
+      {/* Background Orbs */}
+      <BackgroundOrbs colors={['orange', 'purple', 'orange']} />
       
       {/* Confetti on successful submission */}
       <Confetti show={showConfetti} />
@@ -554,7 +554,7 @@ export default function SubmitContentPage() {
           </Link>
         </div>
       </main>
-      </div>
+    </div>
     </ProtectedRoute>
   );
 }

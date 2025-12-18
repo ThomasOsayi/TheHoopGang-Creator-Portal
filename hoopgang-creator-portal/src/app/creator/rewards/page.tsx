@@ -36,10 +36,10 @@ interface RewardItem {
 
 // Category color mapping
 const categoryColors = {
-  gold: { bg: 'bg-yellow-500/20', text: 'text-yellow-400', border: 'border-yellow-500/30', glow: 'rgba(234, 179, 8, 0.3)' },
-  purple: { bg: 'bg-purple-500/20', text: 'text-purple-400', border: 'border-purple-500/30', glow: 'rgba(168, 85, 247, 0.3)' },
-  blue: { bg: 'bg-blue-500/20', text: 'text-blue-400', border: 'border-blue-500/30', glow: 'rgba(59, 130, 246, 0.3)' },
-  green: { bg: 'bg-green-500/20', text: 'text-green-400', border: 'border-green-500/30', glow: 'rgba(34, 197, 94, 0.3)' },
+  gold: { bg: 'bg-yellow-500/20', text: 'text-yellow-400', border: 'border-yellow-500/30', glow: 'rgba(234, 179, 8, 0.4)' },
+  purple: { bg: 'bg-purple-500/20', text: 'text-purple-400', border: 'border-purple-500/30', glow: 'rgba(168, 85, 247, 0.4)' },
+  blue: { bg: 'bg-blue-500/20', text: 'text-blue-400', border: 'border-blue-500/30', glow: 'rgba(59, 130, 246, 0.4)' },
+  green: { bg: 'bg-green-500/20', text: 'text-green-400', border: 'border-green-500/30', glow: 'rgba(34, 197, 94, 0.4)' },
 };
 
 // Helper to map API category to filter and color
@@ -156,17 +156,13 @@ function RewardCard({
 
   return (
     <div 
-      className={`aspect-square bg-zinc-900/70 border border-zinc-800 rounded-2xl p-5 flex flex-col transition-all duration-300 hover:border-zinc-600 cursor-pointer relative overflow-hidden group ${reward.available ? 'hover:scale-[1.03] hover:-translate-y-2' : ''}`}
+      className={`aspect-square bg-zinc-900/70 border border-zinc-800 rounded-2xl p-5 flex flex-col transition-all duration-300 cursor-pointer relative overflow-hidden group hover:scale-[1.02] hover:-translate-y-1`}
       onClick={onClick}
-      onMouseEnter={(e) => {
-        setIsHovered(true);
-        if (reward.available) {
-          e.currentTarget.style.boxShadow = `0 0 40px -5px ${colors.glow}`;
-        }
-      }}
-      onMouseLeave={(e) => {
-        setIsHovered(false);
-        e.currentTarget.style.boxShadow = 'none';
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      style={{
+        boxShadow: isHovered ? `0 0 30px -5px ${colors.glow}, 0 0 60px -10px ${colors.glow}` : 'none',
+        borderColor: isHovered ? colors.glow : undefined,
       }}
     >
       {/* Category Tag */}
@@ -177,8 +173,10 @@ function RewardCard({
       {/* Icon - Large & Centered */}
       <div className="flex-1 flex items-center justify-center">
         <div 
-          className={`text-6xl transition-transform duration-300 ${isHovered && reward.available ? 'scale-110' : ''}`}
-          style={{ filter: isHovered && reward.available ? 'drop-shadow(0 0 20px rgba(255,255,255,0.2))' : 'none' }}
+          className={`text-6xl transition-all duration-300 ${isHovered ? 'scale-110' : ''}`}
+          style={{ 
+            filter: isHovered ? `drop-shadow(0 0 20px ${colors.glow})` : 'none',
+          }}
         >
           {reward.icon}
         </div>
@@ -190,8 +188,97 @@ function RewardCard({
         <p className="text-zinc-500 text-sm mb-3 line-clamp-2">{reward.subtitle}</p>
         
         {/* Price Tag */}
-        <div className={`inline-block px-4 py-2 rounded-xl font-bold text-sm ${colors.bg} ${colors.text} ${colors.border} border`}>
+        <div 
+          className={`inline-block px-4 py-2 rounded-xl font-bold text-sm ${colors.bg} ${colors.text} ${colors.border} border transition-all duration-300`}
+          style={{
+            boxShadow: isHovered ? `0 0 15px -3px ${colors.glow}` : 'none',
+          }}
+        >
           {reward.value}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Leaderboard Redirect Modal Component
+function LeaderboardRedirectModal({
+  isOpen,
+  onClose,
+  reward,
+  onGoToLeaderboard,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  reward: RewardItem | null;
+  onGoToLeaderboard: () => void;
+}) {
+  if (!isOpen || !reward) return null;
+
+  const colors = categoryColors[reward.categoryColor];
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div 
+        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        onClick={onClose}
+      />
+
+      {/* Modal */}
+      <div className="relative w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-3xl shadow-2xl shadow-black/50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        {/* Glow Effect */}
+        <div 
+          className="absolute -top-20 -right-20 w-40 h-40 rounded-full blur-3xl pointer-events-none"
+          style={{ backgroundColor: colors.glow }}
+        />
+
+        {/* Content */}
+        <div className="relative p-6 text-center">
+          {/* Icon */}
+          <div 
+            className="text-7xl mb-4 inline-block"
+            style={{ filter: `drop-shadow(0 0 20px ${colors.glow})` }}
+          >
+            {reward.icon}
+          </div>
+
+          {/* Title */}
+          <h2 className="text-2xl font-bold text-white mb-2">{reward.title}</h2>
+          
+          {/* Value Badge */}
+          <div 
+            className={`inline-block px-4 py-2 rounded-xl font-bold text-sm mb-4 ${colors.bg} ${colors.text} ${colors.border} border`}
+          >
+            {reward.value}
+          </div>
+
+          {/* Description */}
+          <p className="text-zinc-400 mb-6">
+            This reward is awarded to top performers on our weekly leaderboard. 
+            Check the leaderboard to see your current ranking!
+          </p>
+
+          {/* Trophy Icon */}
+          <div className="w-16 h-16 bg-yellow-500/20 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-6">
+            🏆
+          </div>
+
+          {/* Actions */}
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={onGoToLeaderboard}
+              className="w-full py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold rounded-xl transition-all hover:shadow-lg hover:shadow-orange-500/25"
+            >
+              View Leaderboard →
+            </button>
+            <button
+              onClick={onClose}
+              className="w-full py-3 text-zinc-400 hover:text-white font-medium transition-colors"
+            >
+              Close
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -224,9 +311,10 @@ export default function CreatorRewardsPage() {
   const [redemptions, setRedemptions] = useState<Redemption[]>([]);
   const [redemptionsLoading, setRedemptionsLoading] = useState(true);
   
-  // Claim modal state
+  // Modal states
   const [selectedReward, setSelectedReward] = useState<RewardItem | null>(null);
   const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
+  const [isLeaderboardModalOpen, setIsLeaderboardModalOpen] = useState(false);
   const { showToast } = useToast();
 
   const getAuthToken = async (): Promise<string | null> => {
@@ -377,10 +465,27 @@ export default function CreatorRewardsPage() {
     }
   }, [user, authLoading, router]);
 
-  // Handle card click
+  // Handle card click - different behavior for milestone vs leaderboard
   const handleCardClick = (reward: RewardItem) => {
     setSelectedReward(reward);
-    setIsClaimModalOpen(true);
+    
+    if (reward.filter === 'milestone') {
+      // Milestone rewards - open claim modal
+      setIsClaimModalOpen(true);
+    } else if (reward.filter === 'leaderboard') {
+      // Leaderboard rewards - show redirect modal
+      setIsLeaderboardModalOpen(true);
+    } else {
+      // Bonus/other rewards - could open claim modal or info modal
+      setIsClaimModalOpen(true);
+    }
+  };
+
+  // Handle leaderboard navigation
+  const handleGoToLeaderboard = () => {
+    setIsLeaderboardModalOpen(false);
+    setSelectedReward(null);
+    router.push('/creator/leaderboard');
   };
 
   // Handle claim submission
@@ -747,7 +852,7 @@ export default function CreatorRewardsPage() {
         )}
       </main>
 
-      {/* Claim Modal */}
+      {/* Claim Modal - Only for Milestone rewards */}
       <ClaimModal
         isOpen={isClaimModalOpen}
         onClose={() => {
@@ -756,6 +861,17 @@ export default function CreatorRewardsPage() {
         }}
         reward={selectedReward}
         onSubmit={handleClaimSubmit}
+      />
+
+      {/* Leaderboard Redirect Modal */}
+      <LeaderboardRedirectModal
+        isOpen={isLeaderboardModalOpen}
+        onClose={() => {
+          setIsLeaderboardModalOpen(false);
+          setSelectedReward(null);
+        }}
+        reward={selectedReward}
+        onGoToLeaderboard={handleGoToLeaderboard}
       />
       </div>
     </ProtectedRoute>

@@ -2,13 +2,13 @@
 
 'use client';
 
-import { useState, useEffect, type MouseEvent } from 'react';
+import { useState, useEffect, useMemo, type MouseEvent } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { getCreatorWithActiveCollab } from '@/lib/firestore';
-import { CollaborationStatus } from '@/types';
+import { CollaborationStatus, CreatorSource } from '@/types';
 
 export function Navbar() {
   const pathname = usePathname();
@@ -19,6 +19,8 @@ export function Navbar() {
   const [showActiveCollabModal, setShowActiveCollabModal] = useState(false);
   // V2: Status is on Collaboration, not Creator
   const [collabStatus, setCollabStatus] = useState<CollaborationStatus | null>(null);
+  // V3: Track creator source for feature restrictions
+  const [creatorSource, setCreatorSource] = useState<CreatorSource | null>(null);
 
   // Track scroll position for navbar styling
   useEffect(() => {
@@ -53,18 +55,28 @@ export function Navbar() {
       if (user && userData?.role === 'creator' && userData?.creatorId) {
         try {
           const result = await getCreatorWithActiveCollab(userData.creatorId);
-          if (result?.collaboration) {
-            setCollabStatus(result.collaboration.status);
+          if (result) {
+            // V3: Track creator source
+            setCreatorSource(result.source || null);
+            
+            if (result.collaboration) {
+              setCollabStatus(result.collaboration.status);
+            } else {
+              // No active collaboration - creator can reapply
+              setCollabStatus(null);
+            }
           } else {
-            // No active collaboration - creator can reapply
             setCollabStatus(null);
+            setCreatorSource(null);
           }
         } catch (error) {
           console.error('Error fetching collaboration status:', error);
           setCollabStatus(null);
+          setCreatorSource(null);
         }
       } else {
         setCollabStatus(null);
+        setCreatorSource(null);
       }
     };
     fetchCollabStatus();
@@ -96,6 +108,20 @@ export function Navbar() {
   // Check if creator has verified email
   const isVerifiedCreator = user && !isAdmin && userData?.creatorId && user.emailVerified;
 
+  // V3: Determine if creator can access full features (Submit Content, Rewards)
+  // TikTok creators always have access (no collab flow)
+  // Instagram creators need to be approved/shipped/delivered/completed
+  const canAccessFullFeatures = useMemo(() => {
+    // TikTok creators always have full access
+    if (creatorSource === 'tiktok') return true;
+    
+    // Instagram creators need an active collab with approved+ status
+    if (!collabStatus) return false;
+    
+    const activeStatuses: CollaborationStatus[] = ['approved', 'shipped', 'delivered', 'completed'];
+    return activeStatuses.includes(collabStatus);
+  }, [creatorSource, collabStatus]);
+
   // Don't show admin link to non-admins
   const navLinks = [
     { href: '/apply', label: 'Apply', icon: '📝', show: true },
@@ -107,9 +133,11 @@ export function Navbar() {
     { href: '/admin/redemptions', label: 'Redemptions', icon: '💰', show: isAdmin },
     { href: '/admin/tiktok-imports', label: 'TikTok Imports', icon: '🎵', show: isAdmin },
     { href: '/creator/dashboard', label: 'Dashboard', icon: '🎯', show: isVerifiedCreator },
-    { href: '/creator/submit', label: 'Submit Content', icon: '📤', show: isVerifiedCreator },
+    // V3: Only show Submit Content if approved OR TikTok creator
+    { href: '/creator/submit', label: 'Submit Content', icon: '📤', show: isVerifiedCreator && canAccessFullFeatures },
     { href: '/creator/leaderboard', label: 'Leaderboard', icon: '🏆', show: user && (isAdmin || (userData?.creatorId && user.emailVerified)) },
-    { href: '/creator/rewards', label: 'Rewards', icon: '🎁', show: isVerifiedCreator },
+    // V3: Only show Rewards if approved OR TikTok creator
+    { href: '/creator/rewards', label: 'Rewards', icon: '🎁', show: isVerifiedCreator && canAccessFullFeatures },
   ].filter(link => link.show);
 
   return (

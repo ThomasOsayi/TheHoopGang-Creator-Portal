@@ -7,19 +7,29 @@ interface ClaimModalProps {
   isOpen: boolean;
   onClose: () => void;
   reward: {
+    id: string;
     title: string;
     subtitle: string;
     value: string;
     icon: string;
-    category: string;
+    categoryColor?: 'gold' | 'purple' | 'blue' | 'green';
   } | null;
-  onSubmit: (tiktokUrl: string) => void;
+  onSubmit: (tiktokUrl: string) => Promise<void>;
 }
 
 export function ClaimModal({ isOpen, onClose, reward, onSubmit }: ClaimModalProps) {
   const [tiktokUrl, setTiktokUrl] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+
+  const categoryColors = {
+    gold: { bg: 'bg-yellow-500/20', text: 'text-yellow-400', border: 'border-yellow-500/30' },
+    purple: { bg: 'bg-purple-500/20', text: 'text-purple-400', border: 'border-purple-500/30' },
+    blue: { bg: 'bg-blue-500/20', text: 'text-blue-400', border: 'border-blue-500/30' },
+    green: { bg: 'bg-green-500/20', text: 'text-green-400', border: 'border-green-500/30' },
+  };
+
+  const colors = categoryColors[reward?.categoryColor || 'purple'];
 
   if (!isOpen || !reward) return null;
 
@@ -77,7 +87,7 @@ export function ClaimModal({ isOpen, onClose, reward, onSubmit }: ClaimModalProp
           <div className="text-5xl mb-3">{reward.icon}</div>
           <h2 className="text-2xl font-bold text-white mb-1">{reward.title}</h2>
           <p className="text-zinc-400 text-sm mb-2">{reward.subtitle}</p>
-          <div className="inline-block px-4 py-2 bg-orange-500/20 border border-orange-500/30 rounded-xl text-orange-400 font-semibold">
+          <div className={`inline-block px-4 py-2 ${colors.bg} ${colors.text} ${colors.border} border rounded-xl font-bold text-sm`}>
             {reward.value}
           </div>
         </div>
