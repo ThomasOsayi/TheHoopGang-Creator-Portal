@@ -22,6 +22,9 @@ export function Navbar() {
   // V3: Track creator source for feature restrictions
   const [creatorSource, setCreatorSource] = useState<CreatorSource | null>(null);
 
+  // Hide navbar on admin pages (admin has its own sidebar)
+  const isAdminPage = pathname.startsWith('/admin');
+
   // Track scroll position for navbar styling
   useEffect(() => {
     const handleScroll = () => {
@@ -122,16 +125,14 @@ export function Navbar() {
     return activeStatuses.includes(collabStatus);
   }, [creatorSource, collabStatus]);
 
-  // Don't show admin link to non-admins
+  // Don't render navbar on admin pages (admin has its own sidebar)
+  if (isAdminPage) {
+    return null;
+  }
+
+  // Nav links for public/creator pages (no admin links - those are in sidebar)
   const navLinks = [
     { href: '/apply', label: 'Apply', icon: '📝', show: true },
-    { href: '/admin/creators', label: 'Admin', icon: '👑', show: isAdmin },
-    { href: '/admin/submissions', label: 'Submissions', icon: '📋', show: isAdmin },
-    { href: '/admin/rewards', label: 'Rewards', icon: '🎁', show: isAdmin },
-    { href: '/admin/leaderboard/volume', label: 'Volume Admin', icon: '📊', show: isAdmin },
-    { href: '/admin/leaderboard/gmv', label: 'GMV Admin', icon: '💰', show: isAdmin },
-    { href: '/admin/redemptions', label: 'Redemptions', icon: '💰', show: isAdmin },
-    { href: '/admin/tiktok-imports', label: 'TikTok Imports', icon: '🎵', show: isAdmin },
     { href: '/creator/dashboard', label: 'Dashboard', icon: '🎯', show: isVerifiedCreator },
     // V3: Only show Submit Content if approved OR TikTok creator
     { href: '/creator/submit', label: 'Submit Content', icon: '📤', show: isVerifiedCreator && canAccessFullFeatures },
@@ -168,7 +169,7 @@ export function Navbar() {
             </Link>
 
             {/* Desktop Nav Links + Auth */}
-            <div className="hidden items-center gap-1">
+            <div className="hidden lg:flex items-center gap-1">
               {navLinks.map((link) => {
                 const isActive = pathname === link.href || pathname.startsWith(link.href + '/');
                 const isApplyLink = link.href === '/apply';
@@ -202,6 +203,22 @@ export function Navbar() {
                   </Link>
                 );
               })}
+
+              {/* Admin Portal Link - Only for admins */}
+              {isAdmin && (
+                <>
+                  <div className="w-px h-6 bg-white/10 mx-2" />
+                  <Link
+                    href="/admin/creators"
+                    className="relative group"
+                  >
+                    <div className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-amber-400 hover:text-amber-300 transition-all duration-200">
+                      <span className="transition-transform duration-200 group-hover:scale-110">👑</span>
+                      <span>Admin</span>
+                    </div>
+                  </Link>
+                </>
+              )}
 
               {/* Divider */}
               {navLinks.length > 0 && (
@@ -237,7 +254,7 @@ export function Navbar() {
             {/* Mobile Hamburger Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="relative w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all duration-200"
+              className="lg:hidden relative w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all duration-200"
               aria-label="Toggle menu"
             >
               <div className="w-5 h-4 flex flex-col justify-between">
@@ -271,7 +288,7 @@ export function Navbar() {
 
       {/* Mobile Menu Overlay */}
       <div
-        className={`fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${
+        className={`fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity duration-300 lg:hidden ${
           mobileMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
         onClick={() => setMobileMenuOpen(false)}
@@ -279,7 +296,7 @@ export function Navbar() {
 
       {/* Mobile Menu Drawer */}
       <div
-        className={`fixed top-0 right-0 z-50 h-full w-72 bg-zinc-900/95 backdrop-blur-xl border-l border-white/10 shadow-2xl transform transition-transform duration-300 ease-out ${
+        className={`fixed top-0 right-0 z-50 h-full w-72 bg-zinc-900/95 backdrop-blur-xl border-l border-white/10 shadow-2xl transform transition-transform duration-300 ease-out lg:hidden ${
           mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
@@ -324,6 +341,18 @@ export function Navbar() {
               </Link>
             );
           })}
+
+          {/* Admin Portal Link for Mobile */}
+          {isAdmin && (
+            <Link
+              href="/admin/creators"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium text-amber-400 hover:bg-amber-500/10 transition-all duration-200 border border-amber-500/20"
+            >
+              <span className="text-xl">👑</span>
+              <span>Admin Portal</span>
+            </Link>
+          )}
         </div>
 
         {/* Mobile Auth Section */}

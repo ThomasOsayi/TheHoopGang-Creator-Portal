@@ -40,6 +40,7 @@ import { SourceBadge } from './SourceBadge';
 import { CreatorSourceBadge } from './CreatorSourceBadge';
 
 export { SuccessAnimation, ConfirmModal, SourceBadge, CreatorSourceBadge };
+export { AdminSidebar } from './AdminSidebar';
 
 // Page Header component
 export { PageHeader } from './PageHeader';

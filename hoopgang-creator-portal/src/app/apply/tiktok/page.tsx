@@ -169,18 +169,21 @@ function TiktokApplyContent() {
       return;
     }
     
-    // If Instagram handle is provided, require follower count
-    if (instagramHandle.trim() && !instagramFollowers.trim()) {
+    // Instagram fields are now required
+    if (!instagramHandle.trim()) {
+      setError('Please enter your Instagram username');
+      return;
+    }
+    
+    if (!instagramFollowers.trim()) {
       setError('Please enter your Instagram follower count');
       return;
     }
     
-    if (instagramFollowers.trim()) {
-      const igCount = parseInt(instagramFollowers.replace(/,/g, ''));
-      if (isNaN(igCount)) {
-        setError('Please enter a valid number for Instagram followers');
-        return;
-      }
+    const igCount = parseInt(instagramFollowers.replace(/,/g, ''));
+    if (isNaN(igCount)) {
+      setError('Please enter a valid number for Instagram followers');
+      return;
     }
     
     setError(null);
@@ -560,18 +563,17 @@ function TiktokApplyContent() {
                     </div>
                   </div>
 
-                  {/* Instagram Stats (Optional) */}
+                  {/* Instagram Stats */}
                   <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4">
                     <div className="flex items-center gap-2 mb-4">
                       <InstagramLogo className="w-5 h-5" />
                       <span className="text-white font-medium">Instagram</span>
-                      <span className="text-white/40 text-xs bg-white/10 px-2 py-0.5 rounded-full">Optional</span>
                     </div>
                     
                     <div className="space-y-4">
                       <div>
                         <label htmlFor="instagramHandle" className={labelClasses}>
-                          Instagram Username
+                          Instagram Username <span className="text-red-400">*</span>
                         </label>
                         <div className="relative">
                           <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30">@</span>
@@ -582,25 +584,25 @@ function TiktokApplyContent() {
                             onChange={(e) => setInstagramHandle(e.target.value.replace('@', ''))}
                             placeholder="your_instagram_handle"
                             className={`${inputClasses} pl-8`}
+                            required
                           />
                         </div>
                       </div>
                       
-                      {instagramHandle && (
-                        <div>
-                          <label htmlFor="instagramFollowers" className={labelClasses}>
-                            Instagram Followers
-                          </label>
-                          <input
-                            type="text"
-                            id="instagramFollowers"
-                            value={instagramFollowers}
-                            onChange={(e) => setInstagramFollowers(formatFollowerInput(e.target.value))}
-                            placeholder="e.g. 5,000"
-                            className={inputClasses}
-                          />
-                        </div>
-                      )}
+                      <div>
+                        <label htmlFor="instagramFollowers" className={labelClasses}>
+                          Instagram Followers <span className="text-red-400">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          id="instagramFollowers"
+                          value={instagramFollowers}
+                          onChange={(e) => setInstagramFollowers(formatFollowerInput(e.target.value))}
+                          placeholder="e.g. 5,000"
+                          className={inputClasses}
+                          required
+                        />
+                      </div>
                     </div>
                   </div>
 
@@ -615,7 +617,7 @@ function TiktokApplyContent() {
                     </button>
                     <button
                       onClick={handleSocialStatsSubmit}
-                      disabled={!tiktokFollowers.trim()}
+                      disabled={!tiktokFollowers.trim() || !instagramHandle.trim() || !instagramFollowers.trim()}
                       className="flex-1 py-3 bg-gradient-to-r from-[#25F4EE] to-[#FE2C55] hover:opacity-90 text-white font-bold rounded-xl transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
                     >
                       Continue
