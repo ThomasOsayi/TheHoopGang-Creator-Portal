@@ -618,17 +618,25 @@ export async function createCreator(
 export async function createCreatorFromTiktokImport(
   tiktokImport: TiktokCreatorImport,
   email: string,
-  userId: string
+  userId: string,
+  socialStats?: {
+    tiktokFollowers?: number;
+    instagramHandle?: string | null;
+    instagramFollowers?: number | null;
+  }
 ): Promise<string> {
   const now = Timestamp.now();
   const creatorId = await generateSequentialCreatorId();
   
-  // TikTok creators won't have Instagram stats initially - set to 0
+  // Use provided social stats or default to 0
+  const tiktokFollowerCount = socialStats?.tiktokFollowers || 0;
+  const instagramFollowerCount = socialStats?.instagramFollowers || 0;
+  
   const initialFollowerHistory = [
     {
       date: now.toDate(),
-      instagramFollowers: 0,
-      tiktokFollowers: 0, // We don't have this from TikTok Shop CSV
+      instagramFollowers: instagramFollowerCount,
+      tiktokFollowers: tiktokFollowerCount,
       source: 'application' as const,
     },
   ];
@@ -637,10 +645,10 @@ export async function createCreatorFromTiktokImport(
     // Profile fields (from TikTok import)
     fullName: tiktokImport.fullName,
     email,
-    instagramHandle: '', // Not available from TikTok
-    instagramFollowers: 0,
+    instagramHandle: socialStats?.instagramHandle || null,
+    instagramFollowers: instagramFollowerCount,
     tiktokHandle: tiktokImport.tiktokUsernameOriginal,
-    tiktokFollowers: 0, // Not available from TikTok Shop CSV
+    tiktokFollowers: tiktokFollowerCount,
     bestContentUrl: '', // Not available from TikTok
     shippingAddress: tiktokImport.shippingAddress,
     

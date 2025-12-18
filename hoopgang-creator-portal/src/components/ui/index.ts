@@ -37,5 +37,6 @@ export { ClaimModal } from './ClaimModal';
 import { SuccessAnimation } from './SuccessAnimation';
 import { ConfirmModal } from './ConfirmModal';
 import { SourceBadge } from './SourceBadge';
+import { CreatorSourceBadge } from './CreatorSourceBadge';
 
-export { SuccessAnimation, ConfirmModal, SourceBadge };
+export { SuccessAnimation, ConfirmModal, SourceBadge, CreatorSourceBadge };

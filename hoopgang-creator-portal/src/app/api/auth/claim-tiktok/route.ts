@@ -22,7 +22,10 @@ import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
  *   tiktokUsername: string,  // The TikTok username being claimed
  *   importId: string,        // The import document ID (from lookup response)
  *   email: string,           // Email for the new account
- *   password: string         // Password for the new account
+ *   password: string,       // Password for the new account
+ *   tiktokFollowers?: number,      // TikTok follower count (optional)
+ *   instagramHandle?: string | null,  // Instagram handle (optional)
+ *   instagramFollowers?: number | null // Instagram follower count (optional)
  * }
  * 
  * Response (success):
@@ -30,6 +33,7 @@ import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
  *   success: true,
  *   creatorId: string,       // Firestore creator document ID
  *   userId: string,          // Firebase Auth user ID
+ *   fullName: string,        // Creator's full name
  *   message: string
  * }
  */
@@ -43,9 +47,20 @@ export async function POST(request: NextRequest) {
       importId: body.importId,
       email: body.email,
       hasPassword: !!body.password,
+      hasTiktokFollowers: !!body.tiktokFollowers,
+      hasInstagramHandle: !!body.instagramHandle,
     });
 
-    const { tiktokUsername, importId, email, password } = body;
+    const { 
+      tiktokUsername, 
+      importId, 
+      email, 
+      password,
+      // Social stats (optional)
+      tiktokFollowers,
+      instagramHandle,
+      instagramFollowers,
+    } = body;
 
     // Validate required fields
     if (!tiktokUsername || !importId || !email || !password) {
@@ -156,7 +171,12 @@ export async function POST(request: NextRequest) {
       creatorId = await createCreatorFromTiktokImport(
         importRecord,
         email,
-        firebaseUser.uid
+        firebaseUser.uid,
+        {
+          tiktokFollowers: tiktokFollowers || 0,
+          instagramHandle: instagramHandle || null,
+          instagramFollowers: instagramFollowers || null,
+        }
       );
       
       console.log('Creator document created:', creatorId);

@@ -15,7 +15,8 @@ import {
   GlowCard,
   FilterPill,
   ConfirmModal,
-  SuccessAnimation
+  SuccessAnimation,
+  CreatorSourceBadge,
 } from '@/components/ui';
 import { ApplicationReviewModal } from '@/components/creators';
 import { ProtectedRoute } from '@/components/auth';
@@ -120,8 +121,12 @@ interface CreatorRowProps {
 
 function CreatorRow({ creator, onView, onReview, onNudge }: CreatorRowProps) {
   const [isHovered, setIsHovered] = useState(false);
-  const status = creator.collaboration?.status || 'pending';
-  const needsAttention = status === 'pending' || status === 'delivered';
+  
+  // TikTok creators don't have collaborations - they're always "active" for content submission
+  const isTikTokCreator = creator.source === 'tiktok';
+  const status = isTikTokCreator ? 'active' : (creator.collaboration?.status || 'pending');
+  // TikTok creators don't need the traditional approval flow
+  const needsAttention = !isTikTokCreator && (status === 'pending' || status === 'delivered');
   
   // Get display values
   const followers = Math.max(creator.tiktokFollowers, creator.instagramFollowers);
@@ -139,6 +144,22 @@ function CreatorRow({ creator, onView, onReview, onNudge }: CreatorRowProps) {
 
   // Determine action button
   const getActionButton = () => {
+    // TikTok Shop creators don't need traditional review - they're here to submit content
+    const isTikTokCreator = creator.source === 'tiktok';
+    
+    if (isTikTokCreator) {
+      // TikTok creators just need a View button since they handle collabs through TikTok Shop
+      return (
+        <button
+          onClick={(e) => { e.stopPropagation(); onView(creator.id); }}
+          className="px-4 py-1.5 bg-zinc-800 text-zinc-300 rounded-lg text-sm font-medium hover:bg-zinc-700 transition-colors"
+        >
+          View
+        </button>
+      );
+    }
+
+    // Instagram/Manual creators follow the traditional flow
     switch (status) {
       case 'pending':
         return (
@@ -202,6 +223,11 @@ function CreatorRow({ creator, onView, onReview, onNudge }: CreatorRowProps) {
         </div>
       </td>
       
+      {/* Source */}
+      <td className="py-4 px-4">
+        <CreatorSourceBadge source={creator.source || 'manual'} size="sm" />
+      </td>
+      
       {/* Followers */}
       <td className="py-4 px-4">
         <span className="text-zinc-300">{formattedFollowers}</span>
@@ -209,7 +235,13 @@ function CreatorRow({ creator, onView, onReview, onNudge }: CreatorRowProps) {
       
       {/* Status */}
       <td className="py-4 px-4">
-        <StatusBadge status={status as any} />
+        {isTikTokCreator ? (
+          <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400 border border-green-500/30">
+            Active
+          </span>
+        ) : (
+          <StatusBadge status={status as any} />
+        )}
       </td>
       
       {/* Product */}
@@ -782,6 +814,7 @@ export default function AdminCreatorsPage() {
                 <thead>
                   <tr className="border-b border-zinc-800 bg-zinc-900/50">
                     <th className="py-3 px-4 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Creator</th>
+                    <th className="py-3 px-4 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Source</th>
                     <th className="py-3 px-4 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Followers</th>
                     <th className="py-3 px-4 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Status</th>
                     <th className="py-3 px-4 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Product</th>
@@ -794,7 +827,7 @@ export default function AdminCreatorsPage() {
                   {loading ? (
                     Array.from({ length: 10 }).map((_, i) => (
                       <tr key={i} className="border-b border-zinc-800/50">
-                        <td colSpan={7} className="py-4 px-4">
+                        <td colSpan={8} className="py-4 px-4">
                           <div className="h-10 bg-zinc-800/50 rounded animate-pulse" />
                         </td>
                       </tr>

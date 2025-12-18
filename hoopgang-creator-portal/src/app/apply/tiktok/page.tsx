@@ -29,14 +29,34 @@ const TiktokLogo = ({ className = "w-10 h-10" }: { className?: string }) => (
   </svg>
 );
 
-type Step = 1 | 2 | 3;
+// Instagram Logo Component
+const InstagramLogo = ({ className = "w-5 h-5" }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none">
+    <defs>
+      <linearGradient id="instagram-gradient" x1="0%" y1="100%" x2="100%" y2="0%">
+        <stop offset="0%" stopColor="#FFDC80" />
+        <stop offset="25%" stopColor="#F77737" />
+        <stop offset="50%" stopColor="#E1306C" />
+        <stop offset="75%" stopColor="#C13584" />
+        <stop offset="100%" stopColor="#833AB4" />
+      </linearGradient>
+    </defs>
+    <rect x="2" y="2" width="20" height="20" rx="5" stroke="url(#instagram-gradient)" strokeWidth="2" fill="none"/>
+    <circle cx="12" cy="12" r="4" stroke="url(#instagram-gradient)" strokeWidth="2" fill="none"/>
+    <circle cx="17.5" cy="6.5" r="1.5" fill="url(#instagram-gradient)"/>
+  </svg>
+);
+
+type Step = 1 | 2 | 3 | 4;
+
+const stepLabels = ['Username', 'Social Stats', 'Confirm', 'Account'];
 
 function TiktokApplyContent() {
   const router = useRouter();
   const { user, refreshUserData } = useAuth();
   const { showToast } = useToast();
   
-  // Step management
+  // Step management - now 4 steps
   const [currentStep, setCurrentStep] = useState<Step>(1);
   
   // Step 1: Username lookup
@@ -44,7 +64,12 @@ function TiktokApplyContent() {
   const [lookupLoading, setLookupLoading] = useState(false);
   const [lookupResult, setLookupResult] = useState<TiktokLookupResult | null>(null);
   
-  // Step 3: Account creation
+  // Step 2: Social stats (NEW)
+  const [tiktokFollowers, setTiktokFollowers] = useState('');
+  const [instagramHandle, setInstagramHandle] = useState('');
+  const [instagramFollowers, setInstagramFollowers] = useState('');
+  
+  // Step 4: Account creation
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -119,7 +144,7 @@ function TiktokApplyContent() {
         return;
       }
 
-      // Success - move to step 2
+      // Success - move to step 2 (Social Stats)
       setLookupResult(data);
       setCurrentStep(2);
     } catch (err) {
@@ -130,21 +155,56 @@ function TiktokApplyContent() {
     }
   };
 
-  // Step 2: Confirm identity
+  // Step 2: Submit social stats
+  const handleSocialStatsSubmit = () => {
+    if (!tiktokFollowers.trim()) {
+      setError('Please enter your TikTok follower count');
+      return;
+    }
+    
+    // Validate that it's a number
+    const tiktokCount = parseInt(tiktokFollowers.replace(/,/g, ''));
+    if (isNaN(tiktokCount)) {
+      setError('Please enter a valid number for TikTok followers');
+      return;
+    }
+    
+    // If Instagram handle is provided, require follower count
+    if (instagramHandle.trim() && !instagramFollowers.trim()) {
+      setError('Please enter your Instagram follower count');
+      return;
+    }
+    
+    if (instagramFollowers.trim()) {
+      const igCount = parseInt(instagramFollowers.replace(/,/g, ''));
+      if (isNaN(igCount)) {
+        setError('Please enter a valid number for Instagram followers');
+        return;
+      }
+    }
+    
+    setError(null);
+    setCurrentStep(3);
+  };
+
+  // Step 3: Confirm identity
   const handleConfirmIdentity = (confirmed: boolean) => {
     if (confirmed) {
-      setCurrentStep(3);
+      setCurrentStep(4);
       setError(null);
     } else {
       // Go back to step 1
       setCurrentStep(1);
       setLookupResult(null);
       setUsername('');
+      setTiktokFollowers('');
+      setInstagramHandle('');
+      setInstagramFollowers('');
       setError(null);
     }
   };
 
-  // Step 3: Create account
+  // Step 4: Create account
   const handleCreateAccount = async () => {
     // Validate
     if (!email.trim() || !email.includes('@')) {
@@ -171,6 +231,10 @@ function TiktokApplyContent() {
     try {
       console.log('1. Starting claim request...');
       
+      // Parse follower counts
+      const tiktokFollowerCount = parseInt(tiktokFollowers.replace(/,/g, '')) || 0;
+      const instagramFollowerCount = instagramFollowers ? parseInt(instagramFollowers.replace(/,/g, '')) || 0 : 0;
+      
       const response = await fetch('/api/auth/claim-tiktok', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -179,6 +243,10 @@ function TiktokApplyContent() {
           importId: lookupResult.importId,
           email: email.trim(),
           password,
+          // Include social stats
+          tiktokFollowers: tiktokFollowerCount,
+          instagramHandle: instagramHandle.trim() || null,
+          instagramFollowers: instagramFollowerCount || null,
         }),
       });
 
@@ -201,7 +269,7 @@ function TiktokApplyContent() {
         body: JSON.stringify({
           userId: data.userId,
           email: email.trim(),
-          fullName: data.fullName, // Use from API response
+          fullName: data.fullName,
           source: 'tiktok',
         }),
       });
@@ -212,7 +280,6 @@ function TiktokApplyContent() {
 
       if (!verifyResponse.ok) {
         console.error('Failed to send verification email:', verifyData);
-        // Don't block - user can resend from verify page
       }
 
       // Refresh auth context
@@ -244,7 +311,17 @@ function TiktokApplyContent() {
       setLookupResult(null);
     } else if (currentStep === 3) {
       setCurrentStep(2);
+    } else if (currentStep === 4) {
+      setCurrentStep(3);
     }
+  };
+
+  // Format number with commas as user types
+  const formatFollowerInput = (value: string) => {
+    // Remove non-numeric characters except commas
+    const numericValue = value.replace(/[^0-9]/g, '');
+    // Format with commas
+    return numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   };
 
   const inputClasses =
@@ -293,11 +370,23 @@ function TiktokApplyContent() {
           </p>
         </div>
 
-        {/* Progress Bar */}
+        {/* Progress Bar - FIXED */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-2">
-            {[1, 2, 3].map((step) => (
-              <div key={step} className="flex items-center">
+          <div className="flex items-center justify-between relative">
+            {/* Background line */}
+            <div className="absolute top-4 left-0 right-0 h-1 bg-zinc-800 mx-8" />
+            
+            {/* Progress line */}
+            <div 
+              className="absolute top-4 left-0 h-1 bg-gradient-to-r from-[#25F4EE] to-[#FE2C55] mx-8 transition-all duration-500"
+              style={{ 
+                width: `calc(${((currentStep - 1) / 3) * 100}% - ${currentStep === 1 ? 0 : (4 - currentStep) * 16}px)`,
+              }}
+            />
+            
+            {/* Step circles */}
+            {[1, 2, 3, 4].map((step) => (
+              <div key={step} className="relative z-10 flex flex-col items-center">
                 <div
                   className={`
                     w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all
@@ -315,21 +404,11 @@ function TiktokApplyContent() {
                     step
                   )}
                 </div>
-                {step < 3 && (
-                  <div 
-                    className={`
-                      w-16 sm:w-24 h-1 mx-2 rounded transition-all
-                      ${currentStep > step ? 'bg-gradient-to-r from-[#25F4EE] to-[#FE2C55]' : 'bg-zinc-800'}
-                    `}
-                  />
-                )}
+                <span className="text-xs text-white/40 mt-2 whitespace-nowrap">
+                  {stepLabels[step - 1]}
+                </span>
               </div>
             ))}
-          </div>
-          <div className="flex justify-between text-xs text-white/40 px-1">
-            <span>Username</span>
-            <span>Confirm</span>
-            <span>Account</span>
           </div>
         </div>
 
@@ -446,9 +525,112 @@ function TiktokApplyContent() {
               )}
 
               {/* ============================================ */}
-              {/* STEP 2: Confirm Identity */}
+              {/* STEP 2: Social Stats (NEW) */}
               {/* ============================================ */}
-              {currentStep === 2 && lookupResult && (
+              {currentStep === 2 && (
+                <div className="space-y-6">
+                  <div className="text-center mb-2">
+                    <h2 className="text-xl font-bold text-white mb-2">Tell Us About Your Audience</h2>
+                    <p className="text-white/50 text-sm">
+                      This helps us match you with the right opportunities
+                    </p>
+                  </div>
+
+                  {/* TikTok Stats */}
+                  <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-4">
+                      <TiktokLogo className="w-5 h-5" />
+                      <span className="text-white font-medium">TikTok</span>
+                      <span className="text-white/50 text-sm">@{username}</span>
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="tiktokFollowers" className={labelClasses}>
+                        How many followers do you have? <span className="text-red-400">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        id="tiktokFollowers"
+                        value={tiktokFollowers}
+                        onChange={(e) => setTiktokFollowers(formatFollowerInput(e.target.value))}
+                        placeholder="e.g. 10,000"
+                        className={inputClasses}
+                        autoFocus
+                      />
+                    </div>
+                  </div>
+
+                  {/* Instagram Stats (Optional) */}
+                  <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-4">
+                      <InstagramLogo className="w-5 h-5" />
+                      <span className="text-white font-medium">Instagram</span>
+                      <span className="text-white/40 text-xs bg-white/10 px-2 py-0.5 rounded-full">Optional</span>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <div>
+                        <label htmlFor="instagramHandle" className={labelClasses}>
+                          Instagram Username
+                        </label>
+                        <div className="relative">
+                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30">@</span>
+                          <input
+                            type="text"
+                            id="instagramHandle"
+                            value={instagramHandle}
+                            onChange={(e) => setInstagramHandle(e.target.value.replace('@', ''))}
+                            placeholder="your_instagram_handle"
+                            className={`${inputClasses} pl-8`}
+                          />
+                        </div>
+                      </div>
+                      
+                      {instagramHandle && (
+                        <div>
+                          <label htmlFor="instagramFollowers" className={labelClasses}>
+                            Instagram Followers
+                          </label>
+                          <input
+                            type="text"
+                            id="instagramFollowers"
+                            value={instagramFollowers}
+                            onChange={(e) => setInstagramFollowers(formatFollowerInput(e.target.value))}
+                            placeholder="e.g. 5,000"
+                            className={inputClasses}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <button
+                      onClick={handleBack}
+                      className="px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-medium rounded-xl transition-all"
+                    >
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={handleSocialStatsSubmit}
+                      disabled={!tiktokFollowers.trim()}
+                      className="flex-1 py-3 bg-gradient-to-r from-[#25F4EE] to-[#FE2C55] hover:opacity-90 text-white font-bold rounded-xl transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
+                    >
+                      Continue
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* ============================================ */}
+              {/* STEP 3: Confirm Identity */}
+              {/* ============================================ */}
+              {currentStep === 3 && lookupResult && (
                 <div className="space-y-6">
                   <div className="text-center mb-2">
                     <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-500/20 border border-green-500/30 mb-4">
@@ -493,6 +675,25 @@ function TiktokApplyContent() {
                     </div>
                   </div>
 
+                  {/* Social Stats Summary */}
+                  <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4">
+                    <p className="text-white/50 text-xs uppercase tracking-wider mb-3">Your Social Stats</p>
+                    <div className="flex flex-wrap gap-3">
+                      <div className="flex items-center gap-2 bg-black/30 px-3 py-1.5 rounded-lg">
+                        <TiktokLogo className="w-4 h-4" />
+                        <span className="text-white font-medium">{tiktokFollowers}</span>
+                        <span className="text-white/50 text-sm">followers</span>
+                      </div>
+                      {instagramHandle && (
+                        <div className="flex items-center gap-2 bg-black/30 px-3 py-1.5 rounded-lg">
+                          <InstagramLogo className="w-4 h-4" />
+                          <span className="text-white font-medium">{instagramFollowers || '—'}</span>
+                          <span className="text-white/50 text-sm">followers</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
                   <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-xl p-4">
                     <p className="text-cyan-400 text-sm text-center">
                       🔒 Your full information is protected and will be revealed after you create your account
@@ -517,9 +718,9 @@ function TiktokApplyContent() {
               )}
 
               {/* ============================================ */}
-              {/* STEP 3: Create Account */}
+              {/* STEP 4: Create Account */}
               {/* ============================================ */}
-              {currentStep === 3 && (
+              {currentStep === 4 && (
                 <div className="space-y-6">
                   <div className="text-center mb-2">
                     <h2 className="text-xl font-bold text-white mb-2">Create Your Account</h2>

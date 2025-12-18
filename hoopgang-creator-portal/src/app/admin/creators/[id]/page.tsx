@@ -20,8 +20,10 @@ import {
   AnimatedCounter,
   SuccessAnimation,
   ConfirmModal,
+  CreatorSourceBadge,
 } from '@/components/ui';
 import { ProtectedRoute } from '@/components/auth';
+import { auth } from '@/lib/firebase';
 
 // ============================================
 // Helper Functions
@@ -301,6 +303,12 @@ export default function CreatorDetailPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isMarkingDelivered, setIsMarkingDelivered] = useState(false);
+
+  // TikTok creator data
+  const [submissions, setSubmissions] = useState<any[]>([]);
+  const [leaderboardStats, setLeaderboardStats] = useState<{ rank: number; submissions: number } | null>(null);
+  const [redemptions, setRedemptions] = useState<any[]>([]);
+  const [loadingTikTokData, setLoadingTikTokData] = useState(false);
   
   // Edit state
   const [editedStatus, setEditedStatus] = useState<CollaborationStatus | ''>('');
@@ -359,6 +367,50 @@ export default function CreatorDetailPage() {
       setLoading(false);
     }
   };
+
+  // Fetch TikTok creator specific data (submissions, leaderboard, redemptions)
+  useEffect(() => {
+    const fetchTikTokCreatorData = async () => {
+      if (!creator || creator.source !== 'tiktok') return;
+      
+      setLoadingTikTokData(true);
+      try {
+        const user = auth.currentUser;
+        if (!user) return;
+        const token = await user.getIdToken();
+
+        // Fetch submissions for this creator
+        const [submissionsRes, redemptionsRes] = await Promise.all([
+          fetch(`/api/admin/submissions?creatorId=${creator.id}`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+          }),
+          fetch(`/api/admin/redemptions?creatorId=${creator.id}`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+          }),
+        ]);
+
+        if (submissionsRes.ok) {
+          const data = await submissionsRes.json();
+          setSubmissions(data.submissions || []);
+        }
+
+        if (redemptionsRes.ok) {
+          const data = await redemptionsRes.json();
+          setRedemptions(data.redemptions?.filter((r: any) => r.creatorId === creator.id) || []);
+        }
+
+        // Calculate leaderboard stats from submissions
+        // (or fetch from leaderboard API if available)
+        
+      } catch (error) {
+        console.error('Error fetching TikTok creator data:', error);
+      } finally {
+        setLoadingTikTokData(false);
+      }
+    };
+
+    fetchTikTokCreatorData();
+  }, [creator]);
 
   // Get selected collaboration
   const selectedCollab = selectedCollabId 
@@ -716,6 +768,7 @@ export default function CreatorDetailPage() {
                 <div>
                   <div className="flex flex-wrap items-center gap-3 mb-1">
                     <h1 className="text-2xl font-bold text-white">{creator.fullName}</h1>
+                    <CreatorSourceBadge source={creator.source || 'manual'} size="sm" />
                     {selectedCollab && <StatusBadge status={selectedCollab.status} />}
                   </div>
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
@@ -824,15 +877,168 @@ export default function CreatorDetailPage() {
             </div>
           )}
 
-          {/* No Collaboration State */}
+          {/* No Collaboration State - Different for TikTok vs Instagram creators */}
           {!selectedCollab && (
-            <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-2xl p-6 text-center">
-              <div className="text-4xl mb-3">📋</div>
-              <h3 className="text-yellow-400 font-semibold mb-2">No Active Collaboration</h3>
-              <p className="text-zinc-400 text-sm">
-                This creator doesn't have any collaborations yet.
-              </p>
-            </div>
+            creator?.source === 'tiktok' ? (
+              /* TikTok Creator View - Show submissions & rewards instead of collab */
+              <div className="space-y-6">
+                {/* TikTok Creator Info Banner */}
+                <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <span className="text-2xl">🎵</span>
+                    <div>
+                      <h3 className="text-white font-semibold">TikTok Shop Creator</h3>
+                      <p className="text-zinc-400 text-sm">
+                        This creator joined through TikTok Shop and submits content for rewards.
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Quick Stats */}
+                  <div className="grid grid-cols-3 gap-4 mt-4">
+                    <div className="text-center p-3 bg-zinc-800/50 rounded-xl">
+                      <div className="text-2xl font-bold text-orange-400">{submissions.length}</div>
+                      <div className="text-zinc-500 text-xs">Submissions</div>
+                    </div>
+                    <div className="text-center p-3 bg-zinc-800/50 rounded-xl">
+                      <div className="text-2xl font-bold text-green-400">
+                        {submissions.filter(s => s.status === 'approved').length}
+                      </div>
+                      <div className="text-zinc-500 text-xs">Approved</div>
+                    </div>
+                    <div className="text-center p-3 bg-zinc-800/50 rounded-xl">
+                      <div className="text-2xl font-bold text-purple-400">{redemptions.length}</div>
+                      <div className="text-zinc-500 text-xs">Rewards Earned</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Submission History */}
+                <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">📊</span>
+                      <h3 className="text-white font-semibold">Content Submissions</h3>
+                    </div>
+                    <span className="text-zinc-500 text-sm">{submissions.length} total</span>
+                  </div>
+                  
+                  {loadingTikTokData ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+                    </div>
+                  ) : submissions.length > 0 ? (
+                    <div className="space-y-3 max-h-80 overflow-y-auto">
+                      {submissions.slice(0, 10).map((sub: any) => (
+                        <div 
+                          key={sub.id} 
+                          className="flex items-center justify-between p-3 bg-zinc-800/30 rounded-xl hover:bg-zinc-800/50 transition-colors"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm ${
+                              sub.type === 'milestone' ? 'bg-purple-500/20 text-purple-400' : 'bg-blue-500/20 text-blue-400'
+                            }`}>
+                              {sub.type === 'milestone' ? '⭐' : '📊'}
+                            </div>
+                            <div className="min-w-0">
+                              <a 
+                                href={sub.tiktokUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-orange-400 hover:text-orange-300 text-sm truncate block"
+                              >
+                                {sub.tiktokUrl?.replace('https://www.tiktok.com/', '').slice(0, 40)}...
+                              </a>
+                              <div className="text-zinc-500 text-xs">
+                                {new Date(sub.submittedAt).toLocaleDateString()}
+                              </div>
+                            </div>
+                          </div>
+                          <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            sub.status === 'approved' 
+                              ? 'bg-green-500/20 text-green-400' 
+                              : sub.status === 'rejected'
+                                ? 'bg-red-500/20 text-red-400'
+                                : 'bg-yellow-500/20 text-yellow-400'
+                          }`}>
+                            {sub.status}
+                          </div>
+                        </div>
+                      ))}
+                      {submissions.length > 10 && (
+                        <p className="text-zinc-500 text-sm text-center py-2">
+                          + {submissions.length - 10} more submissions
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <div className="text-3xl mb-2">📭</div>
+                      <p className="text-zinc-500">No submissions yet</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Rewards Earned */}
+                <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">🎁</span>
+                      <h3 className="text-white font-semibold">Rewards Earned</h3>
+                    </div>
+                    <span className="text-zinc-500 text-sm">{redemptions.length} total</span>
+                  </div>
+                  
+                  {loadingTikTokData ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+                    </div>
+                  ) : redemptions.length > 0 ? (
+                    <div className="space-y-3">
+                      {redemptions.map((redemption: any) => (
+                        <div 
+                          key={redemption.id} 
+                          className="flex items-center justify-between p-3 bg-zinc-800/30 rounded-xl"
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className="text-xl">💰</span>
+                            <div>
+                              <div className="text-white font-medium">{redemption.rewardName}</div>
+                              <div className="text-zinc-500 text-xs">
+                                {new Date(redemption.createdAt).toLocaleDateString()}
+                              </div>
+                            </div>
+                          </div>
+                          <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            redemption.status === 'fulfilled' 
+                              ? 'bg-green-500/20 text-green-400' 
+                              : redemption.status === 'approved'
+                                ? 'bg-blue-500/20 text-blue-400'
+                                : 'bg-yellow-500/20 text-yellow-400'
+                          }`}>
+                            {redemption.status}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <div className="text-3xl mb-2">🎁</div>
+                      <p className="text-zinc-500">No rewards earned yet</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              /* Instagram/Manual Creator - Show original "No Collaboration" message */
+              <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-2xl p-6 text-center">
+                <div className="text-4xl mb-3">📋</div>
+                <h3 className="text-yellow-400 font-semibold mb-2">No Active Collaboration</h3>
+                <p className="text-zinc-400 text-sm">
+                  This creator doesn't have any collaborations yet.
+                </p>
+              </div>
+            )
           )}
 
           {/* Main Content Grid */}
