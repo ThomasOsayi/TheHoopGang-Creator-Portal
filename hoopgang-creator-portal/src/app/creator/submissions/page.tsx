@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
-import { Navbar, AnimatedCounter, BackgroundOrbs, FilterPill } from '@/components/ui';
+import { Navbar, AnimatedCounter, BackgroundOrbs, FilterPill, PageHeader } from '@/components/ui';
 import { auth } from '@/lib/firebase';
 import { V3ContentSubmission, V3SubmissionType, V3SubmissionStatus } from '@/types';
 import { ProtectedRoute } from '@/components/auth';
@@ -337,14 +337,12 @@ export default function SubmissionHistoryPage() {
 
       <main className="relative z-10 max-w-5xl mx-auto px-4 py-8">
         {/* Header */}
-        <div className="text-center mb-8 animate-fade-in">
-          <h1 className="text-4xl font-bold text-white mb-2">
-            Submission History 📋
-          </h1>
-          <p className="text-zinc-400 text-lg">
-            Track all your submitted TikToks in one place
-          </p>
-        </div>
+        <PageHeader 
+          title="Submission History"
+          subtitle="Track all your content submissions"
+          icon="📊"
+          accentColor="blue"
+        />
 
         {/* Stats Row */}
         <div className="grid grid-cols-4 gap-4 mb-8 animate-fade-in-up">

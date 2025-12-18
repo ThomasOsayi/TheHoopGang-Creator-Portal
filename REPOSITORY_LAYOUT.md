@@ -69,10 +69,10 @@
 - **`src/components/creators/`**
   - `CreatorTable.tsx`, `FilterBar.tsx`, `ApplicationReviewModal.tsx`, `index.ts`
 - **`src/components/ui/`**
-  - Buttons, cards, badges, and layout: `Button.tsx`, `SectionCard.tsx`, `StatCard.tsx`, `StatusBadge.tsx`, `SourceBadge.tsx`, `GlowCard.tsx`, `Navbar.tsx`
+  - Buttons, cards, badges, and layout: `Button.tsx`, `SectionCard.tsx`, `StatCard.tsx`, `StatusBadge.tsx`, `SourceBadge.tsx`, `CreatorSourceBadge.tsx`, `GlowCard.tsx`, `Navbar.tsx`
   - Feedback & animation: `Toast.tsx`, `SuccessToast.tsx`, `SuccessAnimation.tsx`, `Confetti.tsx`, `AnimatedCounter.tsx`, `LiveCountdown.tsx`
   - Data display & structure: `DetailRow.tsx`, `EmptyState.tsx`, `StarRating.tsx`, `Pagination.tsx`, `ProgressDots.tsx`, `Skeleton.tsx`, `FilterPill.tsx`, `PackageStatusCard.tsx`
-  - Tracking & rewards UX: `TrackingStatus.tsx`, `TrackingProgress.tsx`, `ClaimModal.tsx`, `ConfirmModal.tsx`, `BackgroundOrbs.tsx`
+  - Tracking & rewards UX: `TrackingStatus.tsx`, `TrackingProgress.tsx`, `ClaimModal.tsx` (with dynamic category colors), `ConfirmModal.tsx`, `BackgroundOrbs.tsx`
   - `index.ts` – Barrel exports
 - **`src/lib/`**
   - Firebase client/admin setup, Firestore helpers (including TikTok import functions), tracking utilities, email system (`email-layout.tsx`, `send-email.ts`, templates), constants, and `week-utils.ts`
@@ -112,9 +112,11 @@
   - Pre-fills form data from Firestore user document
 - `apply/tiktok/page.tsx` - TikTok-specific application flow
   - Step 1: Username lookup (checks TikTok Shop imports)
-  - Step 2: Verify identity (shows masked shipping info for verification)
-  - Step 3: Create account and claim import record
+  - Step 2: Social stats collection (TikTok followers, optional Instagram handle/followers)
+  - Step 3: Verify identity (shows masked shipping info for verification)
+  - Step 4: Create account and claim import record
   - Pre-fills shipping address and product info from TikTok Shop order
+  - Collects and saves social media follower counts
   - Integrates with TikTok creator import system
 - `apply/instagram/page.tsx` - Instagram-specific application flow
   - Similar flow to general apply page
@@ -131,11 +133,17 @@ admin/
 │   │                           # - V3 Creator Program stats section
 │   │                           # - Weekly/total submissions, active creators
 │   │                           # - Pending/approved redemptions, total paid out
+│   │                           # - Source badge display (TikTok/Instagram/Manual)
+│   │                           # - TikTok creators show "Active" status (no review needed)
+│   │                           # - TikTok creators always show "View" button (no Review/Nudge)
 │   └── [id]/
 │       └── page.tsx            # Individual creator detail page (dynamic route)
 │                               # - Tracking management section
 │                               # - Height/weight display in profile
 │                               # - Fit information in stats bar
+│                               # - Source badge next to creator name
+│                               # - TikTok creators: Shows submissions & rewards instead of collaboration
+│                               # - TikTok creators: Displays submission history and redemption stats
 ├── leaderboard/
 │   ├── volume/
 │   │   └── page.tsx            # Volume competition admin page
@@ -261,10 +269,12 @@ api/
 │   └── claim-tiktok/
 │       └── route.ts            # TikTok creator claim API
 │                               # - POST: Claim TikTok import record and create account
+│                               # - Accepts social stats (tiktokFollowers, instagramHandle, instagramFollowers)
 │                               # - Creates Firebase Auth account
-│                               # - Creates creator document with pre-filled data
+│                               # - Creates creator document with pre-filled data and social stats
 │                               # - Updates import status to 'claimed'
 │                               # - Links creator to TikTok import record
+│                               # - Returns fullName for email verification
 │   ├── competitions/
 │   │   └── active/
 │   │       └── route.ts        # Public active competition API
@@ -352,6 +362,8 @@ creator/
 │                               # - Competition status banners
 │                               # - User rank highlighting
 │                               # - Period selection for GMV
+│                               # - Dynamic prize display from competition data (1st/2nd/3rd place)
+│                               # - 1st place card centered and larger (1.5x width, enhanced styling)
 ├── rewards/
 │   └── page.tsx                # Creator rewards page
 │                               # - View available rewards
@@ -372,6 +384,10 @@ creator/
 
 #### Authentication Components (`auth/`)
 - `ProtectedRoute.tsx` - Route protection component
+  - Role-based access control (allowedRoles prop)
+  - Email verification requirement for creators (requireEmailVerification, defaults to true)
+  - Application requirement check (requireApplication prop)
+  - Redirects unverified creators to `/verify-email`
 - `index.ts` - Component exports
 
 #### Admin Components (`admin/`)
@@ -392,7 +408,10 @@ creator/
 - `BackgroundOrbs.tsx` - Decorative gradient orb background for pages
 - `Button.tsx` - Reusable button component
 - `ClaimModal.tsx` - Modal for claiming rewards or related actions
+  - Dynamic category color support (gold, purple, blue, green)
+  - TikTok URL submission for reward claims
 - `Confetti.tsx` - Confetti animation for success states
+- `CreatorSourceBadge.tsx` - Badge component for displaying creator source (TikTok/Instagram/Manual)
 - `ConfirmModal.tsx` - Confirmation dialog component
 - `DetailRow.tsx` - Detail row display component
 - `EmptyState.tsx` - Empty state display for lists and pages
@@ -400,9 +419,10 @@ creator/
 - `GlowCard.tsx` - Glassmorphic/glow card wrapper
 - `LiveCountdown.tsx` - Live-updating countdown timer
 - `Navbar.tsx` - Navigation bar component with THG logo image (V2 collaboration status system)
-  - Admin navigation links: Admin, Submissions, Rewards, Redemptions, Volume Admin, GMV Admin
+  - Admin navigation links: Admin, Submissions, Rewards, Redemptions, Volume Admin, GMV Admin, TikTok Imports
   - Creator navigation links: Dashboard, Submit Content, Leaderboard, Rewards
   - Role-based link visibility
+  - Email verification check for creator links (only verified creators see creator nav links)
   - Active collaboration status checking for re-application prevention
 - `PackageStatusCard.tsx` - Package/shipping status summary card
 - `Pagination.tsx` - Pagination component
@@ -481,6 +501,9 @@ creator/
     - `source: CreatorSource` - 'instagram', 'tiktok', or 'manual'
     - `tiktokImportId?: string` - Reference to TikTok import record
     - `tiktokUsername?: string` - TikTok Shop username
+    - `instagramHandle?: string | null` - Optional Instagram handle
+    - `instagramFollowers?: number` - Optional Instagram follower count
+    - `tiktokFollowers?: number` - Optional TikTok follower count
   - Shipping tracking types:
     - `ShippingStatus` - Tracking status enumeration
     - `TrackingEvent` - Individual tracking event
@@ -582,11 +605,11 @@ creator/
 - Creator Redemptions: Fetch creator redemption history
 - Creator Stats: Fetch creator statistics
 
-### Components (34 files)
+### Components (35 files)
 - Auth: 2 files
 - Admin: 1 file (TiktokCsvImporter)
 - Creators: 4 files (3 components + barrel export)
-- UI: 27 files (buttons, cards, badges, animations, tracking UI, etc.)
+- UI: 28 files (buttons, cards, badges including CreatorSourceBadge, animations, tracking UI, ClaimModal with dynamic colors, etc.)
 
 ### Libraries (10+ files)
 - Authentication context
@@ -664,12 +687,15 @@ creator/
    - Public application flow
 
 2. **Authentication & Authorization**
-   - Protected routes
-   - Role-based access control
+   - Protected routes with `ProtectedRoute` component
+   - Role-based access control (admin vs creator)
+   - Email verification requirement for creators (defaults to true)
+   - Unverified creators redirected to `/verify-email` page
    - Firebase authentication integration (client-side)
    - Email verification system with branded emails
    - Multi-step application flow (account creation → verification → application)
    - Firebase Admin SDK for server-side email verification link generation
+   - Navbar link visibility based on email verification status
 
 3. **Creator Management**
    - Creator listing and filtering
@@ -679,6 +705,12 @@ creator/
    - Status tracking and history
    - Height/weight display for fit recommendations
    - Product selection as text input (links to store)
+   - Source badge display (TikTok/Instagram/Manual) in table and detail pages
+   - TikTok creator special handling:
+     - Always show "Active" status (no collaboration needed)
+     - Show "View" button instead of Review/Nudge
+     - No yellow highlighting for pending status
+     - Display submissions & rewards instead of collaboration in detail page
 
 4. **Shipping & Tracking System**
    - Internal tracking management (simplified system)
@@ -1303,4 +1335,32 @@ creator/
   5. Creators verify identity using masked shipping info
   6. Creators create account and claim import
   7. Creator record created with pre-filled data and linked to import
+
+### Email Verification & TikTok Creator Enhancements (Latest)
+- **Email Verification Requirement**:
+  - All creator pages protected with `ProtectedRoute` requiring email verification
+  - Unverified creators automatically redirected to `/verify-email` page
+  - Navbar creator links hidden until email is verified
+  - Email verification check defaults to `true` for creators in `ProtectedRoute`
+  - Admin users bypass email verification requirement
+- **TikTok Creator Special Handling**:
+  - TikTok creators always show "Active" status (no collaboration needed)
+  - Admin creators table: TikTok creators show "View" button instead of Review/Nudge
+  - No yellow highlighting for TikTok creators with pending status
+  - Admin creator detail page: TikTok creators see submissions & rewards view instead of collaboration
+  - Source badge (`CreatorSourceBadge`) displays in creators table and detail pages
+  - TikTok creators can submit content immediately (no approval workflow)
+- **TikTok Apply Flow Enhancements**:
+  - 4-step application process (Username → Social Stats → Confirm → Account)
+  - Social stats collection: TikTok followers (required), Instagram handle/followers (optional)
+  - Social stats saved to creator document on account creation
+  - Follower counts formatted with commas as user types
+- **UI Component Updates**:
+  - `CreatorSourceBadge` component for displaying creator source (TikTok/Instagram/Manual)
+  - `ClaimModal` supports dynamic category colors (gold, purple, blue, green)
+  - Leaderboard prize cards display dynamic values from competition data
+  - 1st place prize card centered and 1.5x larger than 2nd/3rd place
+- **Creator Type Updates**:
+  - Social stats fields made optional: `instagramHandle?: string | null`, `instagramFollowers?: number`, `tiktokFollowers?: number`
+  - Supports creators without social stats (backward compatible)
 

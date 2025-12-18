@@ -17,7 +17,8 @@ import {
   AnimatedCounter, 
   LiveCountdown, 
   BackgroundOrbs,
-  Skeleton 
+  Skeleton,
+  PageHeader
 } from '@/components/ui';
 import PackageStatusCard from '@/components/ui/PackageStatusCard';
 import { CONTENT_DEADLINE_DAYS } from '@/lib/constants';
@@ -451,27 +452,13 @@ export default function CreatorDashboardPage() {
             </div>
           )}
 
-          {/* Welcome Header - CENTERED */}
-          <div className="mb-8 animate-fade-in text-center">
-            <h1 className="text-3xl font-bold text-white mb-2">
-              {creator.collaboration?.status === 'pending' ? (
-                <>Welcome, {firstName}!</>
-              ) : creator.collaboration?.status === 'denied' ? (
-                <>Hey, {firstName}</>
-              ) : (
-                <>Welcome back, {firstName}!</>
-              )}
-              <span className="inline-block ml-2 animate-bounce">👋</span>
-            </h1>
-            <p className="text-zinc-400">
-              {creator.collaboration?.status === 'pending' 
-                ? "Thanks for applying to join HoopGang"
-                : creator.collaboration?.status === 'denied'
-                  ? "Thanks for your interest in HoopGang"
-                  : "Here's what's happening with your HoopGang collaboration"
-              }
-            </p>
-          </div>
+          {/* Welcome Header */}
+          <PageHeader 
+            title={`Welcome back, ${firstName}!`}
+            subtitle="Here's what's happening with your HoopGang collaboration"
+            icon="👋"
+            accentColor="orange"
+          />
 
           {/* Status Banners */}
           {creator.collaboration?.status === 'pending' && (

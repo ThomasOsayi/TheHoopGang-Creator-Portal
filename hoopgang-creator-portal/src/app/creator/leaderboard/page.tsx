@@ -12,6 +12,7 @@ import {
   LiveCountdown, 
   BackgroundOrbs,
   Skeleton,
+  PageHeader,
 } from '@/components/ui';
 import { LeaderboardEntry, CreatorSource, CollaborationStatus } from '@/types';
 import { ProtectedRoute } from '@/components/auth';
@@ -223,15 +224,12 @@ export default function LeaderboardPage() {
 
       <main className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 py-8">
         {/* Header */}
-        <div className="mb-8 text-center animate-fade-in">
-          <h1 className="text-4xl font-bold text-white mb-2">
-            Leaderboard
-            <span className="inline-block ml-2">🏆</span>
-          </h1>
-          <p className="text-zinc-400">
-            Compete with other creators for weekly prizes
-          </p>
-        </div>
+        <PageHeader 
+          title="Leaderboard"
+          subtitle="Compete with other creators for weekly prizes"
+          icon="🏆"
+          accentColor="gold"
+        />
 
         {/* Your Current Rank Card */}
         {userStats.currentRank && (

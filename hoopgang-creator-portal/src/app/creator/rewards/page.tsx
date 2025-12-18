@@ -11,6 +11,7 @@ import {
   FilterPill,
   ClaimModal,
   useToast,
+  PageHeader,
 } from '@/components/ui';
 import { getCreatorByUserId } from '@/lib/firestore';
 import { Creator, Redemption, RedemptionStatus } from '@/types';
@@ -573,14 +574,12 @@ export default function CreatorRewardsPage() {
 
       <main className="relative z-10 max-w-6xl mx-auto px-4 py-8">
         {/* Header */}
-        <div className="text-center mb-8 animate-fade-in">
-          <h1 className="text-4xl font-bold text-white mb-2">
-            Rewards Shop 🎁
-          </h1>
-          <p className="text-zinc-400 text-lg">
-            Earn rewards for your content and claim your prizes
-          </p>
-        </div>
+        <PageHeader 
+          title="Rewards Shop"
+          subtitle="Earn rewards for your content and claim your prizes"
+          icon="🎁"
+          accentColor="purple"
+        />
 
         {/* Stats Bar */}
         <div className="mb-8 p-5 bg-gradient-to-r from-orange-500/10 via-amber-500/5 to-orange-500/10 border border-orange-500/20 rounded-2xl flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8 animate-fade-in-up">

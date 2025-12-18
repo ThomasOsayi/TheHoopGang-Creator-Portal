@@ -14,6 +14,7 @@ import {
   Confetti,
   SuccessToast,
   Skeleton,
+  PageHeader,
 } from '@/components/ui';
 import { getCreatorByUserId } from '@/lib/firestore';
 import { getCurrentWeek, getWeekEnd } from '@/lib/week-utils';
@@ -271,16 +272,13 @@ export default function SubmitContentPage() {
       />
 
       <main className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 py-8">
-        {/* Header - Centered */}
-        <div className="mb-8 text-center animate-fade-in">
-          <h1 className="text-3xl font-bold text-white mb-2">
-            Submit Content
-            <span className="inline-block ml-2">🎬</span>
-          </h1>
-          <p className="text-zinc-400">
-            Post TikToks to climb the leaderboard and earn rewards
-          </p>
-        </div>
+        {/* Header */}
+        <PageHeader 
+          title="Submit Content"
+          subtitle="Post TikToks and climb the leaderboard"
+          icon="🚀"
+          accentColor="green"
+        />
 
         {/* Competition Banner */}
         {!competitionLoading && activeCompetition?.status === 'active' && (
