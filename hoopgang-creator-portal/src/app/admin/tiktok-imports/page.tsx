@@ -8,6 +8,7 @@ import { ArrowLeft, Upload, Users, Search, Filter, Edit2, Trash2, X, Save, Alert
 import TiktokCsvImporter from '@/components/admin/TiktokCsvImporter';
 import { TiktokCreatorImport, TiktokImportStatus, Size, ShippingAddress } from '@/types';
 import { SIZES } from '@/lib/constants';
+import { PageHeader } from '@/components/ui';
 
 // TikTok Logo SVG Component
 const TiktokLogo = ({ className = "w-5 h-5" }: { className?: string }) => (
@@ -470,9 +471,14 @@ export default function TiktokImportsPage() {
               <div className="p-2 bg-black border border-zinc-700 rounded-lg">
                 <TiktokLogo className="w-6 h-6" />
               </div>
-              <div>
-                <h1 className="text-xl font-bold">TikTok Shop Imports</h1>
-                <p className="text-sm text-zinc-400">Import and manage TikTok Shop creators</p>
+              <div className="flex-1">
+                <PageHeader 
+                  title="TikTok Imports"
+                  subtitle="Import and manage TikTok creators"
+                  icon="🎵"
+                  accentColor="pink"
+                  align="left"
+                />
               </div>
             </div>
           </div>

@@ -8,7 +8,8 @@ import {
   Navbar, 
   AnimatedCounter,
   FilterPill,
-  SuccessAnimation 
+  SuccessAnimation,
+  PageHeader
 } from '@/components/ui';
 import { ProtectedRoute } from '@/components/auth';
 import { auth } from '@/lib/firebase';
@@ -529,12 +530,13 @@ export default function AdminRedemptionsPage() {
 
         <main className="relative max-w-7xl mx-auto px-4 sm:px-6 py-8 pt-24">
           {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-              <span>🎁</span> Redemptions
-            </h1>
-            <p className="text-zinc-400 mt-1">Manage reward redemptions from competitions and milestones</p>
-          </div>
+          <PageHeader 
+            title="Redemptions"
+            subtitle="Track and fulfill creator redemptions"
+            icon="🎟️"
+            accentColor="green"
+            align="left"
+          />
 
           {/* Stats Cards */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">

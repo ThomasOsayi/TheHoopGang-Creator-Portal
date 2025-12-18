@@ -9,7 +9,8 @@ import {
   AnimatedCounter,
   GlowCard,
   ConfirmModal,
-  SuccessAnimation 
+  SuccessAnimation,
+  PageHeader
 } from '@/components/ui';
 import { ProtectedRoute } from '@/components/auth';
 import { auth } from '@/lib/firebase';
@@ -624,12 +625,13 @@ export default function VolumeCompetitionAdminPage() {
         <main className="relative max-w-5xl mx-auto px-4 sm:px-6 py-8 pt-24">
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-            <div>
-              <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-                <span>📊</span> Volume Competition
-              </h1>
-              <p className="text-zinc-400 mt-1">Manage weekly volume competitions</p>
-            </div>
+            <PageHeader 
+              title="Volume Competition"
+              subtitle="Manage volume-based competitions"
+              icon="📊"
+              accentColor="orange"
+              align="left"
+            />
 
             {/* Header Actions */}
             <div className="flex gap-3">

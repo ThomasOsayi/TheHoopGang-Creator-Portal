@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { Navbar } from '@/components/ui';
+import { Navbar, PageHeader } from '@/components/ui';
 import { auth } from '@/lib/firebase';
 
 // ===== TYPES =====
@@ -362,11 +362,14 @@ export default function AdminRewardsPage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-white">Rewards Management</h1>
-            <p className="text-zinc-400 mt-1">Manage rewards for milestones and leaderboards</p>
-          </div>
+        <div className="flex justify-between items-start mb-8">
+          <PageHeader 
+            title="Rewards Management"
+            subtitle="Create and manage creator rewards"
+            icon="🎁"
+            accentColor="purple"
+            align="left"
+          />
           <button
             onClick={openCreateModal}
             className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl transition-colors flex items-center gap-2"

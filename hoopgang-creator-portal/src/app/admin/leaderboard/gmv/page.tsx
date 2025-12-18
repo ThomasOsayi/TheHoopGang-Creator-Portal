@@ -9,7 +9,8 @@ import {
   AnimatedCounter,
   GlowCard,
   ConfirmModal,
-  SuccessAnimation 
+  SuccessAnimation,
+  PageHeader
 } from '@/components/ui';
 import { ProtectedRoute } from '@/components/auth';
 import { auth } from '@/lib/firebase';
@@ -677,12 +678,13 @@ export default function GMVLeaderboardAdminPage() {
         <main className="relative max-w-5xl mx-auto px-4 sm:px-6 py-8 pt-24">
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-            <div>
-              <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-                <span>💰</span> GMV Leaderboard
-              </h1>
-              <p className="text-zinc-400 mt-1">Track creator sales performance</p>
-            </div>
+            <PageHeader 
+              title="GMV Competition"
+              subtitle="Manage GMV-based competitions"
+              icon="💰"
+              accentColor="green"
+              align="left"
+            />
 
             {/* Header Actions (only show when on Current tab with data) */}
             {activeTab === 'current' && entries.length > 0 && (

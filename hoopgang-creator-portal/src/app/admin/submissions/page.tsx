@@ -10,7 +10,8 @@ import {
   GlowCard, 
   FilterPill,
   ConfirmModal,
-  SuccessAnimation 
+  SuccessAnimation,
+  PageHeader
 } from '@/components/ui';
 import { ProtectedRoute } from '@/components/auth';
 import { auth } from '@/lib/firebase';
@@ -526,12 +527,13 @@ export default function AdminSubmissionsPage() {
 
         <main className="relative max-w-7xl mx-auto px-4 sm:px-6 py-8 pt-24">
           {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-              <span>📋</span> Content Submissions
-            </h1>
-            <p className="text-zinc-400 mt-1">Review and manage creator content submissions</p>
-          </div>
+          <PageHeader 
+            title="Content Submissions"
+            subtitle="Review and manage creator content"
+            icon="📹"
+            accentColor="blue"
+            align="left"
+          />
 
           {/* Stats Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">

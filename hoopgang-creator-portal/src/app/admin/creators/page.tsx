@@ -17,6 +17,7 @@ import {
   ConfirmModal,
   SuccessAnimation,
   CreatorSourceBadge,
+  PageHeader,
 } from '@/components/ui';
 import { ApplicationReviewModal } from '@/components/creators';
 import { ProtectedRoute } from '@/components/auth';
@@ -636,12 +637,13 @@ export default function AdminCreatorsPage() {
 
         <main className="relative max-w-7xl mx-auto px-4 sm:px-6 py-8">
           {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-              <span>👑</span> Admin Dashboard
-            </h1>
-            <p className="text-zinc-400 mt-1">Manage creator applications and collaborations</p>
-          </div>
+          <PageHeader 
+            title="Admin Dashboard"
+            subtitle="Manage creator applications and collaborations"
+            icon="👑"
+            accentColor="gold"
+            align="left"
+          />
 
           {/* Quick Action Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
