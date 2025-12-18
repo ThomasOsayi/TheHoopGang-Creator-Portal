@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Determine redirect URL based on source
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://creators.hoopgang.com';
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://thehoopgang.xyz';
     let redirectUrl: string;
     
     if (source === 'tiktok') {
