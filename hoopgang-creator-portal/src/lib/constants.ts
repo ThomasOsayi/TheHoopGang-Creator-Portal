@@ -32,7 +32,7 @@ export const CARRIERS: Array<{ value: Carrier; label: string }> = [
 ];
 
 export const CONTENT_DEADLINE_DAYS = 14;
-export const MAX_CONTENT_SUBMISSIONS = 3;
+export const MAX_CONTENT_SUBMISSIONS = 1;
 
 /**
  * Generates a creator display ID in the format "CRT-YYYY-XXX"

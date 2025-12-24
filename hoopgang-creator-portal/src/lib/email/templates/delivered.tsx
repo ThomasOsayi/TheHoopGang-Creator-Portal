@@ -93,7 +93,7 @@ export function DeliveredEmail({
           fontSize: '14px',
           margin: 0,
         }}>
-          {daysRemaining} days to submit 3 TikTok videos
+          {daysRemaining} days to submit 1 TikTok video
         </p>
       </div>
 
@@ -120,7 +120,7 @@ export function DeliveredEmail({
           margin: 0,
           paddingLeft: '20px',
         }}>
-          <li>Create <strong style={{ color: '#ffffff' }}>3 TikTok videos</strong> featuring your HoopGang gear</li>
+          <li>Create <strong style={{ color: '#ffffff' }}>1 TikTok video</strong> featuring your HoopGang gear</li>
           <li>Tag <strong style={{ color: '#f97316' }}>@thehoopgang</strong> in each video</li>
           <li>Submit your TikTok links through your creator dashboard</li>
           <li>Videos should showcase the gear in action (basketball, lifestyle, fits)</li>

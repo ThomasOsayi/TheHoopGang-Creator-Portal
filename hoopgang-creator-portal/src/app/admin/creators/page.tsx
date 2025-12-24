@@ -265,7 +265,7 @@ function CreatorRow({ creator, onView, onReview, onNudge }: CreatorRowProps) {
       {/* Content */}
       <td className="py-4 px-4">
         {['approved', 'shipped', 'delivered', 'completed'].includes(status) ? (
-          <ContentProgress submitted={contentSubmitted} total={3} />
+          <ContentProgress submitted={contentSubmitted} total={1} />
         ) : (
           <span className="text-zinc-600">—</span>
         )}

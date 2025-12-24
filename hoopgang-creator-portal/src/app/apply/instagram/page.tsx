@@ -1241,7 +1241,7 @@ function InstagramApplyContent() {
                       </div>
                       <div>
                         <span className="text-sm font-semibold text-white group-hover:text-orange-100 transition-colors">
-                          I agree to post 3 TikToks within 14 days
+                          I agree to post 1 TikTok within 14 days
                         </span>
                         <p className="text-xs text-white/50 mt-1">
                           Failure to post may disqualify me from future collaborations.

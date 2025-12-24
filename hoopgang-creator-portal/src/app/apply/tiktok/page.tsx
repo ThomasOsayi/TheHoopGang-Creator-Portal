@@ -822,7 +822,7 @@ function TiktokApplyContent() {
                   </div>
 
                   <p className="text-center text-white/40 text-xs">
-                    By creating an account, you agree to post 3 TikToks within 14 days of receiving your product.
+                    By creating an account, you agree to post 1 TikTok within 14 days of receiving your product.
                   </p>
                 </div>
               )}

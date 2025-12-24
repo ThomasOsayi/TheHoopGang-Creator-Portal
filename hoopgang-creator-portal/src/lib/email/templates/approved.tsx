@@ -93,7 +93,7 @@ export function ApprovedEmail({ creatorName, instagramHandle }: ApprovedEmailPro
         }}>
           <li>We ship your free HoopGang gear</li>
           <li>You receive it and try it on</li>
-          <li>Create 3 TikTok videos featuring the gear</li>
+          <li>Create 1 TikTok video featuring the gear</li>
           <li>Submit links through your creator dashboard</li>
         </ol>
       </div>

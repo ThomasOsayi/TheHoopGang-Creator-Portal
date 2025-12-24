@@ -496,7 +496,7 @@ export default function CreatorDetailPage() {
       items.push({
         date: formatDate(selectedCollab.contentDeadline),
         title: 'Content Deadline',
-        description: `${3 - selectedCollab.contentSubmissions.length} video${3 - selectedCollab.contentSubmissions.length !== 1 ? 's' : ''} remaining`,
+        description: `${1 - selectedCollab.contentSubmissions.length} video${1 - selectedCollab.contentSubmissions.length !== 1 ? 's' : ''} remaining`,
         status: remaining > 0 ? 'current' : 'upcoming',
         sortDate: selectedCollab.contentDeadline,
       });
@@ -832,7 +832,7 @@ export default function CreatorDetailPage() {
                 <MiniStatCard 
                   icon="🎬" 
                   label="Content" 
-                  value={`${selectedCollab?.contentSubmissions.length || 0}/3`} 
+                  value={`${selectedCollab?.contentSubmissions.length || 0}/1`} 
                   color="orange" 
                 />
                 <MiniStatCard 
@@ -1052,8 +1052,8 @@ export default function CreatorDetailPage() {
                   title="Content Submissions"
                   action={
                     <div className="flex items-center gap-3">
-                      <ProgressRing progress={(selectedCollab.contentSubmissions.length / 3) * 100} size={40} />
-                      <span className="text-zinc-400 text-sm">{selectedCollab.contentSubmissions.length}/3</span>
+                      <ProgressRing progress={(selectedCollab.contentSubmissions.length / 1) * 100} size={40} />
+                      <span className="text-zinc-400 text-sm">{selectedCollab.contentSubmissions.length}/1</span>
                     </div>
                   }
                 >

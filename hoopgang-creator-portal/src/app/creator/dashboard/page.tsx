@@ -383,7 +383,7 @@ export default function CreatorDashboardPage() {
         };
       case 'delivered':
         return {
-          title: `Post ${3 - videosSubmitted} more video${3 - videosSubmitted !== 1 ? 's' : ''} to complete`,
+          title: `Post ${1 - videosSubmitted} more video${1 - videosSubmitted !== 1 ? 's' : ''} to complete`,
           message: 'Show off your HoopGang gear!',
           showCta: true,
         };
@@ -643,14 +643,14 @@ export default function CreatorDashboardPage() {
                     <h3 className="text-lg font-semibold text-white flex items-center gap-2">
                       <span>🎥</span> Collab Content
                     </h3>
-                    <span className="text-zinc-400 text-sm">{videosSubmitted}/3 videos</span>
+                    <span className="text-zinc-400 text-sm">{videosSubmitted}/1 video</span>
                   </div>
 
                   {/* Progress bar with shimmer */}
                   <div className="h-3 bg-zinc-800 rounded-full overflow-hidden mb-4 relative">
                     <div 
                       className="h-full bg-gradient-to-r from-orange-500 to-amber-500 rounded-full transition-all duration-1000 relative"
-                      style={{ width: `${Math.max((videosSubmitted / 3) * 100, 2)}%` }}
+                      style={{ width: `${Math.max((videosSubmitted / 1) * 100, 2)}%` }}
                     >
                       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" />
                     </div>
@@ -660,7 +660,9 @@ export default function CreatorDashboardPage() {
                     <p className="text-zinc-400 text-sm">
                       {videosSubmitted === 0 
                         ? "Post your first TikTok featuring your HoopGang gear!"
-                        : `${3 - videosSubmitted} more to complete your collaboration`
+                        : videosSubmitted >= 1
+                          ? "You've completed your content requirement! 🎉"
+                          : `${1 - videosSubmitted} more to complete your collaboration`
                       }
                     </p>
                     <Link 

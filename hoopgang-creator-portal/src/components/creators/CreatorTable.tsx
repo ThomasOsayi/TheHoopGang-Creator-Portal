@@ -103,7 +103,7 @@ export default function CreatorTable({
                 </div>
                 <div className="bg-white/5 rounded-xl p-3 text-center">
                   <div className="flex items-center justify-center gap-1">
-                    <ProgressDots completed={contentSubmissions.length} total={3} size="sm" />
+                    <ProgressDots completed={contentSubmissions.length} total={1} size="sm" />
                   </div>
                   <div className="text-white/40 text-xs mt-1">Content</div>
                 </div>
@@ -348,11 +348,11 @@ export default function CreatorTable({
                       <div className="flex items-center gap-2">
                         <ProgressDots
                           completed={contentSubmissions.length}
-                          total={3}
+                          total={1}
                           size="sm"
                         />
                         <span className="text-white/40 text-xs">
-                          {contentSubmissions.length}/3
+                          {contentSubmissions.length}/1
                         </span>
                       </div>
                     </td>

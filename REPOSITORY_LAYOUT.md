@@ -69,10 +69,11 @@
 - **`src/components/creators/`**
   - `CreatorTable.tsx`, `FilterBar.tsx`, `ApplicationReviewModal.tsx`, `index.ts`
 - **`src/components/ui/`**
-  - Buttons, cards, badges, and layout: `Button.tsx`, `SectionCard.tsx`, `StatCard.tsx`, `StatusBadge.tsx`, `SourceBadge.tsx`, `CreatorSourceBadge.tsx`, `GlowCard.tsx`, `Navbar.tsx`
+  - Buttons, cards, badges, and layout: `Button.tsx`, `SectionCard.tsx`, `StatCard.tsx`, `StatusBadge.tsx`, `SourceBadge.tsx`, `CreatorSourceBadge.tsx`, `GlowCard.tsx`, `Navbar.tsx`, `AdminSidebar.tsx`, `PageHeader.tsx`
   - Feedback & animation: `Toast.tsx`, `SuccessToast.tsx`, `SuccessAnimation.tsx`, `Confetti.tsx`, `AnimatedCounter.tsx`, `LiveCountdown.tsx`
   - Data display & structure: `DetailRow.tsx`, `EmptyState.tsx`, `StarRating.tsx`, `Pagination.tsx`, `ProgressDots.tsx`, `Skeleton.tsx`, `FilterPill.tsx`, `PackageStatusCard.tsx`
   - Tracking & rewards UX: `TrackingStatus.tsx`, `TrackingProgress.tsx`, `ClaimModal.tsx` (with dynamic category colors), `ConfirmModal.tsx`, `BackgroundOrbs.tsx`
+  - Admin UI: `AdminSidebar.tsx` - Admin navigation sidebar with mobile menu, `PageHeader.tsx` - Animated page headers with customizable colors
   - `index.ts` – Barrel exports
 - **`src/lib/`**
   - Firebase client/admin setup, Firestore helpers (including TikTok import functions), tracking utilities, email system (`email-layout.tsx`, `send-email.ts`, templates), constants, and `week-utils.ts`
@@ -123,6 +124,13 @@
   - Instagram logo branding
   - Platform-specific application experience
 
+#### Admin Layout
+- `admin/layout.tsx` - Admin layout wrapper
+  - Uses `AdminSidebar` component for navigation
+  - Desktop: Fixed sidebar on left (lg:pl-64 offset)
+  - Mobile: Header bar with hamburger menu, full-screen drawer
+  - Consistent admin navigation across all admin pages
+
 #### Admin Routes
 ```
 admin/
@@ -134,10 +142,12 @@ admin/
 │   │                           # - Weekly/total submissions, active creators
 │   │                           # - Pending/approved redemptions, total paid out
 │   │                           # - Source badge display (TikTok/Instagram/Manual)
+│   │                           # - PageHeader component with orange accent
 │   │                           # - TikTok creators show "Active" status (no review needed)
 │   │                           # - TikTok creators always show "View" button (no Review/Nudge)
 │   └── [id]/
 │       └── page.tsx            # Individual creator detail page (dynamic route)
+│                               # - CreatorSourceBadge component for source display
 │                               # - Tracking management section
 │                               # - Height/weight display in profile
 │                               # - Fit information in stats bar
@@ -151,13 +161,47 @@ admin/
 │   │                           # - View leaderboard and submissions
 │   │                           # - Competition history
 │   │                           # - Creator submission modal
+│   │                           # - PageHeader component
 │   └── gmv/
 │       └── page.tsx            # GMV leaderboard admin page
 │                               # - Bulk GMV entry management
 │                               # - Monthly leaderboard view
 │                               # - GMV period selection
+│                               # - PageHeader component
+├── rewards/
+│   └── page.tsx                # Admin rewards management page
+│                               # - Create, edit, and manage rewards
+│                               # - Filter by category and status
+│                               # - Reward image upload support
+│                               # - Milestone and leaderboard reward configuration
+│                               # - PageHeader component
+├── redemptions/
+│   └── page.tsx                # Admin redemptions management page
+│                               # - View all redemptions with filters
+│                               # - Update redemption status (pending → approved → fulfilled)
+│                               # - Filter by status, creator, source
+│                               # - Bulk status updates
+│                               # - PageHeader component
+├── submissions/
+│   ├── page.tsx                # Milestone submissions list page
+│   │                           # - Filter by status, type, week
+│   │                           # - View all pending/approved/rejected submissions
+│   │                           # - PageHeader component
+│   └── [id]/
+│       └── page.tsx            # Individual milestone review page
+│                               # - Approve/reject milestone submissions
+│                               # - Verify view counts
+│                               # - Create redemption records
 ├── tiktok-imports/
 │   └── page.tsx                # TikTok creator CSV import management
+│                               # - CSV upload and batch import
+│                               # - Import history and batch tracking
+│                               # - Creator import list with filtering/search
+│                               # - Edit import records (address, size, status)
+│                               # - Bulk status updates (available/claimed/expired)
+│                               # - Pagination and selection management
+│                               # - Import statistics dashboard
+│                               # - PageHeader component
 │                               # - CSV upload and batch import
 │                               # - Import history and batch tracking
 │                               # - Creator import list with filtering/search
@@ -347,6 +391,7 @@ creator/
 │                               # - Content stats (weekly/all-time submissions, rank)
 │                               # - Rewards stats (pending, total earned)
 │                               # - Quick actions (submit, leaderboard, rewards)
+│                               # - PageHeader component
 ├── submit/
 │   └── page.tsx                # Content submission page
 │                               # - Volume submission form
@@ -355,6 +400,7 @@ creator/
 │                               # - Weekly stats display
 │                               # - Milestone stats display
 │                               # - Time until weekly reset
+│                               # - PageHeader component
 ├── leaderboard/
 │   └── page.tsx                # Creator leaderboard page
 │                               # - Volume competition leaderboard
@@ -364,6 +410,7 @@ creator/
 │                               # - Period selection for GMV
 │                               # - Dynamic prize display from competition data (1st/2nd/3rd place)
 │                               # - 1st place card centered and larger (1.5x width, enhanced styling)
+│                               # - PageHeader component
 ├── rewards/
 │   └── page.tsx                # Creator rewards page
 │                               # - View available rewards
@@ -371,11 +418,13 @@ creator/
 │                               # - Leaderboard rewards display
 │                               # - Reward images and descriptions
 │                               # - Redemption status tracking
+│                               # - PageHeader component
 └── submissions/
     └── page.tsx                # Creator submissions history page
                                 # - View all submissions
                                 # - Filter by type and status
                                 # - Submission status tracking
+                                # - PageHeader component
 ```
 
 ---
@@ -811,6 +860,16 @@ creator/
     - Bulk operations (edit, delete, status updates)
     - Admin import management interface
     - Creator source tracking (links creators to import records)
+
+15. **Admin UI System**
+    - Admin layout with consistent sidebar navigation
+    - AdminSidebar component with grouped navigation sections
+    - Desktop fixed sidebar with responsive mobile drawer
+    - PageHeader component with animated gradients and customizable colors
+    - CreatorSourceBadge for visual source identification
+    - Consistent admin navigation across all admin pages
+    - Mobile-first responsive design with hamburger menu
+    - Active route highlighting and visual feedback
 
 ---
 
@@ -1316,6 +1375,39 @@ creator/
   - Removed `icon` prop from all 5 FilterPill component calls
   - All linter errors resolved
   - Filter pills now work correctly without icon support
+
+### Admin UI System (Latest)
+- **Admin Layout** (`/admin/layout.tsx`):
+  - Consistent wrapper for all admin pages
+  - Integrates AdminSidebar component
+  - Responsive layout: desktop sidebar (256px) + mobile header/drawer
+  - Content offset handling (lg:pl-64 for desktop, pt-16 for mobile)
+- **AdminSidebar Component**:
+  - Desktop: Fixed left sidebar with grouped navigation
+    - Main section: Dashboard, Content, Rewards, Redemptions
+    - Competitions section: Volume Comp, GMV Comp
+    - Tools section: Imports, Apply Page
+  - Mobile: Header bar with hamburger menu
+    - Full-screen drawer with navigation links
+    - Overlay backdrop with blur
+    - Body scroll lock when open
+    - Smooth slide-in animations
+  - Active route detection and highlighting
+  - Sign out functionality
+  - HoopGang logo branding
+- **PageHeader Component**:
+  - Used across admin and creator pages
+  - Customizable accent colors (6 color themes)
+  - Animated icon with floating effect
+  - Gradient text with shimmer animation
+  - Animated subtitle and decorative underline
+  - Fade-in and slide animations on mount
+  - Center or left alignment options
+- **CreatorSourceBadge Component**:
+  - Visual identification of creator source
+  - Color-coded badges (TikTok: black, Instagram: purple/pink, Manual: gray)
+  - Size variants for different contexts
+  - Used in creator table and detail pages
 
 ### TikTok Integration Features (Latest)
 - **Creator Application Sources**:
