@@ -1,11 +1,13 @@
 // src/app/api/submissions/volume/file/route.ts
 import { NextRequest, NextResponse } from 'next/server';
+import crypto from 'crypto';
 import { 
   createFileVolumeSubmission, 
   getCreatorByUserId, 
   recalculateVolumeLeaderboard, 
   getActiveCompetition, 
-  recalculateCompetitionLeaderboard 
+  recalculateCompetitionLeaderboard,
+  checkDuplicateFileHash
 } from '@/lib/firestore';
 import { getCurrentWeek } from '@/lib/week-utils';
 import { adminAuth } from '@/lib/firebase-admin';
@@ -67,6 +69,18 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
+    // Calculate file hash to prevent duplicate uploads
+    const fileBuffer = Buffer.from(await file.arrayBuffer());
+    const fileHash = crypto.createHash('sha256').update(fileBuffer).digest('hex');
+
+    // Check if this exact file has already been uploaded by this creator
+    const isDuplicate = await checkDuplicateFileHash(creator.id, fileHash);
+    if (isDuplicate) {
+      return NextResponse.json({ 
+        error: 'You have already uploaded this video file' 
+      }, { status: 409 });
+    }
+
     // Generate unique file path
     const timestamp = Date.now();
     const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
@@ -74,7 +88,6 @@ export async function POST(request: NextRequest) {
 
     // Upload to Firebase Storage
     const bucket = adminStorage.bucket();
-    const fileBuffer = Buffer.from(await file.arrayBuffer());
     
     const fileRef = bucket.file(filePath);
     await fileRef.save(fileBuffer, {
@@ -84,6 +97,7 @@ export async function POST(request: NextRequest) {
           creatorId: creator.id,
           uploadedBy: userId,
           originalName: file.name,
+          fileHash,
         },
       },
     });
@@ -101,7 +115,7 @@ export async function POST(request: NextRequest) {
     const activeCompetition = await getActiveCompetition('volume');
     const competitionId = activeCompetition?.id || null;
 
-    // Create submission record
+    // Create submission record (now includes fileHash)
     const submission = await createFileVolumeSubmission(
       creator.id,
       {
@@ -110,6 +124,7 @@ export async function POST(request: NextRequest) {
         fileSize: file.size,
         filePath,
         mimeType: file.type,
+        fileHash,
       },
       weekOf,
       competitionId
@@ -132,7 +147,7 @@ export async function POST(request: NextRequest) {
     console.error('File upload error:', error);
     
     // Handle duplicate file error
-    if (error instanceof Error && error.message.includes('already been submitted')) {
+    if (error instanceof Error && error.message.includes('already')) {
       return NextResponse.json({ error: error.message }, { status: 409 });
     }
 

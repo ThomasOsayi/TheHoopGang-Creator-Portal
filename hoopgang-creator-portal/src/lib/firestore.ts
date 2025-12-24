@@ -1276,6 +1276,23 @@ export async function createVolumeSubmission(
 }
 
 /**
+ * Checks if a file with the same hash has already been submitted by this creator
+ */
+export async function checkDuplicateFileHash(
+  creatorId: string,
+  fileHash: string
+): Promise<boolean> {
+  const existingQuery = query(
+    collection(db, V3_SUBMISSIONS_COLLECTION),
+    where('creatorId', '==', creatorId),
+    where('fileHash', '==', fileHash),
+    limit(1)
+  );
+  const existing = await getDocs(existingQuery);
+  return !existing.empty;
+}
+
+/**
  * Creates a volume content submission from a file upload
  * If competitionId is provided, tags the submission for that competition
  */
@@ -1287,19 +1304,17 @@ export async function createFileVolumeSubmission(
     fileSize: number;
     filePath: string;
     mimeType: string;
+    fileHash?: string;
   },
   weekOf: string,
   competitionId?: string | null
 ): Promise<V3ContentSubmission> {
-  // Check for duplicate file path (prevents re-uploading same file)
-  const existingQuery = query(
-    collection(db, V3_SUBMISSIONS_COLLECTION),
-    where('creatorId', '==', creatorId),
-    where('filePath', '==', fileData.filePath)
-  );
-  const existing = await getDocs(existingQuery);
-  if (!existing.empty) {
-    throw new Error('This file has already been submitted');
+  // Check for duplicate file hash (most reliable duplicate check)
+  if (fileData.fileHash) {
+    const isDuplicate = await checkDuplicateFileHash(creatorId, fileData.fileHash);
+    if (isDuplicate) {
+      throw new Error('This video file has already been submitted');
+    }
   }
 
   const submissionData: Record<string, any> = {
@@ -1318,6 +1333,11 @@ export async function createFileVolumeSubmission(
     filePath: fileData.filePath,
     mimeType: fileData.mimeType,
   };
+
+  // Store the hash for future duplicate checks
+  if (fileData.fileHash) {
+    submissionData.fileHash = fileData.fileHash;
+  }
 
   // Tag with competition if active
   if (competitionId) {

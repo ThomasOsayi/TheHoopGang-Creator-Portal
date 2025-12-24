@@ -343,6 +343,7 @@ export interface V3ContentSubmission {
   mimeType?: string;                    // "video/mp4", "video/quicktime", "video/webm"
   duration?: number;                    // Video duration in seconds (future use)
   thumbnailUrl?: string;                // Auto-generated thumbnail (future use)
+  fileHash?: string;                    // SHA256 hash for duplicate detection
 }
 
 /**
