@@ -350,8 +350,19 @@ api/
 │   │   │   └── route.ts        # Submission history API
 │   │   │                       # - GET: Fetch creator's submission history
 │   │   └── volume/
-│   │       ├── route.ts        # Volume submission API
-│   │       │                   # - POST: Create volume submission
+│   │       ├── route.ts        # Volume submission API (URL-based)
+│   │       │                   # - POST: Create volume submission from TikTok URL
+│   │       │                   # - Auto-tags with active competition
+│   │       │                   # - Recalculates leaderboards
+│   │       │                   # - Sets submissionFormat: 'url'
+│   │       ├── file/
+│   │       │   └── route.ts    # Volume submission API (file upload)
+│   │       │                   # - POST: Upload video file and create submission
+│   │       │                   # - Multipart form data with file
+│   │       │                   # - Validates file type (MP4, MOV, WebM, AVI, MKV)
+│   │       │                   # - Validates file size (max 100MB)
+│   │       │                   # - Uploads to Firebase Storage
+│   │       │                   # - Sets submissionFormat: 'file'
 │   │       │                   # - Auto-tags with active competition
 │   │       │                   # - Recalculates leaderboards
 │   │       ├── stats/
@@ -394,13 +405,17 @@ creator/
 │                               # - PageHeader component
 ├── submit/
 │   └── page.tsx                # Content submission page
-│                               # - Volume submission form
+│                               # - Volume submission form (URL input)
+│                               # - File upload form (drag & drop or file picker)
+│                               # - File validation (type, size up to 100MB)
+│                               # - Upload progress tracking
 │                               # - Milestone submission form
 │                               # - Competition status banner
 │                               # - Weekly stats display
 │                               # - Milestone stats display
 │                               # - Time until weekly reset
 │                               # - PageHeader component
+│                               # - Supports both URL and file upload submissions
 ├── leaderboard/
 │   └── page.tsx                # Creator leaderboard page
 │                               # - Volume competition leaderboard
@@ -500,7 +515,11 @@ creator/
   - Email verification link generation
   - Service account configuration (supports base64 encoded or individual env vars)
 - `firestore.ts` - Firestore database operations and utilities
-  - V3 Content Submission functions (volume, milestone)
+  - V3 Content Submission functions:
+    - `createVolumeSubmission()` - URL-based volume submissions (submissionFormat: 'url')
+    - `createFileVolumeSubmission()` - File upload volume submissions (submissionFormat: 'file')
+    - `createMilestoneSubmission()` - Milestone submissions (requires admin review)
+    - File upload validation and duplicate checking
   - Competition management functions
   - Leaderboard calculation and management
   - Rewards and redemptions system
@@ -562,8 +581,18 @@ creator/
   - V3 Content Submission types:
     - `V3SubmissionType` - 'volume' | 'milestone'
     - `V3SubmissionStatus` - 'pending' | 'approved' | 'rejected'
+    - `V3SubmissionFormat` - 'url' | 'file' (V3.1: File upload support)
     - `MilestoneTier` - '100k' | '500k' | '1m'
     - `V3ContentSubmission` - Submission interface with competitionId
+      - `submissionFormat: V3SubmissionFormat` - Distinguishes URL vs file uploads
+      - File upload fields (when submissionFormat === 'file'):
+        - `fileUrl?: string` - Firebase Storage download URL
+        - `fileName?: string` - Original filename
+        - `fileSize?: number` - File size in bytes
+        - `filePath?: string` - Storage path
+        - `mimeType?: string` - Video MIME type
+        - `duration?: number` - Video duration (future use)
+        - `thumbnailUrl?: string` - Auto-generated thumbnail (future use)
   - Competition types:
     - `CompetitionStatus` - 'pending' | 'active' | 'ended' | 'finalized'
     - `Competition` - Competition interface with winners, dates
@@ -636,7 +665,7 @@ creator/
 - Admin: creators list, creator detail, submissions list, submission review, volume leaderboard, GMV leaderboard, TikTok imports
 - Creator: dashboard, submit, leaderboard, rewards, submissions history, request-product
 
-### API Routes (25+ files)
+### API Routes (26+ files)
 - Auth: Email verification, TikTok lookup (public), TikTok claim endpoints
 - Email: Send email endpoint
 - Tracking API: POST, GET, DELETE handlers (simplified - no external API)
@@ -644,7 +673,11 @@ creator/
 - Competitions: Active competition endpoint (public)
 - Admin Competitions: Start, end, finalize competitions
 - Admin TikTok Imports: CSV import, batch management, creator lookup/update/delete
-- Submissions: Volume, milestone, history endpoints
+- Submissions: 
+  - Volume URL submission endpoint
+  - Volume file upload endpoint (multipart form data, Firebase Storage)
+  - Milestone submission endpoint
+  - Submission history endpoint
 - Leaderboards: Volume, GMV leaderboard endpoints
 - Admin Submissions: Review and manage submissions
 - Admin Leaderboards: Finalize and manage leaderboards
@@ -816,10 +849,16 @@ creator/
 
 10. **V3 Content Submission System**
     - Volume submissions (auto-approved)
+      - URL-based: TikTok URL input and submission
+      - File upload: Video file upload with drag & drop support (V3.1)
+      - File validation: Type checking (MP4, MOV, WebM, AVI, MKV) and size limits (100MB)
+      - Firebase Storage integration for file storage
+      - Duplicate prevention for both URLs and file paths
     - Milestone submissions (requires admin review)
     - Competition integration (auto-tags submissions)
     - Weekly and milestone statistics tracking
     - Submission history and status tracking
+    - Submission format tracking (URL vs file upload)
 
 11. **Competition System**
     - Volume and GMV competition support
@@ -1188,10 +1227,15 @@ creator/
 ### V3 Content Submission & Competition System (Latest)
 - **Content Submission System**:
   - Volume submissions: Auto-approved, tracked by week
+    - URL-based submissions: TikTok URL input, sets `submissionFormat: 'url'`
+    - File upload submissions: Video file upload (MP4, MOV, WebM, AVI, MKV), sets `submissionFormat: 'file'`
+    - File validation: Type checking, size limit (100MB), duplicate file path prevention
+    - Firebase Storage integration: Files stored at `videos/{creatorId}/{timestamp}-{filename}`
+    - Public file URLs: Files made publicly accessible via Firebase Storage
   - Milestone submissions: Requires admin review, tracks view milestones
   - Competition integration: Submissions automatically tagged with active competition
   - Submission stats: Weekly volume counts, milestone approval/rejection tracking
-  - Duplicate URL prevention: Checks for existing submissions before creating
+  - Duplicate prevention: Checks for existing URL or file path before creating
 - **Competition System**:
   - Competition types: Volume and GMV competitions
   - Competition lifecycle: Start → Active → Ended → Finalized
@@ -1218,6 +1262,11 @@ creator/
   - Creator submission viewer: Modal to view all submissions for a creator
 - **Creator Features**:
   - Submit page: Volume and milestone submission forms with competition status
+    - URL submission: TikTok URL input with validation
+    - File upload: Drag & drop or file picker with progress tracking
+    - File validation: Type and size checking before upload
+    - Upload progress: Real-time progress indicator during file upload
+    - Both submission types auto-tag with active competition
   - Leaderboard page: View competition and GMV leaderboards with user rank
   - Submissions history: View all past submissions with status
   - Competition awareness: Status banners showing active/ended competitions
@@ -1228,14 +1277,28 @@ creator/
   - Submission filtering: Filter by type, status, week, creator
   - Leaderboard APIs: Separate endpoints for volume and GMV
   - Stats APIs: Volume and milestone statistics endpoints
+  - File Upload API (`/api/submissions/volume/file`):
+    - Multipart form data handling
+    - File validation (type, size)
+    - Firebase Storage upload
+    - Public URL generation
+    - Automatic leaderboard recalculation
 - **Firestore Functions**:
   - Competition functions: getActiveCompetition, startCompetition, endCompetition, finalizeCompetition
-  - Submission functions: createVolumeSubmission, createMilestoneSubmission, reviewMilestoneSubmission
+  - Submission functions:
+    - `createVolumeSubmission()` - URL-based volume submissions (submissionFormat: 'url')
+    - `createFileVolumeSubmission()` - File upload volume submissions (submissionFormat: 'file')
+    - `createMilestoneSubmission()` - Milestone submissions (requires admin review)
+    - `reviewMilestoneSubmission()` - Admin review and approval/rejection
   - Leaderboard functions: getLeaderboard, recalculateVolumeLeaderboard, getCompetitionLeaderboard
   - Reward functions: getActiveRewards, getRewardByMilestoneTier, createReward
   - Redemption functions: createRedemption, getRedemptionsByCreatorId, updateRedemptionStatus
 - **Type System**:
-  - Added V3 submission types (V3ContentSubmission, V3SubmissionType, etc.)
+  - Added V3 submission types (V3ContentSubmission, V3SubmissionType, V3SubmissionFormat, etc.)
+  - V3.1 File Upload Support:
+    - `V3SubmissionFormat` type: 'url' | 'file'
+    - Extended `V3ContentSubmission` interface with file upload fields
+    - File metadata: fileUrl, fileName, fileSize, filePath, mimeType, duration, thumbnailUrl
   - Added competition types (Competition, CompetitionStatus, CompetitionWinner)
   - Added leaderboard types (LeaderboardEntry, LeaderboardType, LeaderboardPeriod)
   - Added rewards types (Reward, RewardCategory, FulfillmentType)
@@ -1408,6 +1471,39 @@ creator/
   - Color-coded badges (TikTok: black, Instagram: purple/pink, Manual: gray)
   - Size variants for different contexts
   - Used in creator table and detail pages
+
+### File Upload Submission System (V3.1 - Latest)
+- **File Upload API** (`/api/submissions/volume/file`):
+  - Multipart form data handling for video file uploads
+  - File type validation: MP4, MOV, WebM, AVI, MKV
+  - File size validation: Maximum 100MB
+  - Firebase Storage integration:
+    - Files stored at `videos/{creatorId}/{timestamp}-{filename}`
+    - Public file URLs generated for access
+    - File metadata stored (name, size, MIME type, path)
+  - Duplicate file prevention: Checks file path before upload
+  - Automatic competition tagging: Links to active competition if available
+  - Leaderboard recalculation: Updates volume and competition leaderboards after upload
+- **Submit Page File Upload UI**:
+  - Drag & drop file upload interface
+  - File picker alternative
+  - Real-time upload progress tracking
+  - File validation feedback (type, size)
+  - File size display formatting
+  - Upload state management (uploading, progress, success/error)
+- **Firestore Functions**:
+  - `createFileVolumeSubmission()` - Creates submission record with file metadata
+  - Sets `submissionFormat: 'file'` to distinguish from URL submissions
+  - Stores file metadata: fileUrl, fileName, fileSize, filePath, mimeType
+- **Type System**:
+  - `V3SubmissionFormat` type: 'url' | 'file'
+  - Extended `V3ContentSubmission` interface with optional file fields
+  - Backward compatible: Existing URL submissions continue to work
+- **Storage Configuration**:
+  - Firebase Storage bucket for video files
+  - Public access for uploaded files
+  - Organized by creator ID for easy management
+  - Timestamped filenames prevent conflicts
 
 ### TikTok Integration Features (Latest)
 - **Creator Application Sources**:
