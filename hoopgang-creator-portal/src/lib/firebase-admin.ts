@@ -21,11 +21,11 @@ function getServiceAccount(): ServiceAccount {
   } as ServiceAccount;
 }
 
-const adminApp = getApps().length === 0
+export const adminApp = getApps().length === 0
   ? initializeApp({
       credential: cert(getServiceAccount()),
     })
   : getApps()[0];
 
 export const adminAuth = getAuth(adminApp);
-export const adminDb = getFirestore(adminApp);  // ✅ ADD THIS
+export const adminDb = getFirestore(adminApp); 

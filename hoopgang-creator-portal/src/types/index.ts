@@ -309,11 +309,12 @@ export interface TiktokLookupResult {
 export type V3SubmissionType = 'volume' | 'milestone';
 export type V3SubmissionStatus = 'pending' | 'approved' | 'rejected';
 export type MilestoneTier = '100k' | '500k' | '1m';
+export type V3SubmissionFormat = 'url' | 'file';
 
 export interface V3ContentSubmission {
   id: string;
   creatorId: string;                    // Firestore doc ID of creator
-  tiktokUrl: string;
+  tiktokUrl: string;                    // TikTok URL (required for 'url', optional for 'file')
   type: V3SubmissionType;
   
   // Milestone-specific fields
@@ -330,6 +331,18 @@ export interface V3ContentSubmission {
   submittedAt: Date;
   weekOf: string;                       // ISO week: "2025-W50"
   competitionId?: string;               // Optional: ID of competition this submission is part of
+  
+  // ===== FILE UPLOAD FIELDS (V3.1) =====
+  submissionFormat: V3SubmissionFormat; // 'url' or 'file'
+  
+  // File-specific fields (only when submissionFormat === 'file')
+  fileUrl?: string;                     // Firebase Storage download URL
+  fileName?: string;                    // Original filename: "my-video.mp4"
+  fileSize?: number;                    // File size in bytes
+  filePath?: string;                    // Storage path: "videos/{creatorId}/{timestamp}-{filename}"
+  mimeType?: string;                    // "video/mp4", "video/quicktime", "video/webm"
+  duration?: number;                    // Video duration in seconds (future use)
+  thumbnailUrl?: string;                // Auto-generated thumbnail (future use)
 }
 
 /**

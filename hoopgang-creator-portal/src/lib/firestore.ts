@@ -34,6 +34,7 @@ import {
   V3ContentSubmission,
   V3SubmissionType,
   V3SubmissionStatus,
+  V3SubmissionFormat,
   MilestoneTier,
   LeaderboardEntry,
   LeaderboardType,
@@ -1257,6 +1258,65 @@ export async function createVolumeSubmission(
     status: 'approved' as V3SubmissionStatus, // Volume submissions auto-approve
     submittedAt: Timestamp.fromDate(new Date()),
     weekOf,
+    submissionFormat: 'url', // V3.1: Distinguish from file uploads
+  };
+
+  // Tag with competition if active
+  if (competitionId) {
+    submissionData.competitionId = competitionId;
+  }
+
+  const docRef = await addDoc(collection(db, V3_SUBMISSIONS_COLLECTION), submissionData);
+  
+  return {
+    id: docRef.id,
+    ...submissionData,
+    submittedAt: new Date(),
+  } as V3ContentSubmission;
+}
+
+/**
+ * Creates a volume content submission from a file upload
+ * If competitionId is provided, tags the submission for that competition
+ */
+export async function createFileVolumeSubmission(
+  creatorId: string,
+  fileData: {
+    fileUrl: string;
+    fileName: string;
+    fileSize: number;
+    filePath: string;
+    mimeType: string;
+  },
+  weekOf: string,
+  competitionId?: string | null
+): Promise<V3ContentSubmission> {
+  // Check for duplicate file path (prevents re-uploading same file)
+  const existingQuery = query(
+    collection(db, V3_SUBMISSIONS_COLLECTION),
+    where('creatorId', '==', creatorId),
+    where('filePath', '==', fileData.filePath)
+  );
+  const existing = await getDocs(existingQuery);
+  if (!existing.empty) {
+    throw new Error('This file has already been submitted');
+  }
+
+  const submissionData: Record<string, any> = {
+    creatorId,
+    tiktokUrl: '', // Empty for file uploads
+    type: 'volume' as V3SubmissionType,
+    status: 'approved' as V3SubmissionStatus, // Volume submissions auto-approve
+    submittedAt: Timestamp.fromDate(new Date()),
+    weekOf,
+    
+    // File upload fields
+    submissionFormat: 'file',
+    fileUrl: fileData.fileUrl,
+    fileName: fileData.fileName,
+    fileSize: fileData.fileSize,
+    filePath: fileData.filePath,
+    mimeType: fileData.mimeType,
   };
 
   // Tag with competition if active

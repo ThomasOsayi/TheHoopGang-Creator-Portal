@@ -40,6 +40,33 @@ function ExternalLinkIcon({ className = "w-4 h-4" }: { className?: string }) {
   );
 }
 
+// Upload Cloud Icon
+function UploadIcon({ className = "w-8 h-8" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+    </svg>
+  );
+}
+
+// File Video Icon
+function FileVideoIcon({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
+    </svg>
+  );
+}
+
+// X/Close Icon
+function XIcon({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+    </svg>
+  );
+}
+
 export default function SubmitContentPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -78,6 +105,12 @@ export default function SubmitContentPage() {
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [successSubMessage, setSuccessSubMessage] = useState('');
+
+  // File upload state
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
 
   // Helper function to get auth token
   const getAuthToken = async (): Promise<string | null> => {
@@ -236,6 +269,138 @@ export default function SubmitContentPage() {
     } catch {
       return url.slice(0, 30) + '...';
     }
+  };
+
+  // ===== FILE UPLOAD FUNCTIONS =====
+  const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
+  const ALLOWED_TYPES = ['video/mp4', 'video/quicktime', 'video/webm', 'video/x-msvideo', 'video/x-matroska'];
+
+  const validateFile = (file: File): string | null => {
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      return 'Invalid file type. Please upload MP4, MOV, WebM, AVI, or MKV';
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      return 'File too large. Maximum size is 100MB';
+    }
+    return null;
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  };
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === 'dragenter' || e.type === 'dragover') {
+      setDragActive(true);
+    } else if (e.type === 'dragleave') {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const file = e.dataTransfer.files[0];
+      const error = validateFile(file);
+      if (error) {
+        alert(error);
+        return;
+      }
+      setSelectedFile(file);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const error = validateFile(file);
+      if (error) {
+        alert(error);
+        return;
+      }
+      setSelectedFile(file);
+    }
+  };
+
+  const handleFileUpload = async () => {
+    if (!selectedFile || isUploading) return;
+    
+    setIsUploading(true);
+    setUploadProgress(0);
+    
+    try {
+      const token = await getAuthToken();
+      if (!token) throw new Error('Not authenticated');
+
+      // Create form data
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+
+      // Use XMLHttpRequest for progress tracking
+      const xhr = new XMLHttpRequest();
+      
+      const uploadPromise = new Promise<any>((resolve, reject) => {
+        xhr.upload.addEventListener('progress', (event) => {
+          if (event.lengthComputable) {
+            const progress = Math.round((event.loaded / event.total) * 100);
+            setUploadProgress(progress);
+          }
+        });
+
+        xhr.addEventListener('load', () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve(JSON.parse(xhr.responseText));
+          } else {
+            try {
+              const errorData = JSON.parse(xhr.responseText);
+              reject(new Error(errorData.error || 'Upload failed'));
+            } catch {
+              reject(new Error('Upload failed'));
+            }
+          }
+        });
+
+        xhr.addEventListener('error', () => reject(new Error('Upload failed')));
+        xhr.addEventListener('abort', () => reject(new Error('Upload cancelled')));
+
+        xhr.open('POST', '/api/submissions/volume/file');
+        xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+        xhr.send(formData);
+      });
+
+      await uploadPromise;
+
+      // Clear file and refresh stats
+      setSelectedFile(null);
+      setUploadProgress(0);
+      await loadVolumeStats();
+      
+      // Show celebration!
+      setSuccessMessage('Video Uploaded! 🎬');
+      setSuccessSubMessage(`You now have ${volumeStats.weeklyCount + 1} submissions this week`);
+      setShowConfetti(true);
+      setShowSuccessToast(true);
+      
+      setTimeout(() => setShowConfetti(false), 3000);
+    } catch (error) {
+      console.error('Upload error:', error);
+      alert(error instanceof Error ? error.message : 'Upload failed');
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+    }
+  };
+
+  const clearSelectedFile = () => {
+    setSelectedFile(null);
+    setUploadProgress(0);
   };
 
   if (authLoading || loading) {
@@ -403,8 +568,114 @@ export default function SubmitContentPage() {
           </form>
         </GlowCard>
 
+        {/* Upload Video File Card */}
+        <GlowCard glowColor="purple" delay="0.3s" className="mb-8">
+          <div className="text-center mb-6">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <h2 className="text-xl font-bold text-white">Or Upload a Video</h2>
+              <span className="px-2 py-0.5 bg-purple-500/20 text-purple-400 text-xs font-medium rounded-full">NEW</span>
+            </div>
+            <p className="text-zinc-400">Upload your video directly — no TikTok link needed</p>
+          </div>
+
+          {/* Drop Zone */}
+          <div
+            onDragEnter={handleDrag}
+            onDragLeave={handleDrag}
+            onDragOver={handleDrag}
+            onDrop={handleDrop}
+            className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-300 ${
+              dragActive 
+                ? 'border-purple-500 bg-purple-500/10' 
+                : selectedFile 
+                  ? 'border-green-500/50 bg-green-500/5' 
+                  : 'border-zinc-700 hover:border-zinc-600 hover:bg-zinc-800/30'
+            }`}
+          >
+            {!selectedFile ? (
+              <>
+                <div className={`mx-auto mb-4 transition-colors ${dragActive ? 'text-purple-400' : 'text-zinc-500'}`}>
+                  <UploadIcon className="w-12 h-12 mx-auto" />
+                </div>
+                <p className="text-white font-medium mb-1">
+                  {dragActive ? 'Drop your video here' : 'Drag & drop your video'}
+                </p>
+                <p className="text-zinc-500 text-sm mb-4">or click to browse</p>
+                <input
+                  type="file"
+                  accept="video/mp4,video/quicktime,video/webm,video/x-msvideo,video/x-matroska"
+                  onChange={handleFileSelect}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                />
+                <div className="flex items-center justify-center gap-4 text-xs text-zinc-500">
+                  <span>MP4, MOV, WebM</span>
+                  <span>•</span>
+                  <span>Max 100MB</span>
+                </div>
+              </>
+            ) : (
+              <div className="space-y-4">
+                {/* Selected File Info */}
+                <div className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                      <FileVideoIcon className="w-5 h-5 text-purple-400" />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-white text-sm font-medium truncate max-w-[200px]">
+                        {selectedFile.name}
+                      </p>
+                      <p className="text-zinc-500 text-xs">
+                        {formatFileSize(selectedFile.size)}
+                      </p>
+                    </div>
+                  </div>
+                  {!isUploading && (
+                    <button
+                      onClick={clearSelectedFile}
+                      className="p-2 text-zinc-500 hover:text-white hover:bg-zinc-700 rounded-lg transition-colors"
+                    >
+                      <XIcon />
+                    </button>
+                  )}
+                </div>
+
+                {/* Upload Progress */}
+                {isUploading && (
+                  <div className="space-y-2">
+                    <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-300"
+                        style={{ width: `${uploadProgress}%` }}
+                      />
+                    </div>
+                    <p className="text-zinc-400 text-sm">
+                      Uploading... {uploadProgress}%
+                    </p>
+                  </div>
+                )}
+
+                {/* Upload Button */}
+                {!isUploading && (
+                  <button
+                    onClick={handleFileUpload}
+                    className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-semibold rounded-xl transition-all"
+                  >
+                    Upload to Leaderboard →
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Info Note */}
+          <p className="text-zinc-500 text-xs text-center mt-4">
+            📱 Video uploads count toward the leaderboard just like TikTok links
+          </p>
+        </GlowCard>
+
         {/* Recent Submissions */}
-        <GlowCard glowColor="orange" delay="0.3s" className="mb-8">
+        <GlowCard glowColor="orange" delay="0.35s" className="mb-8">
           <div className="flex items-center gap-2 mb-4">
             <span className="text-xl">📋</span>
             <h3 className="text-lg font-semibold text-white">Recent Submissions</h3>
@@ -424,18 +695,22 @@ export default function SubmitContentPage() {
                       </svg>
                     </div>
                     <div>
-                      <div className="text-white text-sm">{shortenUrl(submission.tiktokUrl)}</div>
+                      <div className="text-white text-sm">
+                        {submission.tiktokUrl ? shortenUrl(submission.tiktokUrl) : '📁 Video Upload'}
+                      </div>
                       <div className="text-zinc-500 text-xs">{formatRelativeTime(submission.createdAt)}</div>
                     </div>
                   </div>
-                  <a 
-                    href={submission.tiktokUrl} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-zinc-500 hover:text-zinc-300 transition-colors"
-                  >
-                    <ExternalLinkIcon />
-                  </a>
+                  {submission.tiktokUrl && (
+                    <a 
+                      href={submission.tiktokUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-zinc-500 hover:text-zinc-300 transition-colors"
+                    >
+                      <ExternalLinkIcon />
+                    </a>
+                  )}
                 </div>
               ))}
             </div>
@@ -457,7 +732,7 @@ export default function SubmitContentPage() {
         </GlowCard>
 
         {/* Milestone Bonuses */}
-        <GlowCard glowColor="amber" delay="0.35s" className="mb-8">
+        <GlowCard glowColor="amber" delay="0.4s" className="mb-8">
           <div className="flex items-center gap-2 mb-2">
             <span className="text-2xl">🏆</span>
             <h3 className="text-lg font-semibold text-white">Milestone Bonuses</h3>
@@ -507,7 +782,7 @@ export default function SubmitContentPage() {
         </GlowCard>
 
         {/* Maximize Your Content - Pro Tips */}
-        <GlowCard glowColor="purple" delay="0.4s" className="mb-8">
+        <GlowCard glowColor="purple" delay="0.45s" className="mb-8">
           <div className="flex items-center gap-2 mb-4">
             <span className="text-2xl">💡</span>
             <h3 className="text-lg font-semibold text-white">Maximize Your Content</h3>
