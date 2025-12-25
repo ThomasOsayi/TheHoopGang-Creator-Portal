@@ -1,8 +1,13 @@
 // src/app/api/creator/rewards/stats/route.ts
-import { NextResponse } from 'next/server';
-import { adminDb, adminAuth } from '@/lib/firebase-admin';
+import { NextRequest, NextResponse } from 'next/server';
+import { 
+  getCreatorByUserId, 
+  getRedemptionsByCreatorId,
+  getV3SubmissionsByCreatorId,
+} from '@/lib/firestore';
+import { adminAuth } from '@/lib/firebase-admin';
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
     // Get auth token from header
     const authHeader = request.headers.get('Authorization');
@@ -16,39 +21,16 @@ export async function GET(request: Request) {
     const decodedToken = await adminAuth.verifyIdToken(token);
     const userId = decodedToken.uid;
 
-    // Get creator by userId
-    const usersSnapshot = await adminDb.collection('users').where('uid', '==', userId).limit(1).get();
-    if (usersSnapshot.empty) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    const userData = usersSnapshot.docs[0].data();
-    const creatorId = userData.creatorId;
-
-    if (!creatorId) {
+    // Get creator by userId (FIXED: use proper function)
+    const creator = await getCreatorByUserId(userId);
+    if (!creator) {
       return NextResponse.json({ error: 'Creator not found' }, { status: 404 });
     }
 
     // Fetch all redemptions for this creator
-    const redemptionsSnapshot = await adminDb.collection('redemptions')
-      .where('creatorId', '==', creatorId)
-      .get();
+    const redemptions = await getRedemptionsByCreatorId(creator.id);
 
-    interface RedemptionData {
-      id: string;
-      rewardId?: string;
-      status: string;
-      cashAmount?: number;
-      storeCreditAmount?: number;
-      submissionId?: string;
-    }
-
-    const redemptions: RedemptionData[] = redemptionsSnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-    } as RedemptionData));
-
-    // Calculate stats
+    // Calculate stats from redemptions
     let totalEarned = 0;
     let pending = 0;
     let readyToClaim = 0;
@@ -63,9 +45,8 @@ export async function GET(request: Request) {
       // Calculate totals based on status
       switch (redemption.status) {
         case 'fulfilled':
-          // Add to total earned (cash + store credit)
+          // Add to total earned
           totalEarned += redemption.cashAmount || 0;
-          totalEarned += redemption.storeCreditAmount || 0;
           break;
         case 'pending':
           pending += 1;
@@ -77,30 +58,26 @@ export async function GET(request: Request) {
       }
     });
 
-    // Also check for milestone submissions that are approved but not yet redeemed
-    const milestoneSubmissionsSnapshot = await adminDb.collection('submissions')
-      .where('creatorId', '==', creatorId)
-      .where('type', '==', 'milestone')
-      .where('status', '==', 'approved')
-      .get();
+    // Check for approved milestone submissions that don't have redemptions yet
+    // (Edge case - shouldn't happen if review endpoint works correctly)
+    const approvedMilestones = await getV3SubmissionsByCreatorId(creator.id, {
+      type: 'milestone',
+      status: 'approved',
+    });
 
-    // Check which approved milestones don't have a redemption yet
-    for (const doc of milestoneSubmissionsSnapshot.docs) {
-      const hasRedemption = redemptions.some(
-        (r) => r.submissionId === doc.id
-      );
+    for (const milestone of approvedMilestones) {
+      const hasRedemption = redemptions.some(r => r.sourceId === milestone.id);
       if (!hasRedemption) {
         readyToClaim += 1;
       }
     }
 
-    // Check volume-based rewards based on total submissions
-    const volumeSubmissionsSnapshot = await adminDb.collection('submissions')
-      .where('creatorId', '==', creatorId)
-      .where('type', '==', 'volume')
-      .get();
-
-    const totalVolumeSubmissions = volumeSubmissionsSnapshot.size;
+    // Get volume submission count for volume-based rewards
+    const volumeSubmissions = await getV3SubmissionsByCreatorId(creator.id, {
+      type: 'volume',
+      status: 'approved',
+    });
+    const totalVolumeSubmissions = volumeSubmissions.length;
 
     // Map to catalog reward IDs based on volume thresholds
     if (totalVolumeSubmissions >= 1) earnedRewardIds.push('bonus-first');

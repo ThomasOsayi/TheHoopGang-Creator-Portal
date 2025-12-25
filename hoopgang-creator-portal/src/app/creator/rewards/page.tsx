@@ -508,7 +508,7 @@ function CreatorRewardsPageContent() {
     router.push('/creator/leaderboard');
   };
 
-  // Handle claim submission
+  // Handle claim submission - calls milestone API
   const handleClaimSubmit = async (tiktokUrl: string) => {
     if (!selectedReward) return;
     
@@ -519,15 +519,43 @@ function CreatorRewardsPageContent() {
         return;
       }
 
-      // TODO: Implement actual claim API call
-      // For now, just show a success message
-      showToast(`Claim submitted for ${selectedReward.title}!`, 'success');
+      // Only milestone rewards can be claimed via URL submission
+      if (selectedReward.filter !== 'milestone' || !selectedReward.milestoneTier) {
+        showToast('This reward cannot be claimed this way', 'error');
+        return;
+      }
+
+      // Call the milestone submission API
+      const response = await fetch('/api/submissions/volume/milestone', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          tiktokUrl,
+          claimedTier: selectedReward.milestoneTier,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to submit milestone');
+      }
+
+      showToast('Milestone submitted for review!', 'success');
       
-      // Refresh stats after claim
+      // Refresh stats and redemptions after claim
       await loadCreatorStats();
+      await loadRedemptions();
+      
+      // Close modal
+      setIsClaimModalOpen(false);
+      setSelectedReward(null);
     } catch (error) {
       console.error('Error claiming reward:', error);
-      showToast('Failed to submit claim', 'error');
+      showToast(error instanceof Error ? error.message : 'Failed to submit claim', 'error');
       throw error;
     }
   };

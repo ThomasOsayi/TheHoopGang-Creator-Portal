@@ -288,6 +288,12 @@ api/
 │       ├── route.ts            # Admin submissions API
 │       │                       # - GET: Fetch all submissions with filters
 │       │                       # - Supports filtering by type, status, weekOf, creatorId
+│       ├── bulk/
+│       │   └── route.ts        # Bulk submissions API
+│       │                       # - PUT: Bulk approve/reject milestone submissions
+│       │                       # - Accepts array of submission IDs (max 50)
+│       │                       # - Recalculates leaderboards after approval
+│       │                       # - Returns success/failure results for each submission
 │       ├── [id]/
 │       │   ├── route.ts        # Single submission API
 │       │   │                   # - GET: Fetch single submission with creator details
@@ -665,7 +671,7 @@ creator/
 - Admin: creators list, creator detail, submissions list, submission review, volume leaderboard, GMV leaderboard, TikTok imports
 - Creator: dashboard, submit, leaderboard, rewards, submissions history, request-product
 
-### API Routes (26+ files)
+### API Routes (36 files)
 - Auth: Email verification, TikTok lookup (public), TikTok claim endpoints
 - Email: Send email endpoint
 - Tracking API: POST, GET, DELETE handlers (simplified - no external API)
@@ -679,7 +685,7 @@ creator/
   - Milestone submission endpoint
   - Submission history endpoint
 - Leaderboards: Volume, GMV leaderboard endpoints
-- Admin Submissions: Review and manage submissions
+- Admin Submissions: Review and manage submissions (including bulk approve/reject)
 - Admin Leaderboards: Finalize and manage leaderboards
 - Admin Rewards: CRUD operations for rewards
 - Admin Redemptions: List and update redemption status
