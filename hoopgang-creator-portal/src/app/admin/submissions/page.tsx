@@ -243,6 +243,148 @@ function DownloadProgressModal({
 }
 
 // ============================================
+// Video Preview Modal Component
+// ============================================
+interface VideoPreviewModalProps {
+  isOpen: boolean;
+  submission: EnrichedSubmission | null;
+  onClose: () => void;
+  onApprove: (submission: EnrichedSubmission) => void;
+  onReject: (submission: EnrichedSubmission) => void;
+  isProcessing: boolean;
+}
+
+function VideoPreviewModal({ 
+  isOpen, 
+  submission, 
+  onClose, 
+  onApprove, 
+  onReject,
+  isProcessing 
+}: VideoPreviewModalProps) {
+  if (!isOpen || !submission) return null;
+
+  const { date, time } = formatRelativeDate(submission.submittedAt);
+  const isPending = submission.status === 'pending';
+
+  return (
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-zinc-900 border border-zinc-700 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden animate-fade-in-up flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-zinc-800">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center text-white font-bold">
+              {submission.creatorName.charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <div className="text-white font-medium">{submission.creatorName}</div>
+              <div className="text-zinc-500 text-sm">@{submission.creatorHandle}</div>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            <SubmissionStatusBadge status={submission.status} />
+            <button 
+              onClick={onClose}
+              className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"
+            >
+              <XMarkIcon className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Video Player */}
+        <div className="flex-1 bg-black flex items-center justify-center min-h-[300px] max-h-[60vh]">
+          {submission.fileUrl ? (
+            <video 
+              src={submission.fileUrl}
+              controls
+              autoPlay
+              className="max-w-full max-h-full"
+              style={{ maxHeight: '60vh' }}
+            >
+              Your browser does not support the video tag.
+            </video>
+          ) : (
+            <div className="text-zinc-500 flex flex-col items-center gap-2">
+              <VideoIcon className="w-12 h-12" />
+              <span>Video not available</span>
+            </div>
+          )}
+        </div>
+
+        {/* Footer with Info & Actions */}
+        <div className="p-4 border-t border-zinc-800 bg-zinc-900/50">
+          {/* File Info Row */}
+          <div className="flex flex-wrap items-center gap-4 mb-4 text-sm">
+            <div className="flex items-center gap-2 text-zinc-400">
+              <VideoIcon className="w-4 h-4" />
+              <span className="text-zinc-300">{submission.fileName || 'Untitled Video'}</span>
+            </div>
+            <div className="text-zinc-500">
+              {formatFileSize(submission.fileSize)}
+            </div>
+            <div className="text-zinc-500">
+              {date} at {time}
+            </div>
+            <FormatBadge format={submission.submissionFormat} />
+            <TypeBadge type={submission.type} />
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => {
+                if (submission.fileUrl) {
+                  window.open(submission.fileUrl, '_blank');
+                }
+              }}
+              className="px-4 py-2 bg-zinc-800 text-zinc-300 rounded-xl text-sm font-medium hover:bg-zinc-700 transition-colors flex items-center gap-2"
+            >
+              <DownloadIcon className="w-4 h-4" />
+              Download
+            </button>
+
+            {isPending ? (
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => onReject(submission)}
+                  disabled={isProcessing}
+                  className="px-6 py-2.5 bg-red-500/20 text-red-400 rounded-xl text-sm font-medium hover:bg-red-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {isProcessing ? (
+                    <div className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <span>✕</span>
+                  )}
+                  Reject
+                </button>
+                <button
+                  onClick={() => onApprove(submission)}
+                  disabled={isProcessing}
+                  className="px-6 py-2.5 bg-green-500 text-white rounded-xl text-sm font-medium hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {isProcessing ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <span>✓</span>
+                  )}
+                  Approve
+                </button>
+              </div>
+            ) : (
+              <div className="text-zinc-500 text-sm">
+                {submission.status === 'approved' ? '✅ Already approved' : '🚫 Already rejected'}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================
 // Submission Row Component
 // ============================================
 interface SubmissionRowProps {
@@ -381,9 +523,16 @@ function SubmissionRow({ submission, isSelected, onSelect, onReview, onDownload 
             >
               Review
             </button>
+          ) : isFile ? (
+            <button
+              onClick={() => onReview(submission)}
+              className="px-3 py-1.5 bg-zinc-800 text-zinc-400 rounded-lg text-sm font-medium hover:bg-zinc-700 hover:text-zinc-300 transition-colors"
+            >
+              View
+            </button>
           ) : (
             <a
-              href={isFile ? submission.fileUrl : submission.tiktokUrl}
+              href={submission.tiktokUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="px-3 py-1.5 bg-zinc-800 text-zinc-400 rounded-lg text-sm font-medium hover:bg-zinc-700 hover:text-zinc-300 transition-colors inline-block"
@@ -510,6 +659,11 @@ export default function AdminSubmissionsPage() {
     currentFileName: '',
   });
   const [zipCancelled, setZipCancelled] = useState(false);
+
+  // Video preview modal state
+  const [previewSubmission, setPreviewSubmission] = useState<EnrichedSubmission | null>(null);
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+  const [isPreviewProcessing, setIsPreviewProcessing] = useState(false);
 
   const weekOptions = getPreviousWeeks(8);
 
@@ -863,6 +1017,80 @@ export default function AdminSubmissionsPage() {
   };
 
   // ============================================
+  // Video Preview Modal Handlers
+  // ============================================
+  const handleOpenPreview = (submission: EnrichedSubmission) => {
+    setPreviewSubmission(submission);
+    setIsPreviewModalOpen(true);
+  };
+
+  const handleClosePreview = () => {
+    setIsPreviewModalOpen(false);
+    setPreviewSubmission(null);
+  };
+
+  const handlePreviewApprove = async (submission: EnrichedSubmission) => {
+    setIsPreviewProcessing(true);
+    try {
+      const token = await getAuthToken();
+      if (!token) return;
+
+      const response = await fetch('/api/admin/submissions/bulk', {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ids: [submission.id],
+          action: 'approve',
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to approve submission');
+
+      setSuccessAnimation({ icon: '✅', message: 'Submission Approved!' });
+      handleClosePreview();
+      await loadSubmissions();
+    } catch (error) {
+      console.error('Error approving submission:', error);
+    } finally {
+      setIsPreviewProcessing(false);
+    }
+  };
+
+  const handlePreviewReject = async (submission: EnrichedSubmission) => {
+    setIsPreviewProcessing(true);
+    try {
+      const token = await getAuthToken();
+      if (!token) return;
+
+      const response = await fetch('/api/admin/submissions/bulk', {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ids: [submission.id],
+          action: 'reject',
+          reason: 'Rejected via preview modal',
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to reject submission');
+
+      setSuccessAnimation({ icon: '🚫', message: 'Submission Rejected' });
+      handleClosePreview();
+      await loadSubmissions();
+    } catch (error) {
+      console.error('Error rejecting submission:', error);
+    } finally {
+      setIsPreviewProcessing(false);
+    }
+  };
+
+  // ============================================
   // Render
   // ============================================
   if (authLoading) {
@@ -1106,7 +1334,7 @@ export default function AdminSubmissionsPage() {
                         submission={submission}
                         isSelected={selectedIds.has(submission.id)}
                         onSelect={handleSelect}
-                        onReview={handleReviewClick}
+                        onReview={submission.submissionFormat === 'file' ? handleOpenPreview : handleReviewClick}
                         onDownload={handleDownloadFile}
                       />
                     ))}
@@ -1179,6 +1407,16 @@ export default function AdminSubmissionsPage() {
             onComplete={() => setSuccessAnimation(null)}
           />
         )}
+
+        {/* Video Preview Modal */}
+        <VideoPreviewModal
+          isOpen={isPreviewModalOpen}
+          submission={previewSubmission}
+          onClose={handleClosePreview}
+          onApprove={handlePreviewApprove}
+          onReject={handlePreviewReject}
+          isProcessing={isPreviewProcessing}
+        />
       </div>
     </ProtectedRoute>
   );
