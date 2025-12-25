@@ -59,7 +59,7 @@ export function DeliveredEmail({
         lineHeight: '1.6',
         margin: '0 0 24px 0',
       }}>
-        Your HoopGang gear has been delivered. We hope you love it. Now it's time 
+        Your TheHoopGang gear has been delivered. We hope you love it. Now it's time 
         for the fun part — creating content.
       </p>
 
@@ -120,7 +120,7 @@ export function DeliveredEmail({
           margin: 0,
           paddingLeft: '20px',
         }}>
-          <li>Create <strong style={{ color: '#ffffff' }}>1 TikTok video</strong> featuring your HoopGang gear</li>
+          <li>Create <strong style={{ color: '#ffffff' }}>1 TikTok video</strong> featuring your TheHoopGang gear</li>
           <li>Tag <strong style={{ color: '#f97316' }}>@thehoopgang</strong> in each video</li>
           <li>Submit your TikTok links through your creator dashboard</li>
           <li>Videos should showcase the gear in action (basketball, lifestyle, fits)</li>
@@ -157,7 +157,7 @@ export function DeliveredEmail({
         margin: '32px 0 0 0',
       }}>
         Looking forward to seeing what you create,<br />
-        <span style={{ color: '#ffffff', fontWeight: 600 }}>The HoopGang Team</span>
+        <span style={{ color: '#ffffff', fontWeight: 600 }}>The TheHoopGang Team</span>
       </p>
     </EmailLayout>
   );

@@ -463,7 +463,7 @@ function InstagramApplyContent() {
 
       setSuccess(true);
       setLoading(false);
-      showToast('Application submitted! Welcome to HoopGang!', 'success');
+      showToast('Application submitted! Welcome to TheHoopGang!', 'success');
 
       setTimeout(() => {
         router.push('/creator/dashboard');
@@ -613,7 +613,7 @@ function InstagramApplyContent() {
               </div>
               <h2 className="text-2xl font-bold text-white mb-2">Application Submitted!</h2>
               <p className="text-white/60 mb-4">
-                Welcome to the HoopGang Creator Program!
+                Welcome to the TheHoopGang Creator Program!
               </p>
               <p className="text-white/40 text-sm">
                 Redirecting to your dashboard...
@@ -1165,7 +1165,7 @@ function InstagramApplyContent() {
                     <div className="space-y-4">
                       <div>
                         <label htmlFor="whyCollab" className={labelClasses}>
-                          Why collab with HoopGang? <span className="text-orange-500">*</span>
+                          Why collab with TheHoopGang? <span className="text-orange-500">*</span>
                         </label>
                         <textarea
                           id="whyCollab"

@@ -15,7 +15,7 @@ export const VerifyEmailTemplate: React.FC<VerifyEmailProps> = ({
   const firstName = creatorName.split(' ')[0];
 
   return (
-    <EmailLayout previewText="Verify your email to join the HoopGang Creator Program">
+    <EmailLayout previewText="Verify your email to join the TheHoopGang Creator Program">
       {/* Header */}
       <h1 style={{ 
         color: '#ffffff', 
@@ -44,7 +44,7 @@ export const VerifyEmailTemplate: React.FC<VerifyEmailProps> = ({
         margin: '0 0 24px 0',
         lineHeight: '1.6'
       }}>
-        Thanks for starting your application to join the HoopGang Creator Program. 
+        Thanks for starting your application to join the TheHoopGang Creator Program. 
         Click the button below to verify your email and continue with your application.
       </p>
 

@@ -48,7 +48,7 @@ export default function HomePage() {
                     backgroundSize: '200% auto',
                   }}
                 >
-                  HoopGang
+                  TheHoopGang
                 </span>{' '}
                 Creator Squad
               </h1>
@@ -112,7 +112,7 @@ export default function HomePage() {
                 <div className="relative bg-zinc-900/80 backdrop-blur-sm rounded-3xl border border-white/10 overflow-hidden shadow-2xl">
                   <Image
                     src="/images/products/hero_product.jpg"
-                    alt="HoopGang Creator"
+                    alt="TheHoopGang Creator"
                     width={450}
                     height={563}
                     className="w-full h-auto"
@@ -165,7 +165,7 @@ export default function HomePage() {
               How It Works
             </h2>
             <p className="text-white/60 text-lg max-w-2xl mx-auto">
-              From application to getting paid — here's your journey with HoopGang
+              From application to getting paid — here's your journey with TheHoopGang
             </p>
             {/* Decorative underline */}
             <div className="mt-4 mx-auto w-24 h-1 rounded-full bg-gradient-to-r from-transparent via-orange-500/50 to-transparent" />
@@ -184,7 +184,7 @@ export default function HomePage() {
                 step: '02',
                 icon: '📦',
                 title: 'Get Gear',
-                description: 'Once approved, we ship you refundable HoopGang gear — no strings attached.',
+                description: 'Once approved, we ship you refundable TheHoopGang gear — no strings attached.',
               },
               {
                 step: '03',
@@ -363,7 +363,7 @@ export default function HomePage() {
             <div className="col-span-2 md:col-span-1 md:row-span-2 relative group overflow-hidden rounded-2xl cursor-pointer">
               <Image
                 src="/images/creators/team_photo.jpg"
-                alt="HoopGang Team"
+                alt="TheHoopGang Team"
                 width={408}
                 height={512}
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
@@ -378,7 +378,7 @@ export default function HomePage() {
             <div className="relative group overflow-hidden rounded-2xl aspect-square cursor-pointer">
               <Image
                 src="/images/creators/purple_crew.jpg"
-                alt="HoopGang Crew"
+                alt="TheHoopGang Crew"
                 width={406}
                 height={406}
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
@@ -390,7 +390,7 @@ export default function HomePage() {
             <div className="relative group overflow-hidden rounded-2xl aspect-square cursor-pointer">
               <Image
                 src="/images/creators/outdoor_crew.jpg"
-                alt="HoopGang Outdoor"
+                alt="TheHoopGang Outdoor"
                 width={405}
                 height={405}
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
@@ -402,7 +402,7 @@ export default function HomePage() {
             <div className="relative group overflow-hidden rounded-2xl aspect-[3/4] cursor-pointer">
               <Image
                 src="/images/creators/striped_duo.jpg"
-                alt="HoopGang Duo"
+                alt="TheHoopGang Duo"
                 width={642}
                 height={800}
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
@@ -414,7 +414,7 @@ export default function HomePage() {
             <div className="relative group overflow-hidden rounded-2xl aspect-square cursor-pointer">
               <Image
                 src="/images/creators/creator_stretch.jpg"
-                alt="HoopGang Creator"
+                alt="TheHoopGang Creator"
                 width={225}
                 height={239}
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
@@ -453,7 +453,7 @@ export default function HomePage() {
               <div className="mb-6 animate-float">
                 <Image
                   src="/images/THG_logo_orange.png"
-                  alt="HoopGang"
+                  alt="TheHoopGang"
                   width={56}
                   height={56}
                   className="mx-auto"
@@ -487,12 +487,12 @@ export default function HomePage() {
             <div className="flex items-center gap-2">
               <Image
                 src="/images/THG_logo_orange.png"
-                alt="HoopGang"
+                alt="TheHoopGang"
                 width={28}
                 height={28}
               />
               <span className="text-lg font-bold bg-gradient-to-r from-orange-500 to-orange-400 bg-clip-text text-transparent">
-                HoopGang
+                TheHoopGang
               </span>
             </div>
 
@@ -520,7 +520,7 @@ export default function HomePage() {
 
             {/* Copyright */}
             <div className="text-sm text-white/40">
-              © {new Date().getFullYear()} HoopGang. All rights reserved.
+              © {new Date().getFullYear()} TheHoopGang. All rights reserved.
             </div>
           </div>
         </div>

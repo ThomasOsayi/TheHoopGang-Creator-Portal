@@ -12,7 +12,7 @@ export function EmailLayout({ previewText, children }: EmailLayoutProps) {
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta httpEquiv="Content-Type" content="text/html; charset=UTF-8" />
-        <title>HoopGang</title>
+        <title>TheHoopGang</title>
         {/* Preview text (hidden) */}
         <style>{`
           .preview-text {
@@ -46,7 +46,7 @@ export function EmailLayout({ previewText, children }: EmailLayoutProps) {
                   <td align="center" style={{ paddingBottom: '32px' }}>
                     <img 
                       src="https://thehoopgang.xyz/images/THG_logo_orange.png" 
-                      alt="HoopGang" 
+                      alt="TheHoopGang" 
                       width="80" 
                       height="80"
                       style={{ display: 'block' }}
@@ -74,7 +74,7 @@ export function EmailLayout({ previewText, children }: EmailLayoutProps) {
                       fontSize: '12px',
                       margin: 0,
                     }}>
-                      © {new Date().getFullYear()} HoopGang. All rights reserved.
+                      © {new Date().getFullYear()} TheHoopGang. All rights reserved.
                     </p>
                     <p style={{
                       color: '#666666',

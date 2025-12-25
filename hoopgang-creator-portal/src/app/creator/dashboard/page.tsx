@@ -384,7 +384,7 @@ export default function CreatorDashboardPage() {
       case 'delivered':
         return {
           title: `Post ${1 - videosSubmitted} more video${1 - videosSubmitted !== 1 ? 's' : ''} to complete`,
-          message: 'Show off your HoopGang gear!',
+          message: 'Show off your TheHoopGang gear!',
           showCta: true,
         };
       case 'completed':
@@ -421,7 +421,7 @@ export default function CreatorDashboardPage() {
             <div className="mb-6 text-6xl">🏀</div>
             <h1 className="text-2xl font-bold text-white mb-4">No Application Found</h1>
             <p className="text-white/60 mb-8">
-              You haven&apos;t applied to join the HoopGang Creator Squad yet.
+              You haven&apos;t applied to join the TheHoopGang Creator Squad yet.
             </p>
             <Link href="/apply">
               <Button variant="primary" size="lg">Apply Now</Button>
@@ -455,7 +455,7 @@ export default function CreatorDashboardPage() {
           {/* Welcome Header */}
           <PageHeader 
             title={`Welcome back, ${firstName}!`}
-            subtitle="Here's what's happening with your HoopGang collaboration"
+            subtitle="Here's what's happening with your TheHoopGang collaboration"
             icon="👋"
             accentColor="orange"
           />
@@ -659,7 +659,7 @@ export default function CreatorDashboardPage() {
                   <div className="flex items-center justify-between">
                     <p className="text-zinc-400 text-sm">
                       {videosSubmitted === 0 
-                        ? "Post your first TikTok featuring your HoopGang gear!"
+                        ? "Post your first TikTok featuring your TheHoopGang gear!"
                         : videosSubmitted >= 1
                           ? "You've completed your content requirement! 🎉"
                           : `${1 - videosSubmitted} more to complete your collaboration`
@@ -943,7 +943,7 @@ export default function CreatorDashboardPage() {
                     <span>📤</span> Submit Content
                   </h3>
                   <p className="text-zinc-400 text-sm mb-4">
-                    Post TikToks featuring your HoopGang gear and submit them to earn rewards!
+                    Post TikToks featuring your TheHoopGang gear and submit them to earn rewards!
                   </p>
                   <Link href="/creator/submit">
                     <Button variant="primary" className="w-full">

@@ -61,9 +61,9 @@ export async function POST(request: NextRequest) {
 
     // Send branded email via Resend
     const { error } = await resend.emails.send({
-      from: process.env.EMAIL_FROM || 'HoopGang <team@thehoopgang.xyz>',
+      from: process.env.EMAIL_FROM || 'TheHoopGang <team@thehoopgang.xyz>',
       to: email,
-      subject: 'Verify your email for HoopGang',
+      subject: 'Verify your email for TheHoopGang',
       html: emailHtml,
     });
 

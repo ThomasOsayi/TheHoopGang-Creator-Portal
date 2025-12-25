@@ -77,7 +77,7 @@ export function EmptyStatePendingApproval() {
     <EmptyState
       icon="⏳"
       title="Application Under Review"
-      description="Your application is being reviewed by the HoopGang team. We'll notify you once there's an update!"
+      description="Your application is being reviewed by the TheHoopGang team. We'll notify you once there's an update!"
     />
   );
 }

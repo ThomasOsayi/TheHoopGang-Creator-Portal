@@ -202,7 +202,7 @@ export default function ApplicationReviewModal({
                   <span className="text-purple-400 font-semibold">Returning Creator</span>
                 </div>
                 <p className="text-zinc-300 text-sm">
-                  This creator has completed {creator.totalCollaborations - 1} previous collaboration{creator.totalCollaborations > 2 ? 's' : ''} with HoopGang.
+                  This creator has completed {creator.totalCollaborations - 1} previous collaboration{creator.totalCollaborations > 2 ? 's' : ''} with TheHoopGang.
                 </p>
               </div>
             )}

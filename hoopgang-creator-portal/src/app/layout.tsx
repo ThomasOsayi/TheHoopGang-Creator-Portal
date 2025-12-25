@@ -9,8 +9,8 @@ import { AuthProvider } from '@/lib/auth-context';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'HoopGang Creator Portal',
-  description: 'Join the HoopGang Creator Squad',
+  title: 'TheHoopGang Creator Portal',
+  description: 'Join the TheHoopGang Creator Squad',
 };
 
 export default function RootLayout({

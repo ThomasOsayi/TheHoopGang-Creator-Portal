@@ -405,7 +405,7 @@ export default function MilestoneReviewPage({ params }: { params: Promise<{ id: 
                   <textarea
                     value={rejectionReason}
                     onChange={(e) => setRejectionReason(e.target.value)}
-                    placeholder="e.g., View count does not meet threshold, video not related to HoopGang..."
+                    placeholder="e.g., View count does not meet threshold, video not related to TheHoopGang..."
                     rows={3}
                     className="w-full bg-zinc-900/50 border border-zinc-700 rounded-lg px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:border-red-500 transition-colors resize-none"
                   />

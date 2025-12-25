@@ -107,7 +107,7 @@ export default function LoginPage() {
               <div className="w-full h-full bg-zinc-800/50 rounded-2xl border border-white/10 flex items-center justify-center p-3">
                 <Image
                   src="/images/THG_logo_orange.png"
-                  alt="HoopGang"
+                  alt="TheHoopGang"
                   width={48}
                   height={48}
                   className="w-full h-full object-contain"
@@ -116,7 +116,7 @@ export default function LoginPage() {
             </div>
           </Link>
           <h1 className="text-2xl font-bold text-white">Welcome Back</h1>
-          <p className="text-white/60 mt-2">Sign in to your HoopGang account</p>
+          <p className="text-white/60 mt-2">Sign in to your TheHoopGang account</p>
         </div>
 
         {/* Login Card */}

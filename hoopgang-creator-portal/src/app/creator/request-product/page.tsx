@@ -204,7 +204,7 @@ export default function RequestProductPage() {
               <div className="w-full h-full bg-zinc-800/50 rounded-2xl border border-white/10 flex items-center justify-center p-4">
                 <Image
                   src="/images/THG_logo_orange.png"
-                  alt="HoopGang"
+                  alt="TheHoopGang"
                   width={56}
                   height={56}
                   className="w-full h-full object-contain"

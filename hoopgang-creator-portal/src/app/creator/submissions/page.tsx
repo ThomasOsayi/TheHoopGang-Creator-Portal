@@ -570,7 +570,7 @@ export default function SubmissionHistoryPage() {
             <h4 className="text-white font-semibold mb-1">Pro Tip</h4>
             <p className="text-zinc-400 text-sm">
               Submissions are usually reviewed within 24 hours. If your submission is rejected, 
-              make sure your TikTok clearly shows HoopGang products and tags <span className="text-orange-400">@thehoopgang</span>.
+              make sure your TikTok clearly shows TheHoopGang products and tags <span className="text-orange-400">@thehoopgang</span>.
             </p>
           </div>
         </div>

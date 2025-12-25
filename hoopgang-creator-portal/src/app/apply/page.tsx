@@ -104,7 +104,7 @@ function PlatformSelectionContent() {
             <div className="w-full h-full bg-zinc-800/50 rounded-2xl border border-white/10 flex items-center justify-center p-4">
               <Image
                 src="/images/THG_logo_orange.png"
-                alt="HoopGang"
+                alt="TheHoopGang"
                 width={56}
                 height={56}
                 className="w-full h-full object-contain"
@@ -112,7 +112,7 @@ function PlatformSelectionContent() {
             </div>
           </div>
           <h1 className="text-4xl font-black text-white mb-3">
-            Join the HoopGang Creator Squad
+            Join the TheHoopGang Creator Squad
           </h1>
           <p className="text-white/60 text-lg">
             Get free gear. Create fire content. Get paid to hoop.
@@ -221,7 +221,7 @@ function PlatformSelectionContent() {
 
                 {/* Description */}
                 <p className="text-white/60 text-sm mb-4">
-                  Apply to become a HoopGang creator. Tell us about yourself and your content.
+                  Apply to become a TheHoopGang creator. Tell us about yourself and your content.
                 </p>
 
                 {/* Features */}

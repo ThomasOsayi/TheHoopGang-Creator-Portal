@@ -117,14 +117,14 @@ export function AdminSidebar() {
             <div className="relative w-9 h-9 transition-transform duration-300 group-hover:scale-110">
               <Image
                 src="/images/THG_logo_orange.png"
-                alt="HoopGang"
+                alt="TheHoopGang"
                 width={36}
                 height={36}
                 className="w-full h-full object-contain"
               />
             </div>
             <span className="text-orange-400 font-bold text-xl tracking-tight">
-              HoopGang
+              TheHoopGang
             </span>
           </Link>
         </div>
@@ -166,12 +166,12 @@ export function AdminSidebar() {
           <Link href="/" className="flex items-center gap-2.5">
             <Image
               src="/images/THG_logo_orange.png"
-              alt="HoopGang"
+              alt="TheHoopGang"
               width={32}
               height={32}
               className="w-8 h-8 object-contain"
             />
-            <span className="text-orange-400 font-bold text-lg">HoopGang</span>
+            <span className="text-orange-400 font-bold text-lg">TheHoopGang</span>
           </Link>
 
           {/* Hamburger Button */}

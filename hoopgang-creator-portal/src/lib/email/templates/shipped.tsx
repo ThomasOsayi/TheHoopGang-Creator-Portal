@@ -16,7 +16,7 @@ export function ShippedEmail({
   trackingUrl 
 }: ShippedEmailProps) {
   return (
-    <EmailLayout previewText="Your HoopGang gear is on the way">
+    <EmailLayout previewText="Your TheHoopGang gear is on the way">
       {/* Heading */}
       <h1 style={{
         color: '#ffffff',
@@ -61,7 +61,7 @@ export function ShippedEmail({
         lineHeight: '1.6',
         margin: '0 0 24px 0',
       }}>
-        Great news — your HoopGang gear just shipped and is on its way to you. 
+        Great news — your TheHoopGang gear just shipped and is on its way to you. 
         Use the tracking info below to follow your package.
       </p>
 
@@ -146,7 +146,7 @@ export function ShippedEmail({
         margin: '24px 0 0 0',
       }}>
         Thanks for your patience,<br />
-        <span style={{ color: '#ffffff', fontWeight: 600 }}>The HoopGang Team</span>
+        <span style={{ color: '#ffffff', fontWeight: 600 }}>The TheHoopGang Team</span>
       </p>
     </EmailLayout>
   );

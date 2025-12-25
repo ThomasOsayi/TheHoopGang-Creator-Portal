@@ -9,7 +9,7 @@ interface ApprovedEmailProps {
 
 export function ApprovedEmail({ creatorName, instagramHandle }: ApprovedEmailProps) {
   return (
-    <EmailLayout previewText="You're in! Welcome to the HoopGang Creator Program">
+    <EmailLayout previewText="You're in! Welcome to the TheHoopGang Creator Program">
       {/* Heading */}
       <h1 style={{
         color: '#ffffff',
@@ -55,7 +55,7 @@ export function ApprovedEmail({ creatorName, instagramHandle }: ApprovedEmailPro
         margin: '0 0 16px 0',
       }}>
         We loved what we saw on <span style={{ color: '#f97316' }}>@{instagramHandle}</span> and 
-        we're excited to have you join the HoopGang creator program.
+        we're excited to have you join the TheHoopGang creator program.
       </p>
 
       <p style={{
@@ -91,7 +91,7 @@ export function ApprovedEmail({ creatorName, instagramHandle }: ApprovedEmailPro
           margin: 0,
           paddingLeft: '20px',
         }}>
-          <li>We ship your free HoopGang gear</li>
+          <li>We ship your free TheHoopGang gear</li>
           <li>You receive it and try it on</li>
           <li>Create 1 TikTok video featuring the gear</li>
           <li>Submit links through your creator dashboard</li>
@@ -128,7 +128,7 @@ export function ApprovedEmail({ creatorName, instagramHandle }: ApprovedEmailPro
         margin: '32px 0 0 0',
       }}>
         Welcome aboard,<br />
-        <span style={{ color: '#ffffff', fontWeight: 600 }}>The HoopGang Team</span>
+        <span style={{ color: '#ffffff', fontWeight: 600 }}>The TheHoopGang Team</span>
       </p>
     </EmailLayout>
   );
