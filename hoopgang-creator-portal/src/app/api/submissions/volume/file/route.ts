@@ -130,18 +130,19 @@ export async function POST(request: NextRequest) {
       competitionId
     );
 
-    // Recalculate leaderboard after successful submission
-    await recalculateVolumeLeaderboard(weekOf);
+    // DON'T recalculate leaderboard for pending file submissions
+    // Leaderboard should only update when admin approves
+    // await recalculateVolumeLeaderboard(weekOf);
 
-    // Recalculate competition leaderboard if there's an active competition
-    if (competitionId) {
-      await recalculateCompetitionLeaderboard(competitionId);
-    }
+    // if (competitionId) {
+    //   await recalculateCompetitionLeaderboard(competitionId);
+    // }
 
     return NextResponse.json({
       success: true,
       submission,
       competitionId,
+      message: 'Video uploaded successfully! It will be reviewed by an admin.',
     });
   } catch (error) {
     console.error('File upload error:', error);

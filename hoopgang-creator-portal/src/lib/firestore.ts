@@ -1321,7 +1321,7 @@ export async function createFileVolumeSubmission(
     creatorId,
     tiktokUrl: '', // Empty for file uploads
     type: 'volume' as V3SubmissionType,
-    status: 'approved' as V3SubmissionStatus, // Volume submissions auto-approve
+    status: 'pending' as V3SubmissionStatus, // File uploads require admin review
     submittedAt: Timestamp.fromDate(new Date()),
     weekOf,
     

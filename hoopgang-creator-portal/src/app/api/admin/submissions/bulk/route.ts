@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb, adminAuth } from '@/lib/firebase-admin';
 import { V3SubmissionStatus } from '@/types';
+import { recalculateVolumeLeaderboard, recalculateCompetitionLeaderboard } from '@/lib/firestore';
 
 interface BulkActionRequest {
   ids: string[];
@@ -50,47 +51,38 @@ export async function PUT(request: NextRequest) {
 
     const newStatus: V3SubmissionStatus = action === 'approve' ? 'approved' : 'rejected';
     const now = new Date().toISOString();
-    const results: { id: string; success: boolean; error?: string }[] = [];
+    const results: { id: string; success: boolean; error?: string; weekOf?: string; competitionId?: string }[] = [];
 
-    // Process each submission
-    // Note: Firestore batch writes are limited to 500 operations
+    // Process each submission from the TOP-LEVEL collection
     const batch = adminDb.batch();
     
     for (const submissionId of ids) {
       try {
-        // Find the submission across all creators
-        // Submissions are stored as: creators/{creatorId}/v3Submissions/{submissionId}
-        const creatorsSnapshot = await adminDb.collection('creators').get();
+        // Query the top-level v3ContentSubmissions collection
+        const submissionRef = adminDb.collection('v3ContentSubmissions').doc(submissionId);
+        const submissionDoc = await submissionRef.get();
         
-        let found = false;
-        for (const creatorDoc of creatorsSnapshot.docs) {
-          const submissionRef = adminDb
-            .collection('creators')
-            .doc(creatorDoc.id)
-            .collection('v3Submissions')
-            .doc(submissionId);
+        if (submissionDoc.exists) {
+          const submissionData = submissionDoc.data();
           
-          const submissionDoc = await submissionRef.get();
+          const updateData: Record<string, any> = {
+            status: newStatus,
+            reviewedAt: now,
+            reviewedBy: decodedToken.uid,
+          };
           
-          if (submissionDoc.exists) {
-            const updateData: Record<string, any> = {
-              status: newStatus,
-              reviewedAt: now,
-              reviewedBy: decodedToken.uid,
-            };
-            
-            if (action === 'reject' && reason) {
-              updateData.rejectionReason = reason;
-            }
-            
-            batch.update(submissionRef, updateData);
-            results.push({ id: submissionId, success: true });
-            found = true;
-            break;
+          if (action === 'reject' && reason) {
+            updateData.rejectionReason = reason;
           }
-        }
-        
-        if (!found) {
+          
+          batch.update(submissionRef, updateData);
+          results.push({ 
+            id: submissionId, 
+            success: true,
+            weekOf: submissionData?.weekOf,
+            competitionId: submissionData?.competitionId,
+          });
+        } else {
           results.push({ 
             id: submissionId, 
             success: false, 
@@ -109,6 +101,44 @@ export async function PUT(request: NextRequest) {
 
     // Commit the batch
     await batch.commit();
+
+    // Recalculate leaderboards after approvals
+    if (action === 'approve') {
+      const successfulResults = results.filter(r => r.success);
+      
+      // Get unique weeks to recalculate
+      const weeksToRecalculate = new Set<string>();
+      const competitionsToRecalculate = new Set<string>();
+      
+      for (const result of successfulResults) {
+        if (result.weekOf) {
+          weeksToRecalculate.add(result.weekOf);
+        }
+        if (result.competitionId) {
+          competitionsToRecalculate.add(result.competitionId);
+        }
+      }
+      
+      // Recalculate volume leaderboards for affected weeks
+      for (const week of weeksToRecalculate) {
+        try {
+          await recalculateVolumeLeaderboard(week);
+          console.log(`Recalculated leaderboard for week: ${week}`);
+        } catch (err) {
+          console.error(`Failed to recalculate leaderboard for week ${week}:`, err);
+        }
+      }
+      
+      // Recalculate competition leaderboards
+      for (const competitionId of competitionsToRecalculate) {
+        try {
+          await recalculateCompetitionLeaderboard(competitionId);
+          console.log(`Recalculated competition leaderboard: ${competitionId}`);
+        } catch (err) {
+          console.error(`Failed to recalculate competition leaderboard ${competitionId}:`, err);
+        }
+      }
+    }
 
     const successCount = results.filter(r => r.success).length;
     const failCount = results.filter(r => !r.success).length;
