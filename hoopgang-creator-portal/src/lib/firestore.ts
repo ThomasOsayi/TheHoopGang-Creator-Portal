@@ -1528,23 +1528,50 @@ export async function reviewMilestoneSubmission(
 
 /**
  * Gets volume stats for a creator
+ * If competitionId is provided, returns competition-based stats
+ * Otherwise returns 0 for competition count (no active competition)
  */
 export async function getVolumeStats(
   creatorId: string,
-  currentWeek: string
+  currentWeek: string,
+  competitionId?: string | null
 ): Promise<V3VolumeStats> {
-  // Get weekly count
-  const weeklyQuery = query(
-    collection(db, V3_SUBMISSIONS_COLLECTION),
-    where('creatorId', '==', creatorId),
-    where('type', '==', 'volume'),
-    where('weekOf', '==', currentWeek),
-    where('status', '==', 'approved')
-  );
-  const weeklySnap = await getDocs(weeklyQuery);
-  const weeklyCount = weeklySnap.size;
+  let competitionCount = 0;
+  let currentRank: number | null = null;
+  let totalCreators = 0;
 
-  // Get all-time count
+  // Only count competition submissions if there's an active competition
+  if (competitionId) {
+    // Get competition submission count for this creator
+    const competitionQuery = query(
+      collection(db, V3_SUBMISSIONS_COLLECTION),
+      where('creatorId', '==', creatorId),
+      where('competitionId', '==', competitionId),
+      where('type', '==', 'volume'),
+      where('status', '==', 'approved')
+    );
+    const competitionSnap = await getDocs(competitionQuery);
+    competitionCount = competitionSnap.size;
+
+    // Get current rank from competition leaderboard
+    const leaderboardQuery = query(
+      collection(db, LEADERBOARD_COLLECTION),
+      where('competitionId', '==', competitionId),
+      where('creatorId', '==', creatorId)
+    );
+    const leaderboardSnap = await getDocs(leaderboardQuery);
+    currentRank = leaderboardSnap.empty ? null : leaderboardSnap.docs[0].data().rank;
+
+    // Get total creators in competition leaderboard
+    const allLeaderboardQuery = query(
+      collection(db, LEADERBOARD_COLLECTION),
+      where('competitionId', '==', competitionId)
+    );
+    const allLeaderboardSnap = await getDocs(allLeaderboardQuery);
+    totalCreators = allLeaderboardSnap.size;
+  }
+
+  // Get all-time count (always available)
   const allTimeQuery = query(
     collection(db, V3_SUBMISSIONS_COLLECTION),
     where('creatorId', '==', creatorId),
@@ -1554,27 +1581,8 @@ export async function getVolumeStats(
   const allTimeSnap = await getDocs(allTimeQuery);
   const allTimeCount = allTimeSnap.size;
 
-  // Get current rank from leaderboard
-  const leaderboardQuery = query(
-    collection(db, LEADERBOARD_COLLECTION),
-    where('type', '==', 'volume'),
-    where('period', '==', currentWeek),
-    where('creatorId', '==', creatorId)
-  );
-  const leaderboardSnap = await getDocs(leaderboardQuery);
-  const currentRank = leaderboardSnap.empty ? null : leaderboardSnap.docs[0].data().rank;
-
-  // Get total creators in leaderboard this week
-  const allLeaderboardQuery = query(
-    collection(db, LEADERBOARD_COLLECTION),
-    where('type', '==', 'volume'),
-    where('period', '==', currentWeek)
-  );
-  const allLeaderboardSnap = await getDocs(allLeaderboardQuery);
-  const totalCreators = allLeaderboardSnap.size;
-
   return {
-    weeklyCount,
+    weeklyCount: competitionCount, // Now represents competition count
     allTimeCount,
     currentRank,
     totalCreators,

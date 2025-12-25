@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth-context';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { 
   Navbar, 
@@ -70,6 +70,7 @@ function XIcon({ className = "w-4 h-4" }: { className?: string }) {
 export default function SubmitContentPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [creator, setCreator] = useState<Creator | null>(null);
   const [loading, setLoading] = useState(true);
   
@@ -83,6 +84,15 @@ export default function SubmitContentPage() {
     totalCreators: 0,
   });
   const [statsLoading, setStatsLoading] = useState(true);
+  
+  // Milestone rewards state
+  const [milestoneRewards, setMilestoneRewards] = useState<Array<{
+    id: string;
+    name: string;
+    description?: string;
+    milestoneTier: string;
+  }>>([]);
+  const [rewardsLoading, setRewardsLoading] = useState(true);
   
   // Recent submissions
   const [recentSubmissions, setRecentSubmissions] = useState<Array<{
@@ -167,6 +177,27 @@ export default function SubmitContentPage() {
     }
   };
 
+  // Function to fetch milestone rewards from catalog
+  const fetchMilestoneRewards = async () => {
+    setRewardsLoading(true);
+    try {
+      const response = await fetch('/api/rewards?category=milestone');
+      if (response.ok) {
+        const data = await response.json();
+        // Sort by tier value (100k, 500k, 1m)
+        const tierOrder: Record<string, number> = { '100k': 1, '500k': 2, '1m': 3 };
+        const sorted = (data.rewards || []).sort((a: any, b: any) => {
+          return (tierOrder[a.milestoneTier] || 0) - (tierOrder[b.milestoneTier] || 0);
+        });
+        setMilestoneRewards(sorted);
+      }
+    } catch (error) {
+      console.error('Error fetching milestone rewards:', error);
+    } finally {
+      setRewardsLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/login');
@@ -194,6 +225,7 @@ export default function SubmitContentPage() {
       loadCreator();
       loadVolumeStats();
       fetchCompetition();
+      fetchMilestoneRewards();
     }
   }, [user, authLoading, router]);
 
@@ -493,18 +525,25 @@ export default function SubmitContentPage() {
             <div className="text-4xl font-bold text-white mb-2">
               {statsLoading ? (
                 <Skeleton className="w-12 h-10 mx-auto" />
-              ) : (
+              ) : activeCompetition?.status === 'active' ? (
                 <AnimatedCounter value={volumeStats.weeklyCount} />
+              ) : (
+                <span className="text-zinc-500">—</span>
               )}
             </div>
-            <div className="text-zinc-400">This Week</div>
+            <div className="text-zinc-400">
+              {activeCompetition?.status === 'active' ? 'This Competition' : 'Competition'}
+            </div>
+            {activeCompetition?.status !== 'active' && (
+              <div className="text-zinc-600 text-xs">No active competition</div>
+            )}
           </GlowCard>
           
           <GlowCard glowColor="orange" delay="0.15s" className="text-center py-8 border-orange-500/30 hover:border-amber-500/30 hover:shadow-[0_0_25px_-5px_rgba(245,158,11,0.25)]">
             <div className="text-4xl font-bold text-orange-400 mb-2">
               {statsLoading ? (
                 <Skeleton className="w-16 h-10 mx-auto" />
-              ) : volumeStats.currentRank ? (
+              ) : activeCompetition?.status === 'active' && volumeStats.currentRank ? (
                 <>
                   #<AnimatedCounter value={volumeStats.currentRank} />
                 </>
@@ -513,8 +552,10 @@ export default function SubmitContentPage() {
               )}
             </div>
             <div className="text-zinc-400">Your Rank</div>
-            {volumeStats.totalCreators > 0 && (
+            {activeCompetition?.status === 'active' && volumeStats.totalCreators > 0 ? (
               <div className="text-zinc-500 text-sm">of {volumeStats.totalCreators} creators</div>
+            ) : (
+              <div className="text-zinc-600 text-xs">No active competition</div>
             )}
           </GlowCard>
           
@@ -739,41 +780,64 @@ export default function SubmitContentPage() {
           </div>
           <p className="text-zinc-400 text-sm mb-6">Got a viral video? Claim extra rewards!</p>
 
-          <div className="space-y-3">
-            <Link href="/creator/milestones" className="block">
-              <div className="flex items-center justify-between p-3 bg-zinc-800/30 rounded-xl transition-all duration-300 hover:bg-zinc-800/50 hover:translate-x-1">
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">🥉</span>
-                  <span className="text-white">100K Views</span>
-                </div>
-                <span className="text-green-400 font-medium">$10 store credit</span>
-              </div>
-            </Link>
+          {rewardsLoading ? (
+            // Loading skeletons
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="h-32 bg-zinc-800/50 rounded-xl animate-pulse" />
+              <div className="h-32 bg-zinc-800/50 rounded-xl animate-pulse" />
+              <div className="h-32 bg-zinc-800/50 rounded-xl animate-pulse" />
+            </div>
+          ) : milestoneRewards.length > 0 ? (
+            // Dynamic rewards as cards
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {milestoneRewards.map((reward) => {
+                const tierEmoji = reward.milestoneTier === '1m' ? '👑' : 
+                                  reward.milestoneTier === '500k' ? '🔥' : '🎯';
+                const tierLabel = reward.milestoneTier === '1m' ? '1M+ Views' :
+                                  reward.milestoneTier === '500k' ? '500K Views' : '100K Views';
+                const tierColor = reward.milestoneTier === '1m' ? 'from-amber-500/20 to-yellow-500/10 border-amber-500/30' :
+                                  reward.milestoneTier === '500k' ? 'from-orange-500/20 to-red-500/10 border-orange-500/30' : 
+                                  'from-purple-500/20 to-pink-500/10 border-purple-500/30';
+                
+                return (
+                  <Link href={`/creator/rewards?reward=${reward.id}`} key={reward.id} className="block group">
+                    <div className={`relative overflow-hidden rounded-xl border bg-gradient-to-br ${tierColor} p-4 h-full transition-all duration-300 hover:scale-[1.02] hover:shadow-lg`}>
+                      {/* Badge */}
+                      <div className="absolute top-2 right-2">
+                        <span className="px-2 py-0.5 bg-purple-500/30 text-purple-300 text-xs font-medium rounded-full">
+                          Milestone
+                        </span>
+                      </div>
+                      
+                      {/* Emoji */}
+                      <div className="text-4xl mb-3 group-hover:scale-110 transition-transform">
+                        {tierEmoji}
+                      </div>
+                      
+                      {/* Title */}
+                      <h4 className="text-white font-semibold mb-1">{tierLabel}</h4>
+                      
+                      {/* Reward Value */}
+                      <div className="mt-2">
+                        <span className="inline-block px-3 py-1 bg-zinc-800/80 text-green-400 text-sm font-medium rounded-full">
+                          {reward.description || reward.name}
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          ) : (
+            // Fallback if no rewards configured
+            <div className="text-center py-8 text-zinc-500">
+              <p>Milestone rewards coming soon!</p>
+            </div>
+          )}
 
-            <Link href="/creator/milestones" className="block">
-              <div className="flex items-center justify-between p-3 bg-zinc-800/30 rounded-xl transition-all duration-300 hover:bg-zinc-800/50 hover:translate-x-1">
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">🥈</span>
-                  <span className="text-white">500K Views</span>
-                </div>
-                <span className="text-green-400 font-medium">$25 + free product</span>
-              </div>
-            </Link>
-
-            <Link href="/creator/milestones" className="block">
-              <div className="flex items-center justify-between p-3 bg-zinc-800/30 rounded-xl transition-all duration-300 hover:bg-zinc-800/50 hover:translate-x-1">
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">🥇</span>
-                  <span className="text-white">1M+ Views</span>
-                </div>
-                <span className="text-green-400 font-medium">$50 + merch pack</span>
-              </div>
-            </Link>
-          </div>
-
-          <div className="mt-4 pt-4 border-t border-zinc-700/50 text-center">
+          <div className="mt-6 text-center">
             <Link 
-              href="/creator/rewards"
+              href="/creator/rewards?filter=milestone"
               className="text-zinc-400 hover:text-white transition-colors text-sm"
             >
               View All Rewards →

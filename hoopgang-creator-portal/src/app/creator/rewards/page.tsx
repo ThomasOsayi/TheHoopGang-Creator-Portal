@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth-context';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { 
   Navbar, 
   AnimatedCounter, 
@@ -289,6 +289,7 @@ function LeaderboardRedirectModal({
 export default function CreatorRewardsPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   
   const [creator, setCreator] = useState<Creator | null>(null);
   const [loading, setLoading] = useState(true);
@@ -465,6 +466,24 @@ export default function CreatorRewardsPage() {
       loadRedemptions();
     }
   }, [user, authLoading, router]);
+
+  // Auto-open reward modal if ?reward= parameter is present
+  useEffect(() => {
+    const rewardId = searchParams.get('reward');
+    if (rewardId && rewards.length > 0 && !rewardsLoading) {
+      const reward = rewards.find(r => r.id === rewardId);
+      if (reward) {
+        setSelectedReward(reward);
+        if (reward.filter === 'milestone') {
+          setIsClaimModalOpen(true);
+        } else if (reward.filter === 'leaderboard') {
+          setIsLeaderboardModalOpen(true);
+        } else {
+          setIsClaimModalOpen(true);
+        }
+      }
+    }
+  }, [rewards, rewardsLoading, searchParams]);
 
   // Handle card click - different behavior for milestone vs leaderboard
   const handleCardClick = (reward: RewardItem) => {
