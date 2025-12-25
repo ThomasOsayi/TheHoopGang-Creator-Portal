@@ -1,0 +1,7 @@
+[
+    {
+      "origin": ["https://thehoopgang.xyz", "http://localhost:3000","http://localhost:3000"],
+      "method": ["GET", "HEAD"],
+      "maxAgeSeconds": 3600
+    }
+  ]
