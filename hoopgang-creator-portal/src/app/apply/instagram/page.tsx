@@ -11,7 +11,7 @@ import { CreatorApplicationInput, Size } from '@/types';
 import { SIZES } from '@/lib/constants';
 import { createCreator, getCreatorByUserId, createCollaboration } from '@/lib/firestore';
 import { useAuth } from '@/lib/auth-context';
-import { useToast } from '@/components/ui';
+import { useToast, Navbar } from '@/components/ui';
 
 // Instagram Logo Component
 const InstagramLogo = ({ className = "w-6 h-6" }: { className?: string }) => (
@@ -1300,13 +1300,14 @@ function InstagramApplyContent() {
 
 export default function InstagramApplyPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+    <Suspense fallback={
+      <div className="min-h-screen bg-zinc-950">
+        <Navbar />
+        <div className="flex items-center justify-center h-[80vh]">
           <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
         </div>
-      }
-    >
+      </div>
+    }>
       <InstagramApplyContent />
     </Suspense>
   );

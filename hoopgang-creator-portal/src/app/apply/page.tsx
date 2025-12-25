@@ -8,6 +8,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/lib/auth-context';
 import { getCreatorByUserId } from '@/lib/firestore';
+import { Navbar } from '@/components/ui';
 
 // TikTok Logo Component with gradient
 const TiktokLogo = ({ className = "w-10 h-10" }: { className?: string }) => (
@@ -272,13 +273,14 @@ function PlatformSelectionContent() {
 
 export default function ApplyPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+    <Suspense fallback={
+      <div className="min-h-screen bg-zinc-950">
+        <Navbar />
+        <div className="flex items-center justify-center h-[80vh]">
           <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
         </div>
-      }
-    >
+      </div>
+    }>
       <PlatformSelectionContent />
     </Suspense>
   );

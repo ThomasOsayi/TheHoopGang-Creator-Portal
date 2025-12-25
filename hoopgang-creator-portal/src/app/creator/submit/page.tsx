@@ -1,7 +1,7 @@
 // src/app/creator/submit/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -67,7 +67,7 @@ function XIcon({ className = "w-4 h-4" }: { className?: string }) {
   );
 }
 
-export default function SubmitContentPage() {
+function SubmitContentPageContent() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -887,5 +887,20 @@ export default function SubmitContentPage() {
       </main>
     </div>
     </ProtectedRoute>
+  );
+}
+
+export default function SubmitContentPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-zinc-950">
+        <Navbar />
+        <div className="flex items-center justify-center h-[80vh]">
+          <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
+        </div>
+      </div>
+    }>
+      <SubmitContentPageContent />
+    </Suspense>
   );
 }
