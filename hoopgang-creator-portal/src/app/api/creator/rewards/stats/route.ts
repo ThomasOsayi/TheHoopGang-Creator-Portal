@@ -48,11 +48,11 @@ export async function GET(request: NextRequest) {
           // Add to total earned
           totalEarned += redemption.cashAmount || 0;
           break;
-        case 'pending':
+        case 'awaiting_claim':
           pending += 1;
           break;
-        case 'approved':
-          // Approved but not yet fulfilled = ready to claim
+        case 'ready_to_fulfill':
+          // Ready to fulfill but not yet fulfilled = ready to claim
           readyToClaim += 1;
           break;
       }

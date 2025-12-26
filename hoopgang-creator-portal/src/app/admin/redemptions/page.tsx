@@ -34,13 +34,13 @@ type SourceFilterType = 'all' | RedemptionSource;
 // ============================================
 function StatusBadge({ status }: { status: RedemptionStatus }) {
   const config: Record<RedemptionStatus, { bg: string; text: string; border: string; label: string; icon: string }> = {
-    pending: { bg: 'bg-yellow-500/20', text: 'text-yellow-400', border: 'border-yellow-500/30', label: 'Pending', icon: '⏳' },
-    approved: { bg: 'bg-blue-500/20', text: 'text-blue-400', border: 'border-blue-500/30', label: 'Approved', icon: '✓' },
+    awaiting_claim: { bg: 'bg-yellow-500/20', text: 'text-yellow-400', border: 'border-yellow-500/30', label: 'Awaiting Claim', icon: '⏳' },
+    ready_to_fulfill: { bg: 'bg-blue-500/20', text: 'text-blue-400', border: 'border-blue-500/30', label: 'Ready to Fulfill', icon: '✓' },
     fulfilled: { bg: 'bg-green-500/20', text: 'text-green-400', border: 'border-green-500/30', label: 'Fulfilled', icon: '📦' },
     rejected: { bg: 'bg-red-500/20', text: 'text-red-400', border: 'border-red-500/30', label: 'Rejected', icon: '✕' },
   };
 
-  const style = config[status] || config.pending;
+  const style = config[status] || config.awaiting_claim;
 
   return (
     <span className={`px-3 py-1.5 rounded-full text-xs font-medium ${style.bg} ${style.text} border ${style.border} inline-flex items-center gap-1.5`}>
@@ -127,7 +127,7 @@ interface RedemptionRowProps {
 }
 
 function RedemptionRow({ redemption, onApprove, onReject, onFulfill, onView }: RedemptionRowProps) {
-  const needsAction = redemption.status === 'pending' || redemption.status === 'approved';
+  const needsAction = redemption.status === 'awaiting_claim' || redemption.status === 'ready_to_fulfill';
 
   const formatDate = (date: Date): { date: string; time: string } => {
     const d = new Date(date);
@@ -197,7 +197,7 @@ function RedemptionRow({ redemption, onApprove, onReject, onFulfill, onView }: R
       {/* Actions */}
       <td className="py-4 px-4">
         <div className="flex items-center gap-2">
-          {redemption.status === 'pending' && (
+          {redemption.status === 'awaiting_claim' && (
             <>
               <button
                 onClick={onApprove}
@@ -213,7 +213,7 @@ function RedemptionRow({ redemption, onApprove, onReject, onFulfill, onView }: R
               </button>
             </>
           )}
-          {redemption.status === 'approved' && (
+          {redemption.status === 'ready_to_fulfill' && (
             <button
               onClick={onFulfill}
               className="px-3 py-1.5 bg-green-500/20 text-green-400 rounded-lg text-sm font-medium hover:bg-green-500/30 transition-colors"
@@ -332,8 +332,8 @@ export default function AdminRedemptionsPage() {
   // ============================================
   const stats = useMemo(() => ({
     total: redemptions.length,
-    pending: redemptions.filter(r => r.status === 'pending').length,
-    approved: redemptions.filter(r => r.status === 'approved').length,
+    pending: redemptions.filter(r => r.status === 'awaiting_claim').length,
+    approved: redemptions.filter(r => r.status === 'ready_to_fulfill').length,
     fulfilled: redemptions.filter(r => r.status === 'fulfilled').length,
     rejected: redemptions.filter(r => r.status === 'rejected').length,
   }), [redemptions]);
@@ -381,7 +381,7 @@ export default function AdminRedemptionsPage() {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ status: 'approved' }),
+        body: JSON.stringify({ status: 'ready_to_fulfill' }),
       });
 
       if (!response.ok) throw new Error('Failed to approve');
@@ -548,19 +548,19 @@ export default function AdminRedemptionsPage() {
               isActive={statusFilter === 'all'}
             />
             <StatCard
-              label="Pending"
+              label="Awaiting Claim"
               value={stats.pending}
               color="yellow"
               isHighlighted={true}
-              onClick={() => handleStatCardClick('pending')}
-              isActive={statusFilter === 'pending'}
+              onClick={() => handleStatCardClick('awaiting_claim')}
+              isActive={statusFilter === 'awaiting_claim'}
             />
             <StatCard
-              label="Approved"
+              label="Ready to Fulfill"
               value={stats.approved}
               color="blue"
-              onClick={() => handleStatCardClick('approved')}
-              isActive={statusFilter === 'approved'}
+              onClick={() => handleStatCardClick('ready_to_fulfill')}
+              isActive={statusFilter === 'ready_to_fulfill'}
             />
             <StatCard
               label="Fulfilled"
@@ -608,16 +608,16 @@ export default function AdminRedemptionsPage() {
                   color="orange"
                 />
                 <FilterPill
-                  label="⏳ Pending"
-                  active={statusFilter === 'pending'}
-                  onClick={() => setStatusFilter('pending')}
+                  label="⏳ Awaiting Claim"
+                  active={statusFilter === 'awaiting_claim'}
+                  onClick={() => setStatusFilter('awaiting_claim')}
                   count={stats.pending}
                   color="yellow"
                 />
                 <FilterPill
-                  label="✓ Approved"
-                  active={statusFilter === 'approved'}
-                  onClick={() => setStatusFilter('approved')}
+                  label="✓ Ready to Fulfill"
+                  active={statusFilter === 'ready_to_fulfill'}
+                  onClick={() => setStatusFilter('ready_to_fulfill')}
                   count={stats.approved}
                   color="blue"
                 />

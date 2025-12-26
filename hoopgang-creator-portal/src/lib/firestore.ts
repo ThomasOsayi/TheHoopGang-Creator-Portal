@@ -43,6 +43,8 @@ import {
   Redemption,
   RedemptionSource,
   RedemptionStatus,
+  CashMethod,
+  FulfillmentType,
   V3VolumeStats,
   V3MilestoneStats,
   V3CreatorStats,
@@ -1834,25 +1836,161 @@ export async function updateReward(id: string, data: Partial<Reward>): Promise<v
 // ===== REDEMPTIONS =====
 
 /**
- * Creates a redemption record
+ * Creates a redemption record with 'awaiting_claim' status
+ * Called when a milestone is approved or competition is finalized
  */
 export async function createRedemption(
-  data: Omit<Redemption, 'id' | 'createdAt' | 'status'>
+  data: Omit<Redemption, 'id' | 'createdAt' | 'status' | 'updatedAt'>
 ): Promise<string> {
   const docRef = await addDoc(collection(db, REDEMPTIONS_COLLECTION), {
     ...data,
-    status: 'pending' as RedemptionStatus,
+    status: 'awaiting_claim' as RedemptionStatus, // Changed from 'pending'
     createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
   });
   return docRef.id;
 }
 
 /**
- * Gets redemptions for a creator
+ * Creator claims a redemption - provides payment info and updates status
+ * This is called when creator clicks "Claim" on an awaiting_claim redemption
+ */
+export async function claimRedemption(
+  redemptionId: string,
+  claimData: {
+    cashMethod?: CashMethod;
+    cashHandle?: string;
+    shippingAddress?: ShippingAddress;
+  }
+): Promise<Redemption> {
+  const docRef = doc(db, REDEMPTIONS_COLLECTION, redemptionId);
+  
+  // Use transaction to ensure atomic update
+  const result = await runTransaction(db, async (transaction) => {
+    const docSnap = await transaction.get(docRef);
+    
+    if (!docSnap.exists()) {
+      throw new Error('Redemption not found');
+    }
+    
+    const current = docSnap.data();
+    
+    if (current.status !== 'awaiting_claim') {
+      throw new Error(`Cannot claim redemption with status: ${current.status}`);
+    }
+    
+    const updateData: Record<string, unknown> = {
+      status: 'ready_to_fulfill',
+      claimedAt: Timestamp.now(),
+      updatedAt: serverTimestamp(),
+    };
+    
+    // Add claim data based on fulfillment type
+    if (claimData.cashMethod) {
+      updateData.cashMethod = claimData.cashMethod;
+    }
+    if (claimData.cashHandle) {
+      updateData.cashHandle = claimData.cashHandle;
+    }
+    if (claimData.shippingAddress) {
+      updateData.shippingAddress = claimData.shippingAddress;
+    }
+    
+    transaction.update(docRef, updateData);
+    
+    return {
+      id: docSnap.id,
+      ...current,
+      ...updateData,
+      claimedAt: new Date(),
+    };
+  });
+  
+  return convertTimestamps<Redemption>(result);
+}
+
+/**
+ * Admin fulfills a redemption - marks as completed with fulfillment details
+ */
+export async function fulfillRedemption(
+  redemptionId: string,
+  adminId: string,
+  fulfillmentData: {
+    notes?: string;
+    trackingNumber?: string;
+    codeSent?: string;
+  }
+): Promise<void> {
+  const docRef = doc(db, REDEMPTIONS_COLLECTION, redemptionId);
+  
+  // Verify redemption is in correct state
+  const docSnap = await getDoc(docRef);
+  if (!docSnap.exists()) {
+    throw new Error('Redemption not found');
+  }
+  
+  const current = docSnap.data();
+  if (current.status !== 'ready_to_fulfill') {
+    throw new Error(`Cannot fulfill redemption with status: ${current.status}`);
+  }
+  
+  const updateData: Record<string, unknown> = {
+    status: 'fulfilled' as RedemptionStatus,
+    fulfilledAt: serverTimestamp(),
+    fulfilledBy: adminId,
+    updatedAt: serverTimestamp(),
+  };
+  
+  if (fulfillmentData.notes) {
+    updateData.fulfillmentNotes = fulfillmentData.notes;
+  }
+  if (fulfillmentData.trackingNumber) {
+    updateData.trackingNumber = fulfillmentData.trackingNumber;
+  }
+  if (fulfillmentData.codeSent) {
+    updateData.codeSent = fulfillmentData.codeSent;
+  }
+  
+  await updateDoc(docRef, updateData);
+}
+
+/**
+ * Admin rejects a redemption (for fraud, ineligibility, etc.)
+ */
+export async function rejectRedemption(
+  redemptionId: string,
+  adminId: string,
+  reason: string
+): Promise<void> {
+  const docRef = doc(db, REDEMPTIONS_COLLECTION, redemptionId);
+  
+  // Verify redemption exists
+  const docSnap = await getDoc(docRef);
+  if (!docSnap.exists()) {
+    throw new Error('Redemption not found');
+  }
+  
+  const current = docSnap.data();
+  if (current.status === 'fulfilled') {
+    throw new Error('Cannot reject an already fulfilled redemption');
+  }
+  
+  await updateDoc(docRef, {
+    status: 'rejected' as RedemptionStatus,
+    rejectedAt: serverTimestamp(),
+    rejectedBy: adminId,
+    rejectionReason: reason,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+/**
+ * Gets redemptions for a creator with optional status filter
+ * Supports both single status and array of statuses
  */
 export async function getRedemptionsByCreatorId(
   creatorId: string,
-  status?: RedemptionStatus
+  statusFilter?: RedemptionStatus | RedemptionStatus[]
 ): Promise<Redemption[]> {
   let q = query(
     collection(db, REDEMPTIONS_COLLECTION),
@@ -1860,8 +1998,13 @@ export async function getRedemptionsByCreatorId(
     orderBy('createdAt', 'desc')
   );
 
-  if (status) {
-    q = query(q, where('status', '==', status));
+  // Note: Firestore 'in' queries support up to 10 values
+  if (statusFilter) {
+    if (Array.isArray(statusFilter)) {
+      q = query(q, where('status', 'in', statusFilter));
+    } else {
+      q = query(q, where('status', '==', statusFilter));
+    }
   }
 
   const snapshot = await getDocs(q);

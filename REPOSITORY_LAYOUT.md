@@ -11,8 +11,9 @@
 ### App root (`hoopgang-creator-portal/`)
 
 - **Config & tooling**
-  - `.firebaserc`, `.gitignore`, `eslint.config.mjs`, `firebase.json`, `firestore.indexes.json`, `firestore.rules`
+  - `.firebaserc`, `.gitignore`, `eslint.config.mjs`, `firebase.json`, `firestore.indexes.json`, `firestore.rules`, `storage.rules`
   - `next.config.ts`, `postcss.config.mjs`, `package.json`, `package-lock.json`, `tsconfig.json`, `README.md`
+  - `cors.json`, `firebase-service-account.json` (service account config)
 - **`public/`** – Static assets
   - **`images/creators/`** – Creator photos
   - **`images/products/`** – Product hero image
@@ -30,7 +31,7 @@
 - **Root & auth**
   - `page.tsx` – Marketing / landing page
   - `layout.tsx`, `globals.css`, icon files (`favicon.ico`, `android-icon.png`, `apple-icon.png`)
-  - `login/page.tsx`, `apply/page.tsx`, `apply/tiktok/page.tsx`, `apply/instagram/page.tsx`, `forgot-password/page.tsx`
+  - `login/page.tsx`, `apply/page.tsx`, `apply/tiktok/page.tsx`, `apply/instagram/page.tsx`, `forgot-password/page.tsx`, `verify-email/page.tsx`
 - **Creator-facing pages**
   - `creator/dashboard/page.tsx`
   - `creator/submit/page.tsx`
@@ -99,6 +100,11 @@
 #### Authentication
 - `login/page.tsx` - Login page
   - THG logo image instead of emoji
+- `verify-email/page.tsx` - Email verification page
+  - Displays verification status and instructions
+  - Resend verification email functionality
+  - Redirects verified users to dashboard
+  - Redirects unauthenticated users to login
 
 #### Application Flow
 - `apply/page.tsx` - General creator application page
@@ -651,6 +657,7 @@ creator/
 - `vercel.svg` - Vercel logo
 - `window.svg` - Window icon
 - `images/` - Image assets directory
+  - `THG_logo_gradient.png` - HoopGang gradient logo
   - `THG_logo_orange.png` - HoopGang orange logo
   - `THG_logo_white.png` - HoopGang white logo
   - `products/` - Product images
@@ -666,8 +673,8 @@ creator/
 
 ## File Statistics
 
-### Pages (16+ `page.tsx` files)
-- Root page, login, apply (general/tiktok/instagram), forgot-password
+### Pages (17+ `page.tsx` files)
+- Root page, login, apply (general/tiktok/instagram), forgot-password, verify-email
 - Admin: creators list, creator detail, submissions list, submission review, volume leaderboard, GMV leaderboard, TikTok imports
 - Creator: dashboard, submit, leaderboard, rewards, submissions history, request-product
 

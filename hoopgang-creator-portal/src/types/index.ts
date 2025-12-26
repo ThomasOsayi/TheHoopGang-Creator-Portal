@@ -398,8 +398,8 @@ export interface Reward {
  * Redemptions - tracks reward fulfillment
  */
 export type RedemptionSource = 'milestone_submission' | 'volume_win' | 'gmv_win' | 'competition_win';
-export type RedemptionStatus = 'pending' | 'approved' | 'fulfilled' | 'rejected';
-export type CashMethod = 'paypal' | 'venmo';
+export type RedemptionStatus = 'awaiting_claim' | 'ready_to_fulfill' | 'fulfilled' | 'rejected';
+export type CashMethod = 'paypal' | 'venmo' | 'cashapp' | 'zelle';
 
 export interface Redemption {
   id: string;
@@ -409,20 +409,35 @@ export interface Redemption {
   source: RedemptionSource;
   sourceId?: string;                    // V3ContentSubmission ID or LeaderboardEntry ID
   
-  // Fulfillment details
+  // Reward details (denormalized from Reward on creation)
   fulfillmentType: FulfillmentType;
-  cashAmount?: number;
-  cashMethod?: CashMethod;
-  cashHandle?: string;                  // PayPal email or Venmo handle
-  storeCreditCode?: string;
-  productShipped?: boolean;
-  trackingNumber?: string;
+  cashValue?: number;                   // Cash amount to pay
+  storeCreditValue?: number;            // Store credit amount
+  productName?: string;                 // For product rewards
+  customInstructions?: string;          // For custom rewards
   
-  // Status
+  // Creator-provided claim info (filled when they claim)
+  cashMethod?: CashMethod;              // PayPal, Venmo, CashApp, Zelle
+  cashHandle?: string;                  // Payment handle/email
+  shippingAddress?: ShippingAddress;    // For products - can be edited during claim
+  claimedAt?: Date;
+  
+  // Admin fulfillment info
   status: RedemptionStatus;
+  fulfillmentNotes?: string;            // Admin notes during fulfillment
+  trackingNumber?: string;              // For product shipments
+  codeSent?: string;                    // For store credit/discount codes
   fulfilledAt?: Date;
   fulfilledBy?: string;                 // Admin user ID
-  notes?: string;
+  rejectedAt?: Date;
+  rejectedBy?: string;                  // Admin user ID
+  rejectionReason?: string;
+  
+  // Legacy fields (kept for backwards compatibility)
+  cashAmount?: number;                  // @deprecated Use cashValue instead
+  storeCreditCode?: string;             // @deprecated Use codeSent instead
+  productShipped?: boolean;             // @deprecated Use status + trackingNumber instead
+  notes?: string;                       // @deprecated Use fulfillmentNotes instead
   
   // Metadata
   createdAt: Date;

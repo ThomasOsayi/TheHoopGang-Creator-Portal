@@ -1012,11 +1012,13 @@ export default function CreatorDetailPage() {
                           <div className={`px-2 py-1 rounded-full text-xs font-medium ${
                             redemption.status === 'fulfilled' 
                               ? 'bg-green-500/20 text-green-400' 
-                              : redemption.status === 'approved'
+                              : redemption.status === 'ready_to_fulfill'
                                 ? 'bg-blue-500/20 text-blue-400'
                                 : 'bg-yellow-500/20 text-yellow-400'
                           }`}>
-                            {redemption.status}
+                            {redemption.status === 'awaiting_claim' ? 'Awaiting Claim' : 
+                             redemption.status === 'ready_to_fulfill' ? 'Ready to Fulfill' :
+                             redemption.status}
                           </div>
                         </div>
                       ))}

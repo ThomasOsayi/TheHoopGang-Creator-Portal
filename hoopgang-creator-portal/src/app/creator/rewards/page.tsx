@@ -579,10 +579,10 @@ function CreatorRewardsPageContent() {
 
   const getStatusBadge = (status: RedemptionStatus) => {
     switch (status) {
-      case 'pending':
-        return { label: 'Pending', class: 'bg-yellow-500/20 text-yellow-400' };
-      case 'approved':
-        return { label: 'Approved', class: 'bg-blue-500/20 text-blue-400' };
+      case 'awaiting_claim':
+        return { label: 'Awaiting Claim', class: 'bg-yellow-500/20 text-yellow-400' };
+      case 'ready_to_fulfill':
+        return { label: 'Ready to Fulfill', class: 'bg-blue-500/20 text-blue-400' };
       case 'fulfilled':
         return { label: 'Fulfilled', class: 'bg-green-500/20 text-green-400' };
       case 'rejected':

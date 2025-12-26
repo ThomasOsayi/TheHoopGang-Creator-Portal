@@ -377,7 +377,7 @@ export default function AdminCreatorsPage() {
         if (redemptionsRes.ok) {
           const data = await redemptionsRes.json();
           const redemptions = data.redemptions || [];
-          pendingRedemptions = redemptions.filter((r: any) => r.status === 'pending').length;
+          pendingRedemptions = redemptions.filter((r: any) => r.status === 'awaiting_claim').length;
           totalPaidOut = redemptions
             .filter((r: any) => r.status === 'fulfilled')
             .reduce((sum: number, r: any) => sum + (r.cashAmount || 0), 0);

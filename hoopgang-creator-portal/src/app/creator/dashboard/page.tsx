@@ -198,7 +198,7 @@ export default function CreatorDashboardPage() {
         const redemptions = data.redemptions || [];
         
         const pending = redemptions.filter(
-          (r: { status: string }) => r.status === 'pending' || r.status === 'approved'
+          (r: { status: string }) => r.status === 'awaiting_claim' || r.status === 'ready_to_fulfill'
         ).length;
         
         const totalEarned = redemptions
