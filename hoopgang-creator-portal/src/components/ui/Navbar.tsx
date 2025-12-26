@@ -138,6 +138,8 @@ export function Navbar() {
     { href: '/creator/submit', label: 'Submit Content', icon: '📤', show: isVerifiedCreator && canAccessFullFeatures },
     // V3: Only show Rewards if approved OR TikTok creator
     { href: '/creator/rewards', label: 'Rewards', icon: '🎁', show: isVerifiedCreator && canAccessFullFeatures },
+    // V3: My Rewards (redemptions) page
+    { href: '/creator/redemptions', label: 'My Rewards', icon: '🏆', show: isVerifiedCreator && canAccessFullFeatures },
   ].filter(link => link.show);
 
   return (

@@ -25,6 +25,7 @@ import { CONTENT_DEADLINE_DAYS } from '@/lib/constants';
 import { useAuth } from '@/lib/auth-context';
 import { ProtectedRoute } from '@/components/auth';
 import { getCurrentWeek, getWeekEnd } from '@/lib/week-utils';
+import { useRouter } from 'next/navigation';
 
 /**
  * Formats a date to a readable string
@@ -47,6 +48,7 @@ function getFirstName(fullName: string): string {
 export default function CreatorDashboardPage() {
   const { user } = useAuth();
   const { showToast } = useToast();
+  const router = useRouter();
   const [creator, setCreator] = useState<CreatorWithCollab | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -77,8 +79,34 @@ export default function CreatorDashboardPage() {
   }>({ pending: 0, totalEarned: 0 });
   const [redemptionsLoading, setRedemptionsLoading] = useState(true);
   
+  // Reward stats for notification
+  const [rewardStats, setRewardStats] = useState<{ readyToClaim: number; processing: number } | null>(null);
+  
   // Weekly reset target date
   const [weekResetDate, setWeekResetDate] = useState<Date>(new Date());
+
+  // Load reward stats
+  const loadRewardStats = async () => {
+    try {
+      if (!user) return;
+      const idToken = await user.getIdToken();
+      if (!idToken) return;
+
+      const response = await fetch('/api/creator/rewards/stats', {
+        headers: { 'Authorization': `Bearer ${idToken}` },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setRewardStats({
+          readyToClaim: data.readyToClaim || 0,
+          processing: data.processing || data.pending || 0,
+        });
+      }
+    } catch (error) {
+      console.error('Error loading reward stats:', error);
+    }
+  };
 
   // Fetch creator data
   useEffect(() => {
@@ -86,6 +114,7 @@ export default function CreatorDashboardPage() {
       fetchCreator();
       fetchV3Stats();
       fetchRedemptionStats();
+      loadRewardStats();
       
       // Set week reset date
       const currentWeek = getCurrentWeek();
@@ -459,6 +488,35 @@ export default function CreatorDashboardPage() {
             icon="👋"
             accentColor="orange"
           />
+
+          {/* Rewards Notification Card */}
+          {rewardStats && rewardStats.readyToClaim > 0 && (
+            <div 
+              onClick={() => router.push('/creator/redemptions')}
+              className="mb-6 p-4 bg-gradient-to-r from-orange-500/20 via-amber-500/10 to-orange-500/20 border border-orange-500/30 rounded-2xl cursor-pointer hover:border-orange-500/50 transition-all group"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-orange-500/20 rounded-xl flex items-center justify-center text-2xl animate-bounce">
+                    🎁
+                  </div>
+                  <div>
+                    <div className="text-white font-bold text-lg">
+                      You have {rewardStats.readyToClaim} reward{rewardStats.readyToClaim !== 1 ? 's' : ''} to claim!
+                    </div>
+                    <div className="text-orange-400/70 text-sm">
+                      Click here to claim your rewards
+                    </div>
+                  </div>
+                </div>
+                <div className="text-orange-400 group-hover:translate-x-1 transition-transform">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Status Banners */}
           {creator.collaboration?.status === 'pending' && (

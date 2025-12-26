@@ -24,6 +24,7 @@ interface EnrichedRedemption extends Redemption {
   creatorEmail?: string;
   rewardIcon?: string;
   rewardValue?: string;
+  // Note: cashMethod and cashHandle are already inherited from Redemption interface
 }
 
 type StatusFilterType = 'all' | RedemptionStatus;
@@ -172,8 +173,21 @@ function RedemptionRow({ redemption, onApprove, onReject, onFulfill, onView }: R
           <div>
             <div className="text-white">{redemption.rewardName}</div>
             <div className="text-zinc-500 text-sm">
-              {redemption.cashAmount ? `$${redemption.cashAmount.toFixed(2)}` : redemption.rewardValue || ''}
+              {redemption.cashValue ? `$${redemption.cashValue}` : 
+               redemption.cashAmount ? `$${redemption.cashAmount.toFixed(2)}` : 
+               redemption.rewardValue || ''}
             </div>
+            {/* Payment info - show when creator has claimed */}
+            {redemption.cashMethod && redemption.cashHandle && (
+              <div className="mt-1 flex items-center gap-1.5">
+                <span className="text-xs px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded-md capitalize">
+                  {redemption.cashMethod}
+                </span>
+                <span className="text-xs text-zinc-400 font-mono">
+                  {redemption.cashHandle}
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </td>
@@ -198,27 +212,14 @@ function RedemptionRow({ redemption, onApprove, onReject, onFulfill, onView }: R
       <td className="py-4 px-4">
         <div className="flex items-center gap-2">
           {redemption.status === 'awaiting_claim' && (
-            <>
-              <button
-                onClick={onApprove}
-                className="px-3 py-1.5 bg-blue-500/20 text-blue-400 rounded-lg text-sm font-medium hover:bg-blue-500/30 transition-colors"
-              >
-                Approve
-              </button>
-              <button
-                onClick={onReject}
-                className="px-3 py-1.5 bg-zinc-800 text-zinc-400 rounded-lg text-sm font-medium hover:bg-red-500/20 hover:text-red-400 transition-colors"
-              >
-                Reject
-              </button>
-            </>
+            <span className="text-zinc-500 text-sm italic">Waiting for creator...</span>
           )}
           {redemption.status === 'ready_to_fulfill' && (
             <button
               onClick={onFulfill}
               className="px-3 py-1.5 bg-green-500/20 text-green-400 rounded-lg text-sm font-medium hover:bg-green-500/30 transition-colors"
             >
-              Mark Fulfilled
+              {redemption.cashMethod ? 'Fulfill Payment' : 'Mark Fulfilled'}
             </button>
           )}
           {(redemption.status === 'fulfilled' || redemption.status === 'rejected') && (
@@ -823,8 +824,10 @@ export default function AdminRedemptionsPage() {
           <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-6 animate-fade-in">
             <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-md w-full animate-scale-in">
               <div className="flex items-center gap-3 mb-6">
-                <span className="text-3xl">📦</span>
-                <h3 className="text-xl font-bold text-white">Mark as Fulfilled</h3>
+                <span className="text-3xl">{selectedRedemption.cashMethod ? '💸' : '📦'}</span>
+                <h3 className="text-xl font-bold text-white">
+                  {selectedRedemption.cashMethod ? 'Fulfill Payment' : 'Mark as Fulfilled'}
+                </h3>
               </div>
 
               {/* Redemption preview */}
@@ -838,12 +841,53 @@ export default function AdminRedemptionsPage() {
                 </div>
               </div>
 
+              {/* Payment Details - Show if creator provided payment info */}
+              {selectedRedemption.cashMethod && selectedRedemption.cashHandle && (
+                <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 mb-4">
+                  <div className="text-blue-400 text-sm font-medium mb-3">💳 Payment Details</div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-zinc-400 text-sm">Amount</span>
+                      <span className="text-white font-bold text-lg">
+                        ${selectedRedemption.cashValue || selectedRedemption.cashAmount || 0}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-zinc-400 text-sm">Method</span>
+                      <span className="text-white capitalize font-medium">{selectedRedemption.cashMethod}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-zinc-400 text-sm">Send To</span>
+                      <span className="text-white font-mono bg-zinc-800 px-2 py-1 rounded text-sm">
+                        {selectedRedemption.cashHandle}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {/* Copy button for handle */}
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(selectedRedemption.cashHandle || '');
+                      // Optional: show a quick toast or change button text
+                    }}
+                    className="mt-3 w-full py-2 bg-zinc-800 text-zinc-300 rounded-lg text-sm hover:bg-zinc-700 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    Copy {selectedRedemption.cashMethod} Handle
+                  </button>
+                </div>
+              )}
+
               <div className="mb-6">
                 <label className="text-zinc-400 text-sm block mb-2">Fulfillment Notes (optional)</label>
                 <textarea
                   value={fulfillmentNotes}
                   onChange={(e) => setFulfillmentNotes(e.target.value)}
-                  placeholder="e.g., PayPal transfer sent, tracking #12345..."
+                  placeholder={selectedRedemption.cashMethod 
+                    ? `e.g., ${selectedRedemption.cashMethod} transfer sent, confirmation #...` 
+                    : "e.g., Tracking number, confirmation details..."}
                   rows={3}
                   className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-green-500 resize-none"
                 />
@@ -871,7 +915,7 @@ export default function AdminRedemptionsPage() {
                       Processing...
                     </>
                   ) : (
-                    'Mark Fulfilled'
+                    selectedRedemption.cashMethod ? 'Confirm Payment Sent' : 'Mark Fulfilled'
                   )}
                 </button>
               </div>

@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     const decodedToken = await adminAuth.verifyIdToken(token);
     const userId = decodedToken.uid;
 
-    // Get creator by userId (FIXED: use proper function)
+    // Get creator by userId
     const creator = await getCreatorByUserId(userId);
     if (!creator) {
       return NextResponse.json({ error: 'Creator not found' }, { status: 404 });
@@ -31,9 +31,12 @@ export async function GET(request: NextRequest) {
     const redemptions = await getRedemptionsByCreatorId(creator.id);
 
     // Calculate stats from redemptions
-    let totalEarned = 0;
-    let pending = 0;
-    let readyToClaim = 0;
+    let totalEarned = 0;           // Total $ value of fulfilled redemptions
+    let totalEarnedValue = 0;      // Total value including store credit
+    let readyToClaimCount = 0;     // Redemptions waiting for creator to claim
+    let readyToClaimValue = 0;     // $ value of claimable redemptions
+    let processingCount = 0;       // Redemptions being processed by admin
+    let processingValue = 0;       // $ value of processing redemptions
     const earnedRewardIds: string[] = [];
 
     redemptions.forEach((redemption) => {
@@ -42,19 +45,32 @@ export async function GET(request: NextRequest) {
         earnedRewardIds.push(redemption.rewardId);
       }
 
+      // Get redemption value (prefer new fields, fallback to legacy)
+      const cashValue = redemption.cashValue || redemption.cashAmount || 0;
+      const storeCreditValue = redemption.storeCreditValue || 0;
+      const totalValue = cashValue + storeCreditValue;
+
       // Calculate totals based on status
       switch (redemption.status) {
         case 'fulfilled':
-          // Add to total earned
-          totalEarned += redemption.cashAmount || 0;
+          // Completed - add to total earned
+          totalEarned += cashValue;
+          totalEarnedValue += totalValue;
           break;
+          
         case 'awaiting_claim':
-          pending += 1;
+          // Waiting for creator to provide payment info = Ready to Claim
+          readyToClaimCount += 1;
+          readyToClaimValue += totalValue;
           break;
+          
         case 'ready_to_fulfill':
-          // Ready to fulfill but not yet fulfilled = ready to claim
-          readyToClaim += 1;
+          // Creator claimed, waiting for admin to fulfill = Processing
+          processingCount += 1;
+          processingValue += totalValue;
           break;
+          
+        // 'rejected' status is not counted in active stats
       }
     });
 
@@ -68,7 +84,7 @@ export async function GET(request: NextRequest) {
     for (const milestone of approvedMilestones) {
       const hasRedemption = redemptions.some(r => r.sourceId === milestone.id);
       if (!hasRedemption) {
-        readyToClaim += 1;
+        readyToClaimCount += 1;
       }
     }
 
@@ -86,10 +102,26 @@ export async function GET(request: NextRequest) {
     if (totalVolumeSubmissions >= 50) earnedRewardIds.push('vol-50');
 
     return NextResponse.json({
-      totalEarned,
-      pending,
-      readyToClaim,
+      // Primary stats for display
+      totalEarned,                    // Cash value of fulfilled redemptions
+      totalEarnedValue,               // Total value including store credit
+      readyToClaim: readyToClaimCount, // Number ready to claim
+      readyToClaimValue,              // Value of claimable rewards
+      pending: processingCount,        // Number being processed (legacy name for backwards compat)
+      processing: processingCount,     // Alias for clarity
+      processingValue,                // Value being processed
+      
+      // For reward availability
       earnedRewardIds,
+      
+      // Detailed counts for UI
+      counts: {
+        awaitingClaim: readyToClaimCount,
+        processing: processingCount,
+        fulfilled: redemptions.filter(r => r.status === 'fulfilled').length,
+        rejected: redemptions.filter(r => r.status === 'rejected').length,
+        total: redemptions.length,
+      },
     });
   } catch (error) {
     console.error('Error fetching reward stats:', error);

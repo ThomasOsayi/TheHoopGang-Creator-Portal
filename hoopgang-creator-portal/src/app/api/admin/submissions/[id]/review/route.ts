@@ -70,7 +70,8 @@ export async function PUT(
       const creator = await getCreatorById(submission.creatorId);
       
       if (reward) {
-        await createRedemption({
+        // Build redemption data, excluding undefined values (Firestore rejects undefined)
+        const redemptionData: Parameters<typeof createRedemption>[0] = {
           creatorId: submission.creatorId,
           rewardId: reward.id,
           rewardName: reward.name,
@@ -83,10 +84,20 @@ export async function PUT(
               : reward.storeCreditValue 
                 ? 'store_credit' 
                 : 'product',
-          cashValue: reward.cashValue,
-          storeCreditValue: reward.storeCreditValue,
-          productName: reward.productName,
-        });
+        };
+
+        // Only add optional fields if they have values
+        if (reward.cashValue !== undefined && reward.cashValue !== null) {
+          redemptionData.cashValue = reward.cashValue;
+        }
+        if (reward.storeCreditValue !== undefined && reward.storeCreditValue !== null) {
+          redemptionData.storeCreditValue = reward.storeCreditValue;
+        }
+        if (reward.productName) {
+          redemptionData.productName = reward.productName;
+        }
+
+        await createRedemption(redemptionData);
       }
 
       // TODO: Send approval email to creator

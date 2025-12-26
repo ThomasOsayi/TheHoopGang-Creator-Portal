@@ -397,8 +397,8 @@ function CreatorRewardsPageContent() {
         const data = await response.json();
         setStats({
           totalEarned: data.totalEarned || 0,
-          pending: data.pending || 0,
-          readyToClaim: data.readyToClaim || 0,
+          pending: data.processing || data.pending || 0,  // Processing count
+          readyToClaim: data.readyToClaim || 0,           // Ready to claim count
         });
         
         // Update earned status on rewards
@@ -629,58 +629,63 @@ function CreatorRewardsPageContent() {
         />
 
         {/* Stats Bar */}
-        <div className="mb-8 p-5 bg-gradient-to-r from-orange-500/10 via-amber-500/5 to-orange-500/10 border border-orange-500/20 rounded-2xl flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8 animate-fade-in-up">
-          <div className="flex items-center gap-6 sm:gap-8">
-            {/* Total Earned */}
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
-                <span className="text-2xl">💰</span>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-green-400">
-                  $<AnimatedCounter value={stats.totalEarned} />
+        <div className="mb-8 p-5 bg-gradient-to-r from-orange-500/10 via-amber-500/5 to-orange-500/10 border border-orange-500/20 rounded-2xl animate-fade-in-up">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-6 sm:gap-8">
+              {/* Total Earned */}
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
+                  <span className="text-2xl">💰</span>
                 </div>
-                <div className="text-zinc-500 text-sm">Total Earned</div>
+                <div>
+                  <div className="text-2xl font-bold text-green-400">
+                    $<AnimatedCounter value={stats.totalEarned} />
+                  </div>
+                  <div className="text-zinc-500 text-sm">Total Earned</div>
+                </div>
+              </div>
+              
+              <div className="w-px h-12 bg-zinc-700 hidden sm:block" />
+              
+              {/* Processing */}
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
+                  <span className="text-2xl">⏳</span>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-blue-400">
+                    <AnimatedCounter value={stats.pending} />
+                  </div>
+                  <div className="text-zinc-500 text-sm">Processing</div>
+                </div>
+              </div>
+              
+              <div className="w-px h-12 bg-zinc-700 hidden sm:block" />
+              
+              {/* Ready to Claim */}
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-orange-500/20 rounded-xl flex items-center justify-center">
+                  <span className="text-2xl">🎉</span>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-orange-400">
+                    <AnimatedCounter value={stats.readyToClaim} />
+                  </div>
+                  <div className="text-zinc-500 text-sm">Ready to Claim</div>
+                </div>
               </div>
             </div>
-            
-            <div className="w-px h-12 bg-zinc-700 hidden sm:block" />
-            
-            {/* Pending */}
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-yellow-500/20 rounded-xl flex items-center justify-center">
-                <span className="text-2xl">⏳</span>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-yellow-400">
-                  <AnimatedCounter value={stats.pending} />
-                </div>
-                <div className="text-zinc-500 text-sm">Pending</div>
-              </div>
-            </div>
-            
-            <div className="w-px h-12 bg-zinc-700 hidden sm:block" />
-            
-            {/* Ready to Claim */}
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-orange-500/20 rounded-xl flex items-center justify-center">
-                <span className="text-2xl">🎉</span>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-orange-400">
-                  <AnimatedCounter value={stats.readyToClaim} />
-                </div>
-                <div className="text-zinc-500 text-sm">Ready to Claim</div>
-              </div>
-            </div>
-          </div>
 
-          {/* Claim All Button */}
-          {stats.readyToClaim > 0 && (
-            <button className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl transition-all hover:scale-105 active:scale-95 shadow-lg shadow-orange-500/25">
-              Claim All →
-            </button>
-          )}
+            {/* Claim Rewards Button - Links to Redemptions Page */}
+            {stats.readyToClaim > 0 && (
+              <button 
+                onClick={() => router.push('/creator/redemptions')}
+                className="px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold rounded-xl transition-all hover:scale-105 active:scale-95 shadow-lg shadow-orange-500/25 flex items-center gap-2"
+              >
+                <span>🎁</span> Claim Rewards →
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Tabs */}
