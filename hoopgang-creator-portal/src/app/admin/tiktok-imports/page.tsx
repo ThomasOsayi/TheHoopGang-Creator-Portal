@@ -1,4 +1,5 @@
 // src/app/admin/tiktok-imports/page.tsx
+// Mobile-Responsive Version
 
 'use client';
 
@@ -158,8 +159,6 @@ export default function TiktokImportsPage() {
   const goToPage = (page: number) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
-      // Clear selection when changing pages (optional - remove if you want to keep selection across pages)
-      // setSelectedIds(new Set());
     }
   };
 
@@ -171,19 +170,16 @@ export default function TiktokImportsPage() {
     const pages: (number | 'ellipsis')[] = [];
     
     if (totalPages <= 7) {
-      // Show all pages if 7 or fewer
       for (let i = 1; i <= totalPages; i++) {
         pages.push(i);
       }
     } else {
-      // Always show first page
       pages.push(1);
       
       if (currentPage > 3) {
         pages.push('ellipsis');
       }
       
-      // Show pages around current
       const start = Math.max(2, currentPage - 1);
       const end = Math.min(totalPages - 1, currentPage + 1);
       
@@ -195,7 +191,6 @@ export default function TiktokImportsPage() {
         pages.push('ellipsis');
       }
       
-      // Always show last page
       pages.push(totalPages);
     }
     
@@ -205,12 +200,10 @@ export default function TiktokImportsPage() {
   // ===== SELECTION HANDLERS =====
   const toggleSelectAllOnPage = () => {
     if (isAllOnPageSelected) {
-      // Deselect all on current page
       const newSelected = new Set(selectedIds);
       currentPageDeletableImports.forEach(imp => newSelected.delete(imp.id));
       setSelectedIds(newSelected);
     } else {
-      // Select all deletable on current page
       const newSelected = new Set(selectedIds);
       currentPageDeletableImports.forEach(imp => newSelected.add(imp.id));
       setSelectedIds(newSelected);
@@ -233,23 +226,25 @@ export default function TiktokImportsPage() {
     setSelectedIds(new Set());
   };
 
-  const getStatusBadge = (status: TiktokImportStatus) => {
+  const getStatusBadge = (status: TiktokImportStatus, size: 'sm' | 'default' = 'default') => {
+    const sizeClass = size === 'sm' ? 'px-1.5 py-0.5 text-[10px]' : 'px-2 py-1 text-xs';
+    
     switch (status) {
       case 'available':
         return (
-          <span className="px-2 py-1 text-xs font-medium bg-green-500/10 text-green-400 border border-green-500/20 rounded-full">
+          <span className={`${sizeClass} font-medium bg-green-500/10 text-green-400 border border-green-500/20 rounded-full`}>
             Available
           </span>
         );
       case 'claimed':
         return (
-          <span className="px-2 py-1 text-xs font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20 rounded-full">
+          <span className={`${sizeClass} font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20 rounded-full`}>
             Claimed
           </span>
         );
       case 'expired':
         return (
-          <span className="px-2 py-1 text-xs font-medium bg-zinc-500/10 text-zinc-400 border border-zinc-500/20 rounded-full">
+          <span className={`${sizeClass} font-medium bg-zinc-500/10 text-zinc-400 border border-zinc-500/20 rounded-full`}>
             Expired
           </span>
         );
@@ -262,6 +257,14 @@ export default function TiktokImportsPage() {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
+    });
+  };
+
+  const formatShortDate = (date: Date | string) => {
+    const d = typeof date === 'string' ? new Date(date) : date;
+    return d.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
     });
   };
 
@@ -328,7 +331,6 @@ export default function TiktokImportsPage() {
         throw new Error(data.error || 'Failed to update import');
       }
 
-      // Update local state
       setImports(prev =>
         prev.map(imp => (imp.id === editingImport.id ? data.import : imp))
       );
@@ -372,7 +374,6 @@ export default function TiktokImportsPage() {
         throw new Error(data.error || 'Failed to delete import');
       }
 
-      // Remove from local state
       setImports(prev => prev.filter(imp => imp.id !== deletingImport.id));
       setSelectedIds(prev => {
         const newSet = new Set(prev);
@@ -432,7 +433,6 @@ export default function TiktokImportsPage() {
       setBulkDeleteProgress({ current: i + 1, total: toDelete.length });
     }
 
-    // Update local state
     setImports(prev => prev.filter(imp => !successfulDeletes.includes(imp.id)));
     setSelectedIds(prev => {
       const newSet = new Set(prev);
@@ -452,33 +452,110 @@ export default function TiktokImportsPage() {
   };
 
   const inputClasses =
-    'w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500';
+    'w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm placeholder-zinc-500 focus:outline-none focus:border-orange-500';
   const labelClasses = 'block text-zinc-400 text-xs uppercase tracking-wider mb-1';
+
+  // ===== MOBILE CARD COMPONENT =====
+  const ImportCard = ({ imp }: { imp: TiktokCreatorImport }) => {
+    const isSelected = selectedIds.has(imp.id);
+    const isClaimed = imp.status === 'claimed';
+
+    return (
+      <div 
+        className={`p-3 bg-zinc-900/50 border rounded-xl transition-all ${
+          isSelected ? 'border-orange-500/50 bg-orange-500/5' : 'border-zinc-800 hover:border-zinc-700'
+        }`}
+      >
+        {/* Header Row */}
+        <div className="flex items-start justify-between gap-2 mb-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <button
+              onClick={() => toggleSelectOne(imp.id, imp.status)}
+              disabled={isClaimed}
+              className={`p-0.5 rounded transition-colors flex-shrink-0 ${
+                isClaimed ? 'cursor-not-allowed opacity-30' : ''
+              }`}
+            >
+              {isSelected ? (
+                <CheckSquare className="w-5 h-5 text-orange-500" />
+              ) : (
+                <Square className={`w-5 h-5 ${isClaimed ? 'text-zinc-700' : 'text-zinc-500'}`} />
+              )}
+            </button>
+            <div className="w-8 h-8 bg-black border border-zinc-700 rounded-lg flex items-center justify-center flex-shrink-0">
+              <TiktokLogo className="w-4 h-4" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-white font-medium text-sm truncate">@{imp.tiktokUsername}</p>
+              <p className="text-xs text-zinc-400 truncate">{imp.fullName}</p>
+            </div>
+          </div>
+          {getStatusBadge(imp.status, 'sm')}
+        </div>
+
+        {/* Info Grid */}
+        <div className="grid grid-cols-2 gap-2 mb-3 text-xs">
+          <div>
+            <span className="text-zinc-500">Location</span>
+            <p className="text-zinc-300 truncate">{imp.shippingAddress.city}, {imp.shippingAddress.state}</p>
+          </div>
+          <div>
+            <span className="text-zinc-500">Product</span>
+            <p className="text-zinc-300 truncate">{imp.productOrdered}</p>
+          </div>
+          <div>
+            <span className="text-zinc-500">Size</span>
+            <p className="text-zinc-300">{imp.sizeOrdered}</p>
+          </div>
+          <div>
+            <span className="text-zinc-500">Imported</span>
+            <p className="text-zinc-300">{formatShortDate(imp.importedAt)}</p>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center justify-end gap-2 pt-2 border-t border-zinc-800">
+          <button
+            onClick={() => openEditModal(imp)}
+            className="p-2 hover:bg-zinc-700 rounded-lg transition-colors text-zinc-400 hover:text-white active:scale-[0.98]"
+          >
+            <Edit2 className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => openDeleteModal(imp)}
+            disabled={isClaimed}
+            className={`p-2 rounded-lg transition-colors active:scale-[0.98] ${
+              isClaimed
+                ? 'text-zinc-600 cursor-not-allowed'
+                : 'hover:bg-red-500/10 text-zinc-400 hover:text-red-400'
+            }`}
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-black text-white">
       {/* Header */}
       <div className="border-b border-zinc-800">
-        <div className="max-w-6xl mx-auto px-6 py-4">
-          <div className="flex items-center gap-4">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
+          <div className="flex items-center gap-3 sm:gap-4">
             <button
               onClick={() => router.back()}
-              className="p-2 hover:bg-zinc-800 rounded-lg transition-colors"
+              className="p-2 hover:bg-zinc-800 rounded-lg transition-colors active:scale-[0.98]"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-black border border-zinc-700 rounded-lg">
-                <TiktokLogo className="w-6 h-6" />
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="p-1.5 sm:p-2 bg-black border border-zinc-700 rounded-lg">
+                <TiktokLogo className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
-              <div className="flex-1">
-                <PageHeader 
-                  title="TikTok Imports"
-                  subtitle="Import and manage TikTok creators"
-                  icon="🎵"
-                  accentColor="pink"
-                  align="left"
-                />
+              <div>
+                <h1 className="text-lg sm:text-xl font-bold text-white">TikTok Imports</h1>
+                <p className="text-xs sm:text-sm text-zinc-400 hidden xs:block">Import and manage TikTok creators</p>
               </div>
             </div>
           </div>
@@ -487,32 +564,32 @@ export default function TiktokImportsPage() {
 
       {/* Tabs */}
       <div className="border-b border-zinc-800">
-        <div className="max-w-6xl mx-auto px-6">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="flex gap-1">
             <button
               onClick={() => setActiveTab('import')}
-              className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+              className={`px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-medium border-b-2 transition-colors ${
                 activeTab === 'import'
                   ? 'border-orange-500 text-orange-500'
                   : 'border-transparent text-zinc-400 hover:text-white'
               }`}
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 <Upload className="w-4 h-4" />
-                Import CSV
+                <span className="hidden xs:inline">Import</span> CSV
               </div>
             </button>
             <button
               onClick={() => setActiveTab('creators')}
-              className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+              className={`px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-medium border-b-2 transition-colors ${
                 activeTab === 'creators'
                   ? 'border-orange-500 text-orange-500'
                   : 'border-transparent text-zinc-400 hover:text-white'
               }`}
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 <Users className="w-4 h-4" />
-                Imported Creators
+                <span className="hidden xs:inline">Imported</span> Creators
               </div>
             </button>
           </div>
@@ -520,70 +597,106 @@ export default function TiktokImportsPage() {
       </div>
 
       {/* Content */}
-      <div className="max-w-6xl mx-auto px-6 py-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {activeTab === 'import' ? (
           <TiktokCsvImporter
             adminId={adminId}
             onImportComplete={() => {
-              // Switch to creators tab and refresh
               setActiveTab('creators');
             }}
           />
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* Filters */}
-            <div className="flex items-center gap-4">
-              <div className="relative flex-1 max-w-md">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+              {/* Search */}
+              <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
                 <input
                   type="text"
-                  placeholder="Search by username, name, or city..."
+                  placeholder="Search by username, name, city..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500"
+                  className="w-full pl-10 pr-4 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white text-sm placeholder-zinc-500 focus:outline-none focus:border-orange-500"
                 />
               </div>
+              
+              {/* Filter & Refresh Row */}
               <div className="flex items-center gap-2">
-                <Filter className="w-4 h-4 text-zinc-500" />
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value as TiktokImportStatus | 'all')}
-                  className="px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-orange-500"
+                <div className="flex items-center gap-2 flex-1 sm:flex-none">
+                  <Filter className="w-4 h-4 text-zinc-500 hidden sm:block" />
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value as TiktokImportStatus | 'all')}
+                    className="flex-1 sm:flex-none px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-orange-500"
+                  >
+                    <option value="all">All Status</option>
+                    <option value="available">Available</option>
+                    <option value="claimed">Claimed</option>
+                    <option value="expired">Expired</option>
+                  </select>
+                </div>
+                <button
+                  onClick={fetchImports}
+                  className="px-3 sm:px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-sm font-medium transition-colors active:scale-[0.98]"
                 >
-                  <option value="all">All Status</option>
-                  <option value="available">Available</option>
-                  <option value="claimed">Claimed</option>
-                  <option value="expired">Expired</option>
-                </select>
+                  <span className="hidden sm:inline">Refresh</span>
+                  <span className="sm:hidden">↻</span>
+                </button>
               </div>
-              <button
-                onClick={fetchImports}
-                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-sm font-medium transition-colors"
-              >
-                Refresh
-              </button>
             </div>
 
             {/* Bulk Actions Bar */}
             {selectedCount > 0 && (
-              <div className="bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-3 flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <span className="text-sm text-white">
-                    <span className="font-medium">{selectedCount}</span> selected
-                    {claimedSelectedCount > 0 && (
-                      <span className="text-zinc-400 ml-2">
-                        ({claimedSelectedCount} claimed - cannot delete)
-                      </span>
-                    )}
-                  </span>
+              <div className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 sm:px-4 py-3">
+                {/* Mobile Layout */}
+                <div className="sm:hidden">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-white font-medium">{selectedCount} selected</span>
+                    <button
+                      onClick={clearSelection}
+                      className="text-xs text-zinc-400 hover:text-white"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                  {claimedSelectedCount > 0 && (
+                    <p className="text-xs text-zinc-400 mb-2">
+                      {claimedSelectedCount} claimed - cannot delete
+                    </p>
+                  )}
                   <button
-                    onClick={clearSelection}
-                    className="text-sm text-zinc-400 hover:text-white transition-colors"
+                    onClick={openBulkDeleteModal}
+                    disabled={deletableSelectedImports.length === 0}
+                    className={`w-full py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors active:scale-[0.98] ${
+                      deletableSelectedImports.length === 0
+                        ? 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
+                        : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                    }`}
                   >
-                    Clear selection
+                    <Trash2 className="w-4 h-4" />
+                    Delete ({deletableSelectedImports.length})
                   </button>
                 </div>
-                <div className="flex items-center gap-2">
+
+                {/* Desktop Layout */}
+                <div className="hidden sm:flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <span className="text-sm text-white">
+                      <span className="font-medium">{selectedCount}</span> selected
+                      {claimedSelectedCount > 0 && (
+                        <span className="text-zinc-400 ml-2">
+                          ({claimedSelectedCount} claimed - cannot delete)
+                        </span>
+                      )}
+                    </span>
+                    <button
+                      onClick={clearSelection}
+                      className="text-sm text-zinc-400 hover:text-white transition-colors"
+                    >
+                      Clear selection
+                    </button>
+                  </div>
                   <button
                     onClick={openBulkDeleteModal}
                     disabled={deletableSelectedImports.length === 0}
@@ -600,8 +713,8 @@ export default function TiktokImportsPage() {
               </div>
             )}
 
-            {/* Table */}
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
+            {/* Desktop Table */}
+            <div className="hidden md:block bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-zinc-800">
@@ -745,22 +858,59 @@ export default function TiktokImportsPage() {
               </table>
             </div>
 
+            {/* Mobile Cards */}
+            <div className="md:hidden space-y-3">
+              {/* Select All on Mobile */}
+              {paginatedImports.length > 0 && (
+                <div className="flex items-center justify-between px-1 mb-2">
+                  <button
+                    onClick={toggleSelectAllOnPage}
+                    className="flex items-center gap-2 text-zinc-400 text-sm"
+                  >
+                    {isAllOnPageSelected ? (
+                      <CheckSquare className="w-4 h-4 text-orange-500" />
+                    ) : isSomeSelected ? (
+                      <MinusSquare className="w-4 h-4 text-orange-500" />
+                    ) : (
+                      <Square className="w-4 h-4 text-zinc-500" />
+                    )}
+                    <span>Select All</span>
+                  </button>
+                  <span className="text-zinc-500 text-xs">{filteredImports.length} total</span>
+                </div>
+              )}
+
+              {loading ? (
+                <div className="text-center py-12 text-zinc-500">Loading...</div>
+              ) : paginatedImports.length === 0 ? (
+                <div className="text-center py-12 text-zinc-500 text-sm">
+                  {imports.length === 0
+                    ? 'No imports yet. Upload a CSV to get started.'
+                    : 'No results match your search.'}
+                </div>
+              ) : (
+                paginatedImports.map((imp) => (
+                  <ImportCard key={imp.id} imp={imp} />
+                ))
+              )}
+            </div>
+
             {/* Pagination & Results Count */}
             {!loading && filteredImports.length > 0 && (
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
                 {/* Results count */}
-                <p className="text-sm text-zinc-500">
-                  Showing {startIndex + 1}-{Math.min(endIndex, filteredImports.length)} of {filteredImports.length} imported creators
+                <p className="text-xs sm:text-sm text-zinc-500 order-2 sm:order-1">
+                  {startIndex + 1}-{Math.min(endIndex, filteredImports.length)} of {filteredImports.length}
                 </p>
 
                 {/* Pagination controls */}
                 {totalPages > 1 && (
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 order-1 sm:order-2">
                     {/* Previous button */}
                     <button
                       onClick={goToPreviousPage}
                       disabled={currentPage === 1}
-                      className={`p-2 rounded-lg transition-colors ${
+                      className={`p-2 rounded-lg transition-colors active:scale-[0.98] ${
                         currentPage === 1
                           ? 'text-zinc-600 cursor-not-allowed'
                           : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
@@ -769,32 +919,39 @@ export default function TiktokImportsPage() {
                       <ChevronLeft className="w-5 h-5" />
                     </button>
 
-                    {/* Page numbers */}
-                    {getPageNumbers().map((page, index) => (
-                      page === 'ellipsis' ? (
-                        <span key={`ellipsis-${index}`} className="px-2 text-zinc-500">
-                          ...
-                        </span>
-                      ) : (
-                        <button
-                          key={page}
-                          onClick={() => goToPage(page)}
-                          className={`min-w-[36px] h-9 px-3 rounded-lg text-sm font-medium transition-colors ${
-                            currentPage === page
-                              ? 'bg-orange-500 text-white'
-                              : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
-                          }`}
-                        >
-                          {page}
-                        </button>
-                      )
-                    ))}
+                    {/* Page numbers - Simplified on mobile */}
+                    <div className="hidden sm:flex items-center gap-1">
+                      {getPageNumbers().map((page, index) => (
+                        page === 'ellipsis' ? (
+                          <span key={`ellipsis-${index}`} className="px-2 text-zinc-500">
+                            ...
+                          </span>
+                        ) : (
+                          <button
+                            key={page}
+                            onClick={() => goToPage(page)}
+                            className={`min-w-[36px] h-9 px-3 rounded-lg text-sm font-medium transition-colors ${
+                              currentPage === page
+                                ? 'bg-orange-500 text-white'
+                                : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        )
+                      ))}
+                    </div>
+
+                    {/* Mobile: Just show current / total */}
+                    <span className="sm:hidden px-3 text-sm text-zinc-400">
+                      {currentPage} / {totalPages}
+                    </span>
 
                     {/* Next button */}
                     <button
                       onClick={goToNextPage}
                       disabled={currentPage === totalPages}
-                      className={`p-2 rounded-lg transition-colors ${
+                      className={`p-2 rounded-lg transition-colors active:scale-[0.98] ${
                         currentPage === totalPages
                           ? 'text-zinc-600 cursor-not-allowed'
                           : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
@@ -810,23 +967,26 @@ export default function TiktokImportsPage() {
         )}
       </div>
 
-      {/* ===== EDIT MODAL ===== */}
+      {/* ===== EDIT MODAL - Mobile Optimized ===== */}
       {editModalOpen && editFormData && editingImport && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
           <div
             className="absolute inset-0 bg-black/70 backdrop-blur-sm"
             onClick={closeEditModal}
           />
-          <div className="relative bg-zinc-900 border border-zinc-700 rounded-2xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto">
+          <div className="relative bg-zinc-900 border-t sm:border border-zinc-700 rounded-t-2xl sm:rounded-2xl p-4 sm:p-6 w-full sm:max-w-lg sm:mx-4 max-h-[90vh] overflow-y-auto safe-bottom">
+            {/* Mobile Drag Indicator */}
+            <div className="sm:hidden w-12 h-1 bg-zinc-600 rounded-full mx-auto mb-4" />
+
             {/* Header */}
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-black border border-zinc-700 rounded-lg flex items-center justify-center">
-                  <TiktokLogo className="w-5 h-5" />
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-black border border-zinc-700 rounded-lg flex items-center justify-center">
+                  <TiktokLogo className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-white">Edit Import</h3>
-                  <p className="text-sm text-zinc-400">@{editingImport.tiktokUsername}</p>
+                  <h3 className="text-base sm:text-lg font-bold text-white">Edit Import</h3>
+                  <p className="text-xs sm:text-sm text-zinc-400">@{editingImport.tiktokUsername}</p>
                 </div>
               </div>
               <button
@@ -845,7 +1005,7 @@ export default function TiktokImportsPage() {
             )}
 
             {/* Form */}
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {/* Full Name */}
               <div>
                 <label className={labelClasses}>Full Name</label>
@@ -892,9 +1052,9 @@ export default function TiktokImportsPage() {
                 />
               </div>
 
-              {/* City, State, ZIP */}
-              <div className="grid grid-cols-3 gap-3">
-                <div>
+              {/* City, State, ZIP - Stack on mobile */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div className="col-span-2 sm:col-span-1">
                   <label className={labelClasses}>City</label>
                   <input
                     type="text"
@@ -923,31 +1083,31 @@ export default function TiktokImportsPage() {
                 </div>
               </div>
 
-              {/* Product */}
-              <div>
-                <label className={labelClasses}>Product Ordered</label>
-                <input
-                  type="text"
-                  value={editFormData.productOrdered}
-                  onChange={(e) => setEditFormData({ ...editFormData, productOrdered: e.target.value })}
-                  className={inputClasses}
-                />
-              </div>
-
-              {/* Size */}
-              <div>
-                <label className={labelClasses}>Size</label>
-                <select
-                  value={editFormData.sizeOrdered}
-                  onChange={(e) => setEditFormData({ ...editFormData, sizeOrdered: e.target.value as Size })}
-                  className={inputClasses}
-                >
-                  {SIZES.map((size) => (
-                    <option key={size.value} value={size.value}>
-                      {size.label}
-                    </option>
-                  ))}
-                </select>
+              {/* Product & Size - Side by side on mobile */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelClasses}>Product</label>
+                  <input
+                    type="text"
+                    value={editFormData.productOrdered}
+                    onChange={(e) => setEditFormData({ ...editFormData, productOrdered: e.target.value })}
+                    className={inputClasses}
+                  />
+                </div>
+                <div>
+                  <label className={labelClasses}>Size</label>
+                  <select
+                    value={editFormData.sizeOrdered}
+                    onChange={(e) => setEditFormData({ ...editFormData, sizeOrdered: e.target.value as Size })}
+                    className={inputClasses}
+                  >
+                    {SIZES.map((size) => (
+                      <option key={size.value} value={size.value}>
+                        {size.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               {/* Status */}
@@ -963,25 +1123,25 @@ export default function TiktokImportsPage() {
                   <option value="expired">Expired</option>
                 </select>
                 {editingImport.status === 'claimed' && (
-                  <p className="mt-1 text-xs text-orange-400">
-                    ⚠️ This import has been claimed. Changing the status may cause issues.
+                  <p className="mt-1 text-[10px] sm:text-xs text-orange-400">
+                    ⚠️ This import has been claimed. Changing status may cause issues.
                   </p>
                 )}
               </div>
             </div>
 
             {/* Actions */}
-            <div className="flex gap-3 mt-6">
+            <div className="flex gap-3 mt-4 sm:mt-6">
               <button
                 onClick={closeEditModal}
-                className="flex-1 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg font-medium transition-colors"
+                className="flex-1 px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 rounded-lg font-medium transition-colors text-sm active:scale-[0.98]"
               >
                 Cancel
               </button>
               <button
                 onClick={handleEditSubmit}
                 disabled={editLoading}
-                className="flex-1 px-4 py-2 bg-orange-500 hover:bg-orange-600 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                className="flex-1 px-4 py-2.5 bg-orange-500 hover:bg-orange-600 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50 text-sm active:scale-[0.98]"
               >
                 {editLoading ? (
                   <>
@@ -991,7 +1151,7 @@ export default function TiktokImportsPage() {
                 ) : (
                   <>
                     <Save className="w-4 h-4" />
-                    Save Changes
+                    Save
                   </>
                 )}
               </button>
@@ -1000,33 +1160,32 @@ export default function TiktokImportsPage() {
         </div>
       )}
 
-      {/* ===== DELETE CONFIRMATION MODAL (SINGLE) ===== */}
+      {/* ===== DELETE CONFIRMATION MODAL (SINGLE) - Mobile Optimized ===== */}
       {deleteModalOpen && deletingImport && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 sm:p-0">
           <div
             className="absolute inset-0 bg-black/70 backdrop-blur-sm"
             onClick={closeDeleteModal}
           />
-          <div className="relative bg-zinc-900 border border-zinc-700 rounded-2xl p-6 max-w-md w-full">
+          <div className="relative bg-zinc-900 border border-zinc-700 rounded-2xl p-4 sm:p-6 w-full sm:max-w-md safe-bottom">
             {/* Warning Icon */}
-            <div className="flex justify-center mb-4">
-              <div className="w-16 h-16 bg-red-500/10 border border-red-500/20 rounded-full flex items-center justify-center">
-                <AlertTriangle className="w-8 h-8 text-red-400" />
+            <div className="flex justify-center mb-3 sm:mb-4">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-red-500/10 border border-red-500/20 rounded-full flex items-center justify-center">
+                <AlertTriangle className="w-6 h-6 sm:w-8 sm:h-8 text-red-400" />
               </div>
             </div>
 
             {/* Content */}
-            <h3 className="text-lg font-bold text-white text-center mb-2">
+            <h3 className="text-base sm:text-lg font-bold text-white text-center mb-2">
               Delete Import?
             </h3>
-            <p className="text-zinc-400 text-center text-sm mb-4">
-              Are you sure you want to delete the import for{' '}
-              <span className="text-white font-medium">@{deletingImport.tiktokUsername}</span>?
-              This action cannot be undone.
+            <p className="text-zinc-400 text-center text-xs sm:text-sm mb-3 sm:mb-4">
+              Delete <span className="text-white font-medium">@{deletingImport.tiktokUsername}</span>?
+              This cannot be undone.
             </p>
 
             {/* Import Details */}
-            <div className="bg-zinc-800 rounded-lg p-3 mb-4 text-sm">
+            <div className="bg-zinc-800 rounded-lg p-3 mb-3 sm:mb-4 text-xs sm:text-sm">
               <div className="flex justify-between">
                 <span className="text-zinc-400">Name:</span>
                 <span className="text-white">{deletingImport.fullName}</span>
@@ -1039,7 +1198,7 @@ export default function TiktokImportsPage() {
 
             {/* Error */}
             {deleteError && (
-              <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">
+              <div className="mb-3 sm:mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-xs sm:text-sm">
                 {deleteError}
               </div>
             )}
@@ -1048,19 +1207,19 @@ export default function TiktokImportsPage() {
             <div className="flex gap-3">
               <button
                 onClick={closeDeleteModal}
-                className="flex-1 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg font-medium transition-colors"
+                className="flex-1 px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 rounded-lg font-medium transition-colors text-sm active:scale-[0.98]"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDeleteConfirm}
                 disabled={deleteLoading}
-                className="flex-1 px-4 py-2 bg-red-500 hover:bg-red-600 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                className="flex-1 px-4 py-2.5 bg-red-500 hover:bg-red-600 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50 text-sm active:scale-[0.98]"
               >
                 {deleteLoading ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Deleting...
+                    <span className="hidden xs:inline">Deleting...</span>
                   </>
                 ) : (
                   <>
@@ -1074,43 +1233,42 @@ export default function TiktokImportsPage() {
         </div>
       )}
 
-      {/* ===== BULK DELETE CONFIRMATION MODAL ===== */}
+      {/* ===== BULK DELETE CONFIRMATION MODAL - Mobile Optimized ===== */}
       {bulkDeleteModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 sm:p-0">
           <div
             className="absolute inset-0 bg-black/70 backdrop-blur-sm"
             onClick={!bulkDeleteLoading ? closeBulkDeleteModal : undefined}
           />
-          <div className="relative bg-zinc-900 border border-zinc-700 rounded-2xl p-6 max-w-md w-full">
+          <div className="relative bg-zinc-900 border border-zinc-700 rounded-2xl p-4 sm:p-6 w-full sm:max-w-md safe-bottom">
             {/* Warning Icon */}
-            <div className="flex justify-center mb-4">
-              <div className="w-16 h-16 bg-red-500/10 border border-red-500/20 rounded-full flex items-center justify-center">
-                <AlertTriangle className="w-8 h-8 text-red-400" />
+            <div className="flex justify-center mb-3 sm:mb-4">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-red-500/10 border border-red-500/20 rounded-full flex items-center justify-center">
+                <AlertTriangle className="w-6 h-6 sm:w-8 sm:h-8 text-red-400" />
               </div>
             </div>
 
             {/* Content */}
-            <h3 className="text-lg font-bold text-white text-center mb-2">
+            <h3 className="text-base sm:text-lg font-bold text-white text-center mb-2">
               Delete {deletableSelectedImports.length} Import{deletableSelectedImports.length !== 1 ? 's' : ''}?
             </h3>
-            <p className="text-zinc-400 text-center text-sm mb-4">
-              Are you sure you want to delete {deletableSelectedImports.length} selected import{deletableSelectedImports.length !== 1 ? 's' : ''}?
+            <p className="text-zinc-400 text-center text-xs sm:text-sm mb-3 sm:mb-4">
               This action cannot be undone.
             </p>
 
             {/* Preview of items to delete */}
-            <div className="bg-zinc-800 rounded-lg p-3 mb-4 max-h-32 overflow-y-auto">
-              <div className="text-xs text-zinc-400 mb-2">Items to delete:</div>
+            <div className="bg-zinc-800 rounded-lg p-3 mb-3 sm:mb-4 max-h-24 sm:max-h-32 overflow-y-auto">
+              <div className="text-[10px] sm:text-xs text-zinc-400 mb-1 sm:mb-2">Items to delete:</div>
               <div className="space-y-1">
                 {deletableSelectedImports.slice(0, 5).map(imp => (
-                  <div key={imp.id} className="text-sm text-white flex items-center gap-2">
-                    <span>@{imp.tiktokUsername}</span>
+                  <div key={imp.id} className="text-xs sm:text-sm text-white flex items-center gap-1 sm:gap-2">
+                    <span className="truncate">@{imp.tiktokUsername}</span>
                     <span className="text-zinc-500">-</span>
-                    <span className="text-zinc-400">{imp.fullName}</span>
+                    <span className="text-zinc-400 truncate">{imp.fullName}</span>
                   </div>
                 ))}
                 {deletableSelectedImports.length > 5 && (
-                  <div className="text-sm text-zinc-500">
+                  <div className="text-xs sm:text-sm text-zinc-500">
                     ...and {deletableSelectedImports.length - 5} more
                   </div>
                 )}
@@ -1119,8 +1277,8 @@ export default function TiktokImportsPage() {
 
             {/* Progress */}
             {bulkDeleteProgress && (
-              <div className="mb-4">
-                <div className="flex justify-between text-sm mb-1">
+              <div className="mb-3 sm:mb-4">
+                <div className="flex justify-between text-xs sm:text-sm mb-1">
                   <span className="text-zinc-400">Progress</span>
                   <span className="text-white">
                     {bulkDeleteProgress.current} / {bulkDeleteProgress.total}
@@ -1139,7 +1297,7 @@ export default function TiktokImportsPage() {
 
             {/* Error */}
             {bulkDeleteError && (
-              <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">
+              <div className="mb-3 sm:mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-xs sm:text-sm">
                 {bulkDeleteError}
               </div>
             )}
@@ -1149,7 +1307,7 @@ export default function TiktokImportsPage() {
               <button
                 onClick={closeBulkDeleteModal}
                 disabled={bulkDeleteLoading}
-                className="flex-1 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg font-medium transition-colors disabled:opacity-50"
+                className="flex-1 px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 rounded-lg font-medium transition-colors disabled:opacity-50 text-sm active:scale-[0.98]"
               >
                 {bulkDeleteError ? 'Close' : 'Cancel'}
               </button>
@@ -1157,12 +1315,12 @@ export default function TiktokImportsPage() {
                 <button
                   onClick={handleBulkDeleteConfirm}
                   disabled={bulkDeleteLoading}
-                  className="flex-1 px-4 py-2 bg-red-500 hover:bg-red-600 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="flex-1 px-4 py-2.5 bg-red-500 hover:bg-red-600 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50 text-sm active:scale-[0.98]"
                 >
                   {bulkDeleteLoading ? (
                     <>
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Deleting...
+                      <span className="hidden xs:inline">Deleting...</span>
                     </>
                   ) : (
                     <>

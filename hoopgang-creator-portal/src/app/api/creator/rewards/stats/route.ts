@@ -1,4 +1,6 @@
 // src/app/api/creator/rewards/stats/route.ts
+// FIXED: Removed misleading edge case that inflated readyToClaim count
+
 import { NextRequest, NextResponse } from 'next/server';
 import { 
   getCreatorByUserId, 
@@ -74,19 +76,17 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    // Check for approved milestone submissions that don't have redemptions yet
-    // (Edge case - shouldn't happen if review endpoint works correctly)
-    const approvedMilestones = await getV3SubmissionsByCreatorId(creator.id, {
-      type: 'milestone',
-      status: 'approved',
-    });
-
-    for (const milestone of approvedMilestones) {
-      const hasRedemption = redemptions.some(r => r.sourceId === milestone.id);
-      if (!hasRedemption) {
-        readyToClaimCount += 1;
-      }
-    }
+    // ===== FIX: REMOVED the misleading edge case check =====
+    // The previous code was checking for approved milestones without redemptions
+    // and adding them to readyToClaimCount. This caused confusion because:
+    // 1. It mixed "redemptions ready to claim" with "milestones awaiting redemption creation"
+    // 2. These are admin-side issues, not creator-actionable items
+    // 3. If a milestone is approved but has no redemption, that's a backend bug
+    //    that should be fixed in the review endpoint, not shown to creators
+    //
+    // The "Ready to Claim" stat should ONLY count actual redemptions with
+    // status 'awaiting_claim' - things the creator can take action on.
+    // ================================================================
 
     // Get volume submission count for volume-based rewards
     const volumeSubmissions = await getV3SubmissionsByCreatorId(creator.id, {
@@ -105,7 +105,7 @@ export async function GET(request: NextRequest) {
       // Primary stats for display
       totalEarned,                    // Cash value of fulfilled redemptions
       totalEarnedValue,               // Total value including store credit
-      readyToClaim: readyToClaimCount, // Number ready to claim
+      readyToClaim: readyToClaimCount, // Number ready to claim (ONLY actual awaiting_claim redemptions)
       readyToClaimValue,              // Value of claimable rewards
       pending: processingCount,        // Number being processed (legacy name for backwards compat)
       processing: processingCount,     // Alias for clarity

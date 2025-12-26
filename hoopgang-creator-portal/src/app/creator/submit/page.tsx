@@ -69,6 +69,105 @@ function XIcon({ className = "w-4 h-4" }: { className?: string }) {
   );
 }
 
+// Video Preview Modal Component - Mobile Optimized
+function VideoPreviewModal({
+  isOpen,
+  onClose,
+  videoUrl,
+  fileName,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  videoUrl: string | null;
+  fileName: string | null;
+}) {
+  if (!isOpen || !videoUrl) return null;
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center">
+      {/* Backdrop */}
+      <div 
+        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+        onClick={onClose}
+      />
+
+      {/* Modal - Bottom sheet on mobile, centered on desktop */}
+      <div className="relative w-full sm:max-w-3xl sm:mx-4 bg-zinc-900 border-t sm:border border-zinc-700 rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden animate-fade-in-up max-h-[90vh] sm:max-h-[85vh] flex flex-col">
+        
+        {/* Mobile Drag Indicator */}
+        <div className="sm:hidden w-12 h-1 bg-zinc-600 rounded-full mx-auto mt-2 mb-1" />
+        
+        {/* Header */}
+        <div className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 border-b border-zinc-800 bg-zinc-900/80 flex-shrink-0">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 bg-purple-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+              <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <span className="text-white font-medium text-xs sm:text-sm truncate">
+              {fileName || 'Video Preview'}
+            </span>
+          </div>
+          
+          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+            {/* Download Button */}
+            <a
+              href={videoUrl}
+              download={fileName || 'video'}
+              className="p-2 sm:p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"
+              title="Download video"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+            </a>
+            
+            {/* Close Button */}
+            <button
+              onClick={onClose}
+              className="p-2 sm:p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {/* Video Player - Flexible height */}
+        <div className="relative bg-black flex-1 min-h-0">
+          <video
+            src={videoUrl}
+            controls
+            autoPlay
+            playsInline
+            className="w-full h-full object-contain"
+            style={{ maxHeight: 'calc(90vh - 120px)' }}
+          >
+            Your browser does not support the video tag.
+          </video>
+        </div>
+
+        {/* Footer - Mobile optimized */}
+        <div className="px-3 sm:px-4 py-2 sm:py-3 border-t border-zinc-800 bg-zinc-900/80 flex-shrink-0 safe-bottom">
+          <div className="flex items-center justify-between">
+            <span className="text-zinc-500 text-[10px] sm:text-xs">
+              Tap outside to close
+            </span>
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-xs sm:text-sm bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg transition-colors active:scale-[0.98]"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function SubmitContentPageContent() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -99,9 +198,23 @@ function SubmitContentPageContent() {
   // Recent submissions
   const [recentSubmissions, setRecentSubmissions] = useState<Array<{
     id: string;
-    tiktokUrl: string;
+    tiktokUrl: string | null;
     createdAt: Date;
+    submissionFormat?: 'url' | 'file';
+    fileName?: string | null;
+    fileUrl?: string | null;
   }>>([]);
+  
+  // Video preview modal state
+  const [videoPreview, setVideoPreview] = useState<{
+    isOpen: boolean;
+    url: string | null;
+    fileName: string | null;
+  }>({
+    isOpen: false,
+    url: null,
+    fileName: null,
+  });
   
   // Competition state
   const [activeCompetition, setActiveCompetition] = useState<{
@@ -177,6 +290,23 @@ function SubmitContentPageContent() {
     } finally {
       setCompetitionLoading(false);
     }
+  };
+
+  // Helper functions for video preview
+  const openVideoPreview = (url: string, fileName: string | null) => {
+    setVideoPreview({
+      isOpen: true,
+      url,
+      fileName,
+    });
+  };
+
+  const closeVideoPreview = () => {
+    setVideoPreview({
+      isOpen: false,
+      url: null,
+      fileName: null,
+    });
   };
 
   // Function to fetch milestone rewards from catalog
@@ -470,6 +600,14 @@ function SubmitContentPageContent() {
         onClose={() => setShowSuccessToast(false)}
       />
 
+      {/* Video Preview Modal */}
+      <VideoPreviewModal
+        isOpen={videoPreview.isOpen}
+        onClose={closeVideoPreview}
+        videoUrl={videoPreview.url}
+        fileName={videoPreview.fileName}
+      />
+
       <main className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {/* Header */}
         <PageHeader 
@@ -737,36 +875,85 @@ function SubmitContentPageContent() {
 
           {recentSubmissions.length > 0 ? (
             <div className="space-y-2 sm:space-y-3">
-              {recentSubmissions.map((submission) => (
-                <div 
-                  key={submission.id}
-                  className="flex items-center justify-between p-2.5 sm:p-3 bg-zinc-800/30 rounded-xl gap-2"
-                >
-                  <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                    <div className="w-7 h-7 sm:w-8 sm:h-8 bg-green-500/20 rounded-full flex items-center justify-center flex-shrink-0">
-                      <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-white text-xs sm:text-sm truncate">
-                        {submission.tiktokUrl ? shortenUrl(submission.tiktokUrl) : '📁 Video Upload'}
+              {recentSubmissions.map((submission) => {
+                const isFileUpload = submission.submissionFormat === 'file' || (!submission.tiktokUrl && submission.fileUrl);
+                const displayName = isFileUpload 
+                  ? (submission.fileName || 'Video Upload')
+                  : shortenUrl(submission.tiktokUrl || '');
+                
+                return (
+                  <div 
+                    key={submission.id}
+                    className="flex items-center justify-between p-2.5 sm:p-3 bg-zinc-800/30 rounded-xl gap-2 group hover:bg-zinc-800/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                      {/* Icon */}
+                      <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                        isFileUpload ? 'bg-purple-500/20' : 'bg-green-500/20'
+                      }`}>
+                        {isFileUpload ? (
+                          <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                          </svg>
+                        ) : (
+                          <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        )}
                       </div>
-                      <div className="text-zinc-500 text-[10px] sm:text-xs">{formatRelativeTime(submission.createdAt)}</div>
+                      
+                      {/* File/URL Info */}
+                      <div className="min-w-0 flex-1">
+                        <div 
+                          className={`text-white text-xs sm:text-sm truncate ${
+                            (isFileUpload && submission.fileUrl) || submission.tiktokUrl 
+                              ? 'cursor-pointer hover:text-orange-400 transition-colors' 
+                              : ''
+                          }`}
+                          onClick={() => {
+                            if (isFileUpload && submission.fileUrl) {
+                              openVideoPreview(submission.fileUrl, submission.fileName || null);
+                            } else if (submission.tiktokUrl) {
+                              window.open(submission.tiktokUrl, '_blank');
+                            }
+                          }}
+                          title={isFileUpload ? submission.fileName || undefined : submission.tiktokUrl || undefined}
+                        >
+                          {isFileUpload && <span className="text-purple-400 mr-1">▶</span>}
+                          {displayName}
+                        </div>
+                        <div className="text-zinc-500 text-[10px] sm:text-xs">
+                          {formatRelativeTime(submission.createdAt)}
+                          {isFileUpload && <span className="ml-2 text-purple-400">• Video</span>}
+                        </div>
+                      </div>
                     </div>
+                    
+                    {/* Action Button */}
+                    {isFileUpload && submission.fileUrl ? (
+                      <button
+                        onClick={() => openVideoPreview(submission.fileUrl!, submission.fileName || null)}
+                        className="flex items-center gap-1 px-2 py-1 sm:px-3 sm:py-1.5 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 hover:text-purple-300 rounded-lg transition-all text-[10px] sm:text-xs font-medium flex-shrink-0"
+                      >
+                        <svg className="w-3 h-3 sm:w-3.5 sm:h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                        </svg>
+                        <span className="hidden xs:inline">Watch</span>
+                      </button>
+                    ) : submission.tiktokUrl ? (
+                      <a 
+                        href={submission.tiktokUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 px-2 py-1 sm:px-3 sm:py-1.5 bg-zinc-700/50 hover:bg-orange-500/20 text-zinc-400 hover:text-orange-400 rounded-lg transition-all text-[10px] sm:text-xs font-medium flex-shrink-0"
+                      >
+                        <ExternalLinkIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                        <span className="hidden xs:inline">View</span>
+                      </a>
+                    ) : null}
                   </div>
-                  {submission.tiktokUrl && (
-                    <a 
-                      href={submission.tiktokUrl} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-zinc-500 hover:text-zinc-300 transition-colors p-1.5 flex-shrink-0"
-                    >
-                      <ExternalLinkIcon className="w-4 h-4" />
-                    </a>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="text-center py-6 sm:py-8 text-zinc-500">

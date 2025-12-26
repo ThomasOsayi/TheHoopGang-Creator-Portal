@@ -1,4 +1,5 @@
 // src/app/admin/creators/page.tsx
+// Mobile-Responsive Version
 
 'use client';
 
@@ -25,7 +26,7 @@ import { useAuth } from '@/lib/auth-context';
 import { getCurrentWeek } from '@/lib/week-utils';
 
 // ============================================
-// Quick Action Card Component
+// Quick Action Card Component - Mobile Optimized
 // ============================================
 interface QuickActionCardProps {
   icon: string;
@@ -50,13 +51,13 @@ function QuickActionCard({ icon, label, count, color, urgent, active, onClick }:
   return (
     <div onClick={onClick} className="cursor-pointer">
       <GlowCard glowColor={styles.glowColor} urgent={urgent} active={active}>
-        <div className="flex items-center gap-4">
-          <div className={`w-12 h-12 rounded-xl ${styles.iconBg} flex items-center justify-center text-2xl`}>
+        <div className="flex items-center gap-3 sm:gap-4">
+          <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl ${styles.iconBg} flex items-center justify-center text-xl sm:text-2xl flex-shrink-0`}>
             {icon}
           </div>
-          <div>
-            <div className="text-zinc-400 text-sm">{label}</div>
-            <div className={`text-3xl font-bold ${styles.text}`}>
+          <div className="min-w-0">
+            <div className="text-zinc-400 text-xs sm:text-sm truncate">{label}</div>
+            <div className={`text-2xl sm:text-3xl font-bold ${styles.text}`}>
               <AnimatedCounter value={count} />
             </div>
           </div>
@@ -74,7 +75,7 @@ function ContentProgress({ submitted, total }: { submitted: number; total: numbe
   
   return (
     <div className="flex items-center gap-2">
-      <div className="w-16 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+      <div className="w-12 sm:w-16 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
         <div 
           className={`h-full rounded-full transition-all duration-500 ${
             percentage === 100 ? 'bg-green-500' : 'bg-orange-500'
@@ -82,7 +83,7 @@ function ContentProgress({ submitted, total }: { submitted: number; total: numbe
           style={{ width: `${percentage}%` }}
         />
       </div>
-      <span className="text-sm text-zinc-400">{submitted}/{total}</span>
+      <span className="text-xs sm:text-sm text-zinc-400">{submitted}/{total}</span>
     </div>
   );
 }
@@ -91,7 +92,7 @@ function ContentProgress({ submitted, total }: { submitted: number; total: numbe
 // Tracking Badge Component
 // ============================================
 function TrackingBadge({ status }: { status: string | null }) {
-  if (!status) return <span className="text-zinc-600">—</span>;
+  if (!status) return <span className="text-zinc-600 text-xs sm:text-sm">—</span>;
   
   const config: Record<string, { icon: string; text: string; label: string }> = {
     pending: { icon: '📦', text: 'text-yellow-400', label: 'In Transit' },
@@ -103,33 +104,28 @@ function TrackingBadge({ status }: { status: string | null }) {
   const style = config[status] || config.pending;
   
   return (
-    <div className={`flex items-center gap-1.5 ${style.text}`}>
-      <span>{style.icon}</span>
-      <span className="text-sm">{style.label}</span>
+    <div className={`flex items-center gap-1 sm:gap-1.5 ${style.text}`}>
+      <span className="text-sm">{style.icon}</span>
+      <span className="text-xs sm:text-sm">{style.label}</span>
     </div>
   );
 }
 
 // ============================================
-// Creator Row Component
+// Creator Card Component (Mobile View)
 // ============================================
-interface CreatorRowProps {
+interface CreatorCardProps {
   creator: CreatorWithCollab;
   onView: (id: string) => void;
   onReview: (creator: CreatorWithCollab) => void;
   onNudge: (creator: CreatorWithCollab) => void;
 }
 
-function CreatorRow({ creator, onView, onReview, onNudge }: CreatorRowProps) {
-  const [isHovered, setIsHovered] = useState(false);
-  
-  // TikTok creators don't have collaborations - they're always "active" for content submission
+function CreatorCard({ creator, onView, onReview, onNudge }: CreatorCardProps) {
   const isTikTokCreator = creator.source === 'tiktok';
   const status = isTikTokCreator ? 'active' : (creator.collaboration?.status || 'pending');
-  // TikTok creators don't need the traditional approval flow
   const needsAttention = !isTikTokCreator && (status === 'pending' || status === 'delivered');
   
-  // Get display values
   const followers = Math.max(creator.tiktokFollowers, creator.instagramFollowers);
   const formattedFollowers = followers >= 1000000 
     ? `${(followers / 1000000).toFixed(1)}M`
@@ -143,13 +139,160 @@ function CreatorRow({ creator, onView, onReview, onNudge }: CreatorRowProps) {
     (creator.collaboration?.status === 'delivered' ? 'delivered' : 'shipped') : null;
   const contentSubmitted = creator.collaboration?.contentSubmissions?.length || 0;
 
-  // Determine action button
   const getActionButton = () => {
-    // TikTok Shop creators don't need traditional review - they're here to submit content
-    const isTikTokCreator = creator.source === 'tiktok';
-    
     if (isTikTokCreator) {
-      // TikTok creators just need a View button since they handle collabs through TikTok Shop
+      return (
+        <button
+          onClick={(e) => { e.stopPropagation(); onView(creator.id); }}
+          className="flex-1 py-2 bg-zinc-800 text-zinc-300 rounded-lg text-sm font-medium hover:bg-zinc-700 transition-colors active:scale-[0.98]"
+        >
+          View
+        </button>
+      );
+    }
+
+    switch (status) {
+      case 'pending':
+        return (
+          <button
+            onClick={(e) => { e.stopPropagation(); onReview(creator); }}
+            className="flex-1 py-2 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors active:scale-[0.98]"
+          >
+            Review
+          </button>
+        );
+      case 'delivered':
+        return (
+          <button
+            onClick={(e) => { e.stopPropagation(); onNudge(creator); }}
+            className="flex-1 py-2 bg-orange-500/20 text-orange-400 border border-orange-500/30 rounded-lg text-sm font-medium hover:bg-orange-500/30 transition-colors active:scale-[0.98]"
+          >
+            Nudge
+          </button>
+        );
+      case 'completed':
+        return (
+          <span className="flex-1 py-2 text-green-400 text-sm font-medium text-center">
+            ✓ Done
+          </span>
+        );
+      default:
+        return (
+          <button
+            onClick={(e) => { e.stopPropagation(); onView(creator.id); }}
+            className="flex-1 py-2 bg-zinc-800 text-zinc-300 rounded-lg text-sm font-medium hover:bg-zinc-700 transition-colors active:scale-[0.98]"
+          >
+            View
+          </button>
+        );
+    }
+  };
+
+  return (
+    <div 
+      onClick={() => onView(creator.id)}
+      className={`p-4 bg-zinc-900/50 border rounded-xl cursor-pointer transition-all active:scale-[0.99] ${
+        needsAttention ? 'border-yellow-500/30 bg-yellow-500/5' : 'border-zinc-800 hover:border-zinc-700'
+      }`}
+    >
+      {/* Header Row */}
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0 ${
+            needsAttention 
+              ? 'bg-gradient-to-br from-yellow-500 to-orange-500' 
+              : 'bg-gradient-to-br from-orange-500 to-amber-600'
+          }`}>
+            {creator.fullName.charAt(0).toUpperCase()}
+          </div>
+          <div className="min-w-0">
+            <div className="text-white font-medium truncate">{creator.fullName}</div>
+            <div className="text-zinc-500 text-sm truncate">@{creator.tiktokHandle || creator.instagramHandle}</div>
+          </div>
+        </div>
+        <CreatorSourceBadge source={creator.source || 'manual'} size="sm" />
+      </div>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-3 gap-2 mb-3">
+        <div className="bg-zinc-800/50 rounded-lg p-2 text-center">
+          <div className="text-zinc-500 text-[10px] uppercase">Followers</div>
+          <div className="text-white font-medium text-sm">{formattedFollowers}</div>
+        </div>
+        <div className="bg-zinc-800/50 rounded-lg p-2 text-center">
+          <div className="text-zinc-500 text-[10px] uppercase">Status</div>
+          <div className="mt-0.5">
+            {isTikTokCreator ? (
+              <span className="text-green-400 text-xs font-medium">Active</span>
+            ) : (
+              <StatusBadge status={status as any} size="sm" />
+            )}
+          </div>
+        </div>
+        <div className="bg-zinc-800/50 rounded-lg p-2 text-center">
+          <div className="text-zinc-500 text-[10px] uppercase">Tracking</div>
+          <div className="mt-0.5">
+            <TrackingBadge status={trackingStatus} />
+          </div>
+        </div>
+      </div>
+
+      {/* Product Info */}
+      {product && (
+        <div className="flex items-center justify-between text-sm mb-3 px-1">
+          <span className="text-zinc-500">Product:</span>
+          <span className="text-zinc-300">{product} {size && `(${size})`}</span>
+        </div>
+      )}
+
+      {/* Content Progress */}
+      {['approved', 'shipped', 'delivered', 'completed'].includes(status) && (
+        <div className="flex items-center justify-between text-sm mb-3 px-1">
+          <span className="text-zinc-500">Content:</span>
+          <ContentProgress submitted={contentSubmitted} total={1} />
+        </div>
+      )}
+
+      {/* Action Button */}
+      <div className="flex gap-2 mt-3 pt-3 border-t border-zinc-800">
+        {getActionButton()}
+      </div>
+    </div>
+  );
+}
+
+// ============================================
+// Creator Row Component (Desktop View)
+// ============================================
+interface CreatorRowProps {
+  creator: CreatorWithCollab;
+  onView: (id: string) => void;
+  onReview: (creator: CreatorWithCollab) => void;
+  onNudge: (creator: CreatorWithCollab) => void;
+}
+
+function CreatorRow({ creator, onView, onReview, onNudge }: CreatorRowProps) {
+  const [isHovered, setIsHovered] = useState(false);
+  
+  const isTikTokCreator = creator.source === 'tiktok';
+  const status = isTikTokCreator ? 'active' : (creator.collaboration?.status || 'pending');
+  const needsAttention = !isTikTokCreator && (status === 'pending' || status === 'delivered');
+  
+  const followers = Math.max(creator.tiktokFollowers, creator.instagramFollowers);
+  const formattedFollowers = followers >= 1000000 
+    ? `${(followers / 1000000).toFixed(1)}M`
+    : followers >= 1000 
+      ? `${Math.round(followers / 1000)}K`
+      : followers.toString();
+  
+  const product = creator.collaboration?.product;
+  const size = creator.collaboration?.size;
+  const trackingStatus = creator.collaboration?.trackingNumber ? 
+    (creator.collaboration?.status === 'delivered' ? 'delivered' : 'shipped') : null;
+  const contentSubmitted = creator.collaboration?.contentSubmissions?.length || 0;
+
+  const getActionButton = () => {
+    if (isTikTokCreator) {
       return (
         <button
           onClick={(e) => { e.stopPropagation(); onView(creator.id); }}
@@ -160,7 +303,6 @@ function CreatorRow({ creator, onView, onReview, onNudge }: CreatorRowProps) {
       );
     }
 
-    // Instagram/Manual creators follow the traditional flow
     switch (status) {
       case 'pending':
         return (
@@ -635,7 +777,7 @@ export default function AdminCreatorsPage() {
           <div className="absolute -bottom-40 right-1/4 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl" />
         </div>
 
-        <main className="relative max-w-7xl mx-auto px-4 sm:px-6 py-8">
+        <main className="relative max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
           {/* Header */}
           <PageHeader 
             title="Admin Dashboard"
@@ -645,8 +787,8 @@ export default function AdminCreatorsPage() {
             align="left"
           />
 
-          {/* Quick Action Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          {/* Quick Action Cards - 2x2 on mobile, 4 cols on desktop */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
             <QuickActionCard
               icon="⏳"
               label="Pending Review"
@@ -683,22 +825,20 @@ export default function AdminCreatorsPage() {
             />
           </div>
 
-          {/* V3 Creator Program Stats */}
-          <div 
-            className="mb-8 p-6 bg-zinc-900/50 border border-zinc-800 rounded-2xl transition-all duration-300 hover:border-zinc-700 group"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+          {/* V3 Creator Program Stats - Mobile Optimized */}
+          <div className="mb-6 sm:mb-8 p-4 sm:p-6 bg-zinc-900/50 border border-zinc-800 rounded-xl sm:rounded-2xl transition-all duration-300 hover:border-zinc-700 group">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+              <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
                 <span>🚀</span> Creator Program (V3)
               </h2>
-              <div className="flex gap-2">
+              <div className="flex flex-col xs:flex-row gap-2 xs:gap-3">
                 <Link 
                   href="/admin/submissions" 
                   className="text-orange-400 hover:text-orange-300 text-sm font-medium transition-colors"
                 >
                   View Submissions →
                 </Link>
-                <span className="text-zinc-600">|</span>
+                <span className="text-zinc-600 hidden xs:inline">|</span>
                 <Link 
                   href="/admin/redemptions" 
                   className="text-orange-400 hover:text-orange-300 text-sm font-medium transition-colors"
@@ -708,49 +848,50 @@ export default function AdminCreatorsPage() {
               </div>
             </div>
             
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            {/* Stats Grid - 2 cols mobile, 5 cols desktop */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4">
               {v3Loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="text-center p-4 bg-zinc-800/30 rounded-xl animate-pulse">
-                    <div className="h-8 bg-zinc-700 rounded w-12 mx-auto mb-2" />
-                    <div className="h-4 bg-zinc-700 rounded w-16 mx-auto" />
+                  <div key={i} className="text-center p-3 sm:p-4 bg-zinc-800/30 rounded-lg sm:rounded-xl animate-pulse">
+                    <div className="h-6 sm:h-8 bg-zinc-700 rounded w-10 sm:w-12 mx-auto mb-1 sm:mb-2" />
+                    <div className="h-3 sm:h-4 bg-zinc-700 rounded w-14 sm:w-16 mx-auto" />
                   </div>
                 ))
               ) : v3Stats ? (
                 <>
-                  <div className="text-center p-4 bg-zinc-800/30 rounded-xl hover:bg-zinc-800/50 transition-colors">
-                    <div className="text-2xl font-bold text-blue-400">
+                  <div className="text-center p-3 sm:p-4 bg-zinc-800/30 rounded-lg sm:rounded-xl hover:bg-zinc-800/50 transition-colors">
+                    <div className="text-xl sm:text-2xl font-bold text-blue-400">
                       <AnimatedCounter value={v3Stats.weeklySubmissions} />
                     </div>
-                    <div className="text-zinc-500 text-sm">This Week</div>
+                    <div className="text-zinc-500 text-xs sm:text-sm">This Week</div>
                   </div>
-                  <div className="text-center p-4 bg-zinc-800/30 rounded-xl hover:bg-zinc-800/50 transition-colors">
-                    <div className="text-2xl font-bold text-zinc-300">
+                  <div className="text-center p-3 sm:p-4 bg-zinc-800/30 rounded-lg sm:rounded-xl hover:bg-zinc-800/50 transition-colors">
+                    <div className="text-xl sm:text-2xl font-bold text-zinc-300">
                       <AnimatedCounter value={v3Stats.totalSubmissions} />
                     </div>
-                    <div className="text-zinc-500 text-sm">All Time</div>
+                    <div className="text-zinc-500 text-xs sm:text-sm">All Time</div>
                   </div>
-                  <div className="text-center p-4 bg-zinc-800/30 rounded-xl hover:bg-zinc-800/50 transition-colors">
-                    <div className="text-2xl font-bold text-green-400">
+                  <div className="text-center p-3 sm:p-4 bg-zinc-800/30 rounded-lg sm:rounded-xl hover:bg-zinc-800/50 transition-colors">
+                    <div className="text-xl sm:text-2xl font-bold text-green-400">
                       <AnimatedCounter value={v3Stats.activeCreators} />
                     </div>
-                    <div className="text-zinc-500 text-sm">Active Creators</div>
+                    <div className="text-zinc-500 text-xs sm:text-sm">Active</div>
                   </div>
-                  <div className="text-center p-4 bg-zinc-800/30 rounded-xl hover:bg-zinc-800/50 transition-colors">
-                    <div className={`text-2xl font-bold ${v3Stats.pendingRedemptions > 0 ? 'text-yellow-400' : 'text-zinc-300'}`}>
+                  <div className="text-center p-3 sm:p-4 bg-zinc-800/30 rounded-lg sm:rounded-xl hover:bg-zinc-800/50 transition-colors">
+                    <div className={`text-xl sm:text-2xl font-bold ${v3Stats.pendingRedemptions > 0 ? 'text-yellow-400' : 'text-zinc-300'}`}>
                       <AnimatedCounter value={v3Stats.pendingRedemptions} />
                     </div>
-                    <div className="text-zinc-500 text-sm">Pending Payouts</div>
+                    <div className="text-zinc-500 text-xs sm:text-sm">Pending</div>
                   </div>
-                  <div className="text-center p-4 bg-zinc-800/30 rounded-xl hover:bg-zinc-800/50 transition-colors">
-                    <div className="text-2xl font-bold text-green-400">
+                  <div className="text-center p-3 sm:p-4 bg-zinc-800/30 rounded-lg sm:rounded-xl hover:bg-zinc-800/50 transition-colors col-span-2 sm:col-span-1">
+                    <div className="text-xl sm:text-2xl font-bold text-green-400">
                       $<AnimatedCounter value={v3Stats.totalPaidOut} />
                     </div>
-                    <div className="text-zinc-500 text-sm">Total Paid Out</div>
+                    <div className="text-zinc-500 text-xs sm:text-sm">Paid Out</div>
                   </div>
                 </>
               ) : (
-                <div className="col-span-5 text-center text-zinc-500 py-4">
+                <div className="col-span-2 sm:col-span-5 text-center text-zinc-500 py-4 text-sm">
                   Unable to load stats
                 </div>
               )}
@@ -758,60 +899,62 @@ export default function AdminCreatorsPage() {
           </div>
 
           {/* Creators Table Section */}
-          <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl overflow-hidden">
+          <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl sm:rounded-2xl overflow-hidden">
             {/* Table Header */}
-            <div className="p-6 border-b border-zinc-800">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <h2 className="text-lg font-bold text-white">All Creators</h2>
-                
-                {/* Search */}
-                <div className="relative flex-1 max-w-md">
-                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
+            <div className="p-4 sm:p-6 border-b border-zinc-800">
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <h2 className="text-base sm:text-lg font-bold text-white">All Creators</h2>
+                  
+                  {/* Search */}
+                  <div className="relative flex-1 sm:max-w-md">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500">
+                      <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                    </div>
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search by name or handle..."
+                      className="w-full bg-zinc-800/50 border border-zinc-700 rounded-lg sm:rounded-xl pl-9 sm:pl-10 pr-4 py-2 sm:py-2.5 text-white text-sm placeholder-zinc-500 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all"
+                    />
                   </div>
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search by name or handle..."
-                    className="w-full bg-zinc-800/50 border border-zinc-700 rounded-xl pl-10 pr-4 py-2.5 text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all"
+                </div>
+                
+                {/* Filter Pills - Horizontal scroll on mobile */}
+                <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide -mx-1 px-1">
+                  <FilterPill 
+                    label="All" 
+                    active={activeFilter === 'all'} 
+                    onClick={() => setActiveFilter('all')}
+                    count={filterCounts.all}
+                  />
+                  <FilterPill 
+                    label="⚠️ Action" 
+                    active={activeFilter === 'needs-action'} 
+                    onClick={() => setActiveFilter('needs-action')}
+                    count={filterCounts.needsAction}
+                  />
+                  <FilterPill 
+                    label="⏳ Pending" 
+                    active={activeFilter === 'pending'} 
+                    onClick={() => setActiveFilter('pending')}
+                    count={filterCounts.pending}
+                  />
+                  <FilterPill 
+                    label="📦 Active" 
+                    active={activeFilter === 'active'} 
+                    onClick={() => setActiveFilter('active')}
+                    count={filterCounts.active}
                   />
                 </div>
               </div>
-              
-              {/* Filter Pills */}
-              <div className="flex flex-wrap gap-2 mt-4">
-                <FilterPill 
-                  label="All Creators" 
-                  active={activeFilter === 'all'} 
-                  onClick={() => setActiveFilter('all')}
-                  count={filterCounts.all}
-                />
-                <FilterPill 
-                  label="⚠️ Needs Action" 
-                  active={activeFilter === 'needs-action'} 
-                  onClick={() => setActiveFilter('needs-action')}
-                  count={filterCounts.needsAction}
-                />
-                <FilterPill 
-                  label="⏳ Pending Review" 
-                  active={activeFilter === 'pending'} 
-                  onClick={() => setActiveFilter('pending')}
-                  count={filterCounts.pending}
-                />
-                <FilterPill 
-                  label="📦 Active Collabs" 
-                  active={activeFilter === 'active'} 
-                  onClick={() => setActiveFilter('active')}
-                  count={filterCounts.active}
-                />
-              </div>
             </div>
 
-            {/* Table */}
-            <div className="overflow-x-auto">
+            {/* Desktop Table - Hidden on mobile */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-zinc-800 bg-zinc-900/50">
@@ -846,7 +989,7 @@ export default function AdminCreatorsPage() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={7} className="py-12 text-center">
+                      <td colSpan={8} className="py-12 text-center">
                         <div className="text-4xl mb-3">🔍</div>
                         <div className="text-zinc-400">No creators found</div>
                         <div className="text-zinc-500 text-sm mt-1">Try adjusting your filters</div>
@@ -857,24 +1000,49 @@ export default function AdminCreatorsPage() {
               </table>
             </div>
 
+            {/* Mobile Card View - Hidden on desktop */}
+            <div className="md:hidden p-4 space-y-3">
+              {loading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="h-48 bg-zinc-800/50 rounded-xl animate-pulse" />
+                ))
+              ) : filteredCreators.length > 0 ? (
+                filteredCreators.map((creator) => (
+                  <CreatorCard
+                    key={creator.id}
+                    creator={creator}
+                    onView={handleViewCreator}
+                    onReview={handleReview}
+                    onNudge={handleNudge}
+                  />
+                ))
+              ) : (
+                <div className="py-12 text-center">
+                  <div className="text-4xl mb-3">🔍</div>
+                  <div className="text-zinc-400">No creators found</div>
+                  <div className="text-zinc-500 text-sm mt-1">Try adjusting your filters</div>
+                </div>
+              )}
+            </div>
+
             {/* Table Footer */}
-            <div className="px-6 py-4 border-t border-zinc-800 bg-zinc-900/30 flex items-center justify-between">
-              <span className="text-zinc-500 text-sm">
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-zinc-800 bg-zinc-900/30 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <span className="text-zinc-500 text-xs sm:text-sm">
                 Showing {filteredCreators.length} of {creators.length} creators
               </span>
               <div className="flex items-center gap-2">
                 <button 
                   onClick={handlePreviousPage}
                   disabled={currentPage === 1 || loading}
-                  className="px-3 py-1.5 bg-zinc-800 text-zinc-400 rounded-lg text-sm font-medium hover:bg-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-3 py-1.5 bg-zinc-800 text-zinc-400 rounded-lg text-sm font-medium hover:bg-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
                 >
                   Previous
                 </button>
-                <span className="text-zinc-400 text-sm">Page {currentPage}</span>
+                <span className="text-zinc-400 text-sm px-2">Page {currentPage}</span>
                 <button 
                   onClick={handleNextPage}
                   disabled={!hasMore || loading}
-                  className="px-3 py-1.5 bg-zinc-800 text-zinc-300 rounded-lg text-sm font-medium hover:bg-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-3 py-1.5 bg-zinc-800 text-zinc-300 rounded-lg text-sm font-medium hover:bg-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
                 >
                   Next
                 </button>

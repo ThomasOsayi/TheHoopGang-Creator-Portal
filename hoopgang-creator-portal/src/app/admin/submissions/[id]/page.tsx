@@ -1,4 +1,6 @@
 // src/app/admin/submissions/[id]/page.tsx
+// Mobile-Responsive Version
+
 'use client';
 
 import { useState, useEffect, use } from 'react';
@@ -193,12 +195,21 @@ export default function MilestoneReviewPage({ params }: { params: Promise<{ id: 
     });
   };
 
+  // Mobile-friendly short date
+  const formatShortDate = (date: Date) => {
+    return new Date(date).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  };
+
   if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900">
         <Navbar />
         <div className="flex items-center justify-center h-[80vh]">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
+          <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-t-2 border-b-2 border-orange-500"></div>
         </div>
       </div>
     );
@@ -208,11 +219,11 @@ export default function MilestoneReviewPage({ params }: { params: Promise<{ id: 
     return (
       <div className="min-h-screen bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900">
         <Navbar />
-        <div className="flex flex-col items-center justify-center h-[80vh]">
-          <p className="text-red-400 mb-4">{error || 'Submission not found'}</p>
+        <div className="flex flex-col items-center justify-center h-[80vh] px-4">
+          <p className="text-red-400 mb-4 text-center text-sm sm:text-base">{error || 'Submission not found'}</p>
           <Link
             href="/admin/submissions"
-            className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors"
+            className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors text-sm sm:text-base active:scale-[0.98]"
           >
             Back to Submissions
           </Link>
@@ -229,72 +240,77 @@ export default function MilestoneReviewPage({ params }: { params: Promise<{ id: 
       
       {/* Background orbs */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 -left-32 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-orange-600/10 rounded-full blur-3xl" />
+        <div className="absolute top-1/4 -left-32 w-64 sm:w-96 h-64 sm:h-96 bg-orange-500/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 -right-32 w-64 sm:w-96 h-64 sm:h-96 bg-orange-600/10 rounded-full blur-3xl" />
       </div>
 
-      <main className="relative z-10 max-w-4xl mx-auto px-4 py-8 pt-24">
+      <main className="relative z-10 max-w-4xl mx-auto px-4 py-6 sm:py-8 pt-20 sm:pt-24">
         {/* Back Link */}
         <Link
           href="/admin/submissions"
-          className="inline-flex items-center gap-2 text-zinc-400 hover:text-white mb-6 transition-colors"
+          className="inline-flex items-center gap-2 text-zinc-400 hover:text-white mb-4 sm:mb-6 transition-colors text-sm sm:text-base"
         >
           <span>←</span>
           <span>Back to Submissions</span>
         </Link>
 
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Review Milestone</h1>
-          <p className="text-zinc-400">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-1 sm:mb-2">Review Milestone</h1>
+          <p className="text-zinc-400 text-sm sm:text-base">
             Verify the view count and approve or reject this milestone claim
           </p>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-2">
+        {/* Main Grid - Stack on mobile */}
+        <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
           {/* Submission Details */}
-          <div className="bg-zinc-800/50 backdrop-blur-sm rounded-2xl border border-zinc-700/50 p-6">
-            <h2 className="text-lg font-semibold text-white mb-4">Submission Details</h2>
+          <div className="bg-zinc-800/50 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-zinc-700/50 p-4 sm:p-6">
+            <h2 className="text-base sm:text-lg font-semibold text-white mb-4">Submission Details</h2>
             
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               <div>
-                <label className="text-zinc-500 text-sm">Creator</label>
-                <div className="text-white font-medium">{submission.creatorName}</div>
-                <div className="text-zinc-400 text-sm">@{submission.creatorHandle}</div>
+                <label className="text-zinc-500 text-xs sm:text-sm">Creator</label>
+                <div className="text-white font-medium text-sm sm:text-base">{submission.creatorName}</div>
+                <div className="text-zinc-400 text-xs sm:text-sm">@{submission.creatorHandle}</div>
               </div>
               
               <div>
-                <label className="text-zinc-500 text-sm">TikTok URL</label>
+                <label className="text-zinc-500 text-xs sm:text-sm">TikTok URL</label>
                 <a
                   href={submission.tiktokUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block text-orange-400 hover:text-orange-300 break-all"
+                  className="block text-orange-400 hover:text-orange-300 break-all text-sm sm:text-base"
                 >
                   {submission.tiktokUrl}
                 </a>
               </div>
               
               <div>
-                <label className="text-zinc-500 text-sm">Claimed Tier</label>
-                <div className="flex items-center gap-2">
-                  <span className="text-white font-medium text-lg">
+                <label className="text-zinc-500 text-xs sm:text-sm">Claimed Tier</label>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-white font-medium text-base sm:text-lg">
                     {submission.claimedTier?.toUpperCase()} Views
                   </span>
-                  <span className="text-green-400 text-sm">
+                  <span className="text-green-400 text-xs sm:text-sm">
                     ({getTierReward(submission.claimedTier || '')})
                   </span>
                 </div>
               </div>
               
               <div>
-                <label className="text-zinc-500 text-sm">Submitted</label>
-                <div className="text-white">{formatDate(submission.submittedAt)}</div>
+                <label className="text-zinc-500 text-xs sm:text-sm">Submitted</label>
+                {/* Show short date on mobile, full date on desktop */}
+                <div className="text-white text-sm sm:text-base">
+                  <span className="sm:hidden">{formatShortDate(submission.submittedAt)}</span>
+                  <span className="hidden sm:inline">{formatDate(submission.submittedAt)}</span>
+                </div>
               </div>
               
               <div>
-                <label className="text-zinc-500 text-sm">Status</label>
-                <div className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${
+                <label className="text-zinc-500 text-xs sm:text-sm">Status</label>
+                <div className={`inline-flex px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs sm:text-sm font-medium ${
                   submission.status === 'pending' 
                     ? 'bg-yellow-500/20 text-yellow-400'
                     : submission.status === 'approved'
@@ -307,8 +323,8 @@ export default function MilestoneReviewPage({ params }: { params: Promise<{ id: 
 
               {submission.verifiedViews !== undefined && (
                 <div>
-                  <label className="text-zinc-500 text-sm">Verified Views</label>
-                  <div className="text-white font-medium">
+                  <label className="text-zinc-500 text-xs sm:text-sm">Verified Views</label>
+                  <div className="text-white font-medium text-sm sm:text-base">
                     {submission.verifiedViews.toLocaleString()}
                   </div>
                 </div>
@@ -316,40 +332,40 @@ export default function MilestoneReviewPage({ params }: { params: Promise<{ id: 
 
               {submission.rejectionReason && (
                 <div>
-                  <label className="text-zinc-500 text-sm">Rejection Reason</label>
-                  <div className="text-red-400">{submission.rejectionReason}</div>
+                  <label className="text-zinc-500 text-xs sm:text-sm">Rejection Reason</label>
+                  <div className="text-red-400 text-sm sm:text-base">{submission.rejectionReason}</div>
                 </div>
               )}
             </div>
           </div>
 
           {/* Review Actions */}
-          <div className="bg-zinc-800/50 backdrop-blur-sm rounded-2xl border border-zinc-700/50 p-6">
-            <h2 className="text-lg font-semibold text-white mb-4">
+          <div className="bg-zinc-800/50 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-zinc-700/50 p-4 sm:p-6">
+            <h2 className="text-base sm:text-lg font-semibold text-white mb-4">
               {isAlreadyReviewed ? 'Review Complete' : 'Review Actions'}
             </h2>
 
             {isAlreadyReviewed ? (
-              <div className="text-center py-8">
-                <div className="text-4xl mb-4">
+              <div className="text-center py-6 sm:py-8">
+                <div className="text-3xl sm:text-4xl mb-3 sm:mb-4">
                   {submission.status === 'approved' ? '✅' : '❌'}
                 </div>
-                <p className="text-zinc-400">
+                <p className="text-zinc-400 text-sm sm:text-base">
                   This milestone has already been {submission.status}.
                 </p>
               </div>
             ) : (
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 {/* TikTok Preview */}
-                <div className="p-4 bg-zinc-900/50 rounded-xl">
-                  <p className="text-zinc-400 text-sm mb-3">
+                <div className="p-3 sm:p-4 bg-zinc-900/50 rounded-lg sm:rounded-xl">
+                  <p className="text-zinc-400 text-xs sm:text-sm mb-2 sm:mb-3">
                     Open the TikTok video to verify the view count:
                   </p>
                   <a
                     href={submission.tiktokUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-black hover:bg-zinc-800 text-white rounded-lg transition-colors"
+                    className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 bg-black hover:bg-zinc-800 text-white rounded-lg transition-colors text-sm sm:text-base active:scale-[0.98]"
                   >
                     <span>🎵</span>
                     <span>Open in TikTok</span>
@@ -359,7 +375,7 @@ export default function MilestoneReviewPage({ params }: { params: Promise<{ id: 
 
                 {/* Verified Views Input */}
                 <div>
-                  <label className="block text-zinc-400 text-sm mb-2">
+                  <label className="block text-zinc-400 text-xs sm:text-sm mb-2">
                     Verified View Count
                   </label>
                   <input
@@ -368,9 +384,9 @@ export default function MilestoneReviewPage({ params }: { params: Promise<{ id: 
                     onChange={(e) => setVerifiedViews(e.target.value)}
                     placeholder="Enter actual view count..."
                     min="0"
-                    className="w-full bg-zinc-900/50 border border-zinc-700 rounded-lg px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500 transition-colors"
+                    className="w-full bg-zinc-900/50 border border-zinc-700 rounded-lg px-3 sm:px-4 py-2.5 sm:py-3 text-white text-sm sm:text-base placeholder-zinc-500 focus:outline-none focus:border-orange-500 transition-colors"
                   />
-                  <p className="text-zinc-500 text-xs mt-1">
+                  <p className="text-zinc-500 text-[10px] sm:text-xs mt-1">
                     Minimum for {submission.claimedTier}: {
                       submission.claimedTier === '100k' ? '100,000' :
                       submission.claimedTier === '500k' ? '500,000' :
@@ -383,23 +399,24 @@ export default function MilestoneReviewPage({ params }: { params: Promise<{ id: 
                 <button
                   onClick={handleApprove}
                   disabled={submitting || !verifiedViews}
-                  className="w-full py-3 bg-green-600 hover:bg-green-700 disabled:bg-zinc-700 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors"
+                  className="w-full py-2.5 sm:py-3 bg-green-600 hover:bg-green-700 disabled:bg-zinc-700 disabled:cursor-not-allowed text-white font-semibold rounded-lg sm:rounded-xl transition-colors text-sm sm:text-base active:scale-[0.98]"
                 >
                   {submitting ? 'Processing...' : '✓ Approve Milestone'}
                 </button>
 
+                {/* Divider */}
                 <div className="relative">
                   <div className="absolute inset-0 flex items-center">
                     <div className="w-full border-t border-zinc-700"></div>
                   </div>
-                  <div className="relative flex justify-center text-sm">
+                  <div className="relative flex justify-center text-xs sm:text-sm">
                     <span className="px-2 bg-zinc-800/50 text-zinc-500">or</span>
                   </div>
                 </div>
 
                 {/* Rejection Reason */}
                 <div>
-                  <label className="block text-zinc-400 text-sm mb-2">
+                  <label className="block text-zinc-400 text-xs sm:text-sm mb-2">
                     Rejection Reason
                   </label>
                   <textarea
@@ -407,7 +424,7 @@ export default function MilestoneReviewPage({ params }: { params: Promise<{ id: 
                     onChange={(e) => setRejectionReason(e.target.value)}
                     placeholder="e.g., View count does not meet threshold, video not related to TheHoopGang..."
                     rows={3}
-                    className="w-full bg-zinc-900/50 border border-zinc-700 rounded-lg px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:border-red-500 transition-colors resize-none"
+                    className="w-full bg-zinc-900/50 border border-zinc-700 rounded-lg px-3 sm:px-4 py-2.5 sm:py-3 text-white text-sm sm:text-base placeholder-zinc-500 focus:outline-none focus:border-red-500 transition-colors resize-none"
                   />
                 </div>
 
@@ -415,7 +432,7 @@ export default function MilestoneReviewPage({ params }: { params: Promise<{ id: 
                 <button
                   onClick={handleReject}
                   disabled={submitting || !rejectionReason.trim()}
-                  className="w-full py-3 bg-red-600/20 hover:bg-red-600/30 border border-red-600/50 disabled:bg-zinc-700/20 disabled:border-zinc-700 disabled:cursor-not-allowed text-red-400 disabled:text-zinc-500 font-semibold rounded-xl transition-colors"
+                  className="w-full py-2.5 sm:py-3 bg-red-600/20 hover:bg-red-600/30 border border-red-600/50 disabled:bg-zinc-700/20 disabled:border-zinc-700 disabled:cursor-not-allowed text-red-400 disabled:text-zinc-500 font-semibold rounded-lg sm:rounded-xl transition-colors text-sm sm:text-base active:scale-[0.98]"
                 >
                   {submitting ? 'Processing...' : '✕ Reject Milestone'}
                 </button>
@@ -427,4 +444,3 @@ export default function MilestoneReviewPage({ params }: { params: Promise<{ id: 
     </div>
   );
 }
-

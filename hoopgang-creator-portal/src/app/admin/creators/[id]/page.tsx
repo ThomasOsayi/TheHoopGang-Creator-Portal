@@ -1,4 +1,5 @@
 // src/app/admin/creators/[id]/page.tsx
+// Mobile-Responsive Version + Fixed content submissions (3→1)
 
 'use client';
 
@@ -87,7 +88,7 @@ function ProgressRing({ progress, size = 48, strokeWidth = 4 }: { progress: numb
 }
 
 // ============================================
-// Mini Stat Card Component
+// Mini Stat Card Component - Mobile Optimized
 // ============================================
 
 function MiniStatCard({ icon, label, value, subValue, color = 'white' }: {
@@ -106,19 +107,19 @@ function MiniStatCard({ icon, label, value, subValue, color = 'white' }: {
   };
   
   return (
-    <div className="text-center p-4 bg-zinc-800/30 border border-zinc-800 rounded-xl hover:bg-zinc-800/50 transition-colors">
-      <div className="text-xl mb-1">{icon}</div>
-      <div className={`text-xl font-bold ${colors[color]}`}>
+    <div className="text-center p-2 sm:p-4 bg-zinc-800/30 border border-zinc-800 rounded-lg sm:rounded-xl hover:bg-zinc-800/50 transition-colors">
+      <div className="text-base sm:text-xl mb-0.5 sm:mb-1">{icon}</div>
+      <div className={`text-base sm:text-xl font-bold ${colors[color]}`}>
         {typeof value === 'number' ? <AnimatedCounter value={value} /> : value}
       </div>
-      <div className="text-zinc-500 text-xs">{label}</div>
-      {subValue && <div className="text-zinc-400 text-xs mt-0.5">{subValue}</div>}
+      <div className="text-zinc-500 text-[10px] sm:text-xs">{label}</div>
+      {subValue && <div className="text-zinc-400 text-[10px] sm:text-xs mt-0.5 hidden sm:block">{subValue}</div>}
     </div>
   );
 }
 
 // ============================================
-// Section Card Component
+// Section Card Component - Mobile Optimized
 // ============================================
 
 function SectionCard({ icon, title, children, action }: {
@@ -128,11 +129,11 @@ function SectionCard({ icon, title, children, action }: {
   action?: React.ReactNode;
 }) {
   return (
-    <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 hover:border-zinc-700 transition-all duration-300">
-      <div className="flex items-center justify-between mb-5">
+    <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 hover:border-zinc-700 transition-all duration-300">
+      <div className="flex items-center justify-between mb-4 sm:mb-5">
         <div className="flex items-center gap-2">
-          <span className="text-xl">{icon}</span>
-          <h2 className="text-lg font-semibold text-white">{title}</h2>
+          <span className="text-lg sm:text-xl">{icon}</span>
+          <h2 className="text-base sm:text-lg font-semibold text-white">{title}</h2>
         </div>
         {action}
       </div>
@@ -142,7 +143,7 @@ function SectionCard({ icon, title, children, action }: {
 }
 
 // ============================================
-// Quick Action Button Component
+// Quick Action Button Component - Mobile Optimized
 // ============================================
 
 function QuickActionButton({ icon, label, onClick, variant = 'default', disabled, loading }: {
@@ -163,20 +164,21 @@ function QuickActionButton({ icon, label, onClick, variant = 'default', disabled
     <button
       onClick={onClick}
       disabled={disabled || loading}
-      className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${variants[variant]} disabled:opacity-50 disabled:cursor-not-allowed`}
+      className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium transition-all flex items-center gap-1.5 sm:gap-2 ${variants[variant]} disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]`}
     >
       {loading ? (
-        <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+        <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
       ) : (
-        <span>{icon}</span>
+        <span className="text-sm sm:text-base">{icon}</span>
       )}
-      {label}
+      <span className="hidden xs:inline">{label}</span>
+      <span className="xs:hidden">{label.split(' ')[0]}</span>
     </button>
   );
 }
 
 // ============================================
-// Collaboration Pill Component
+// Collaboration Pill Component - Mobile Optimized
 // ============================================
 
 function CollabPill({ collab, isActive, onClick }: {
@@ -187,7 +189,7 @@ function CollabPill({ collab, isActive, onClick }: {
   return (
     <button
       onClick={onClick}
-      className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+      className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
         isActive 
           ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/25' 
           : 'bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700'
@@ -195,7 +197,7 @@ function CollabPill({ collab, isActive, onClick }: {
     >
       #{collab.collabNumber} - {collab.product}
       {collab.id === collab.id && isActive && (
-        <span className="ml-2 text-xs opacity-75">(Active)</span>
+        <span className="ml-1 sm:ml-2 text-[10px] sm:text-xs opacity-75">(Active)</span>
       )}
     </button>
   );
@@ -219,22 +221,22 @@ function TimelineItem({ date, title, description, status, isLast }: {
   };
   
   return (
-    <div className="flex gap-4">
+    <div className="flex gap-3 sm:gap-4">
       <div className="flex flex-col items-center">
-        <div className={`w-3 h-3 rounded-full ${statusColors[status]}`} />
-        {!isLast && <div className="w-0.5 flex-1 bg-zinc-800 my-1 min-h-[20px]" />}
+        <div className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full ${statusColors[status]}`} />
+        {!isLast && <div className="w-0.5 flex-1 bg-zinc-800 my-1 min-h-[16px] sm:min-h-[20px]" />}
       </div>
-      <div className="pb-4">
-        <div className="text-zinc-500 text-xs">{date}</div>
-        <div className="text-white font-medium">{title}</div>
-        {description && <div className="text-zinc-400 text-sm mt-0.5">{description}</div>}
+      <div className="pb-3 sm:pb-4">
+        <div className="text-zinc-500 text-[10px] sm:text-xs">{date}</div>
+        <div className="text-white font-medium text-sm sm:text-base">{title}</div>
+        {description && <div className="text-zinc-400 text-xs sm:text-sm mt-0.5">{description}</div>}
       </div>
     </div>
   );
 }
 
 // ============================================
-// Content Submission Card Component
+// Content Submission Card Component - Mobile Optimized
 // ============================================
 
 function ContentSubmissionCard({ index, submission, isCompleted }: {
@@ -243,13 +245,13 @@ function ContentSubmissionCard({ index, submission, isCompleted }: {
   isCompleted: boolean;
 }) {
   return (
-    <div className={`flex items-center gap-4 p-4 rounded-xl border transition-all ${
+    <div className={`flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg sm:rounded-xl border transition-all ${
       isCompleted 
         ? 'bg-green-500/5 border-green-500/20 hover:border-green-500/30' 
         : 'bg-zinc-800/30 border-zinc-700/50 hover:border-zinc-600'
     }`}>
       {/* Number/Check Badge */}
-      <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${
+      <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold flex-shrink-0 ${
         isCompleted 
           ? 'bg-green-500/20 text-green-400' 
           : 'bg-zinc-700 text-zinc-400'
@@ -259,27 +261,27 @@ function ContentSubmissionCard({ index, submission, isCompleted }: {
       
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <div className="text-white font-medium">TikTok Video {index + 1}</div>
+        <div className="text-white font-medium text-sm sm:text-base">TikTok Video {index + 1}</div>
         {isCompleted && submission ? (
           <a 
             href={submission.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-orange-400 hover:text-orange-300 text-sm truncate block transition-colors"
+            className="text-orange-400 hover:text-orange-300 text-xs sm:text-sm truncate block transition-colors"
           >
             {submission.url}
           </a>
         ) : (
-          <span className="text-zinc-500 text-sm italic">Awaiting submission...</span>
+          <span className="text-zinc-500 text-xs sm:text-sm italic">Awaiting submission...</span>
         )}
       </div>
       
       {/* Date/Views */}
       {isCompleted && submission && (
-        <div className="text-right">
-          <div className="text-zinc-400 text-sm">{formatShortDate(submission.submittedAt)}</div>
+        <div className="text-right flex-shrink-0">
+          <div className="text-zinc-400 text-xs sm:text-sm">{formatShortDate(submission.submittedAt)}</div>
           {submission.views && (
-            <div className="text-green-400 text-xs">{formatFollowers(submission.views)} views</div>
+            <div className="text-green-400 text-[10px] sm:text-xs">{formatFollowers(submission.views)} views</div>
           )}
         </div>
       )}
@@ -398,9 +400,6 @@ export default function CreatorDetailPage() {
           const data = await redemptionsRes.json();
           setRedemptions(data.redemptions?.filter((r: any) => r.creatorId === creator.id) || []);
         }
-
-        // Calculate leaderboard stats from submissions
-        // (or fetch from leaderboard API if available)
         
       } catch (error) {
         console.error('Error fetching TikTok creator data:', error);
@@ -491,12 +490,14 @@ export default function CreatorDetailPage() {
     });
     
     // Content deadline (if delivered and not completed)
+    // FIXED: Changed from 3 to 1 submission requirement
     if (selectedCollab.contentDeadline && selectedCollab.status === 'delivered') {
       const remaining = Math.ceil((new Date(selectedCollab.contentDeadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+      const videosRemaining = 1 - selectedCollab.contentSubmissions.length;
       items.push({
         date: formatDate(selectedCollab.contentDeadline),
         title: 'Content Deadline',
-        description: `${1 - selectedCollab.contentSubmissions.length} video${1 - selectedCollab.contentSubmissions.length !== 1 ? 's' : ''} remaining`,
+        description: videosRemaining > 0 ? `${videosRemaining} video remaining` : 'All videos submitted',
         status: remaining > 0 ? 'current' : 'upcoming',
         sortDate: selectedCollab.contentDeadline,
       });
@@ -544,9 +545,9 @@ export default function CreatorDetailPage() {
         updateData.internalNotes = editedNotes || undefined;
       }
 
-      // Auto-complete when saving a rating if all content is submitted
+      // FIXED: Auto-complete when saving a rating if all content is submitted (1 video, not 3)
       const isRatingBeingSaved = editedRating > 0 && editedRating !== (selectedCollab.rating || 0);
-      const allContentSubmitted = selectedCollab.contentSubmissions.length >= 3;
+      const allContentSubmitted = selectedCollab.contentSubmissions.length >= 1; // Changed from 3 to 1
       const isDelivered = selectedCollab.status === 'delivered';
       
       if (isRatingBeingSaved && allContentSubmitted && isDelivered && !statusChanged) {
@@ -674,11 +675,11 @@ export default function CreatorDetailPage() {
             <div className="absolute -top-40 -right-40 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl" />
             <div className="absolute top-1/2 -left-40 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl" />
           </div>
-          <main className="relative max-w-7xl mx-auto px-4 sm:px-6 py-8">
-            <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl px-6 py-16 text-center">
+          <main className="relative max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+            <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl sm:rounded-2xl px-4 sm:px-6 py-12 sm:py-16 text-center">
               <div className="inline-flex items-center gap-3">
-                <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
-                <span className="text-zinc-400">Loading creator details...</span>
+                <div className="w-5 h-5 sm:w-6 sm:h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+                <span className="text-zinc-400 text-sm sm:text-base">Loading creator details...</span>
               </div>
             </div>
           </main>
@@ -699,16 +700,16 @@ export default function CreatorDetailPage() {
             <div className="absolute -top-40 -right-40 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl" />
             <div className="absolute top-1/2 -left-40 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl" />
           </div>
-          <main className="relative max-w-7xl mx-auto px-4 sm:px-6 py-8">
-            <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl px-6 py-16 text-center">
-              <div className="text-5xl mb-4">🔍</div>
-              <p className="text-white text-lg mb-2">Creator not found</p>
-              <p className="text-zinc-500 text-sm mb-6">
+          <main className="relative max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+            <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl sm:rounded-2xl px-4 sm:px-6 py-12 sm:py-16 text-center">
+              <div className="text-4xl sm:text-5xl mb-4">🔍</div>
+              <p className="text-white text-base sm:text-lg mb-2">Creator not found</p>
+              <p className="text-zinc-500 text-xs sm:text-sm mb-6">
                 This creator may have been deleted or the ID is invalid.
               </p>
               <button
                 onClick={handleBack}
-                className="px-6 py-2 bg-zinc-800 text-white rounded-xl hover:bg-zinc-700 transition-colors"
+                className="px-5 sm:px-6 py-2 bg-zinc-800 text-white rounded-lg sm:rounded-xl hover:bg-zinc-700 transition-colors text-sm sm:text-base active:scale-[0.98]"
               >
                 ← Back to Creators
               </button>
@@ -746,34 +747,34 @@ export default function CreatorDetailPage() {
           <div className="absolute -bottom-40 right-1/3 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl" />
         </div>
 
-        <main className="relative max-w-7xl mx-auto px-4 sm:px-6 py-8">
+        <main className="relative max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
           {/* Back Button */}
           <button
             onClick={handleBack}
-            className="group flex items-center gap-2 text-zinc-400 hover:text-white mb-6 transition-colors"
+            className="group flex items-center gap-2 text-zinc-400 hover:text-white mb-4 sm:mb-6 transition-colors text-sm sm:text-base"
           >
             <span className="group-hover:-translate-x-1 transition-transform">←</span>
             <span>Back to Creators</span>
           </button>
 
-          {/* Header Card */}
-          <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 mb-6 hover:border-zinc-700 transition-all">
-            <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
-              {/* Creator Info */}
-              <div className="flex items-start gap-4">
+          {/* Header Card - Mobile Optimized */}
+          <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 mb-4 sm:mb-6 hover:border-zinc-700 transition-all">
+            <div className="flex flex-col gap-4 sm:gap-6">
+              {/* Creator Info Row */}
+              <div className="flex items-start gap-3 sm:gap-4">
                 {/* Avatar */}
-                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center text-3xl font-bold text-white shadow-lg shadow-orange-500/20">
+                <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center text-xl sm:text-3xl font-bold text-white shadow-lg shadow-orange-500/20 flex-shrink-0">
                   {creator.fullName.charAt(0).toUpperCase()}
                 </div>
-                <div>
-                  <div className="flex flex-wrap items-center gap-3 mb-1">
-                    <h1 className="text-2xl font-bold text-white">{creator.fullName}</h1>
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-1">
+                    <h1 className="text-lg sm:text-2xl font-bold text-white truncate">{creator.fullName}</h1>
                     <CreatorSourceBadge source={creator.source || 'manual'} size="sm" />
                     {selectedCollab && <StatusBadge status={selectedCollab.status} />}
                   </div>
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+                  <div className="flex flex-wrap items-center gap-x-2 sm:gap-x-3 gap-y-1 text-xs sm:text-sm">
                     <span className="text-orange-400 font-mono">{creator.creatorId}</span>
-                    <span className="text-zinc-600">•</span>
+                    <span className="text-zinc-600 hidden sm:inline">•</span>
                     <a 
                       href={`https://tiktok.com/@${creator.tiktokHandle.replace('@', '')}`}
                       target="_blank"
@@ -782,8 +783,8 @@ export default function CreatorDetailPage() {
                     >
                       @{creator.tiktokHandle.replace('@', '')}
                     </a>
-                    <span className="text-zinc-600">•</span>
-                    <span className="text-zinc-500">Applied {formatDate(creator.createdAt)}</span>
+                    <span className="text-zinc-600 hidden sm:inline">•</span>
+                    <span className="text-zinc-500 hidden sm:inline">Applied {formatDate(creator.createdAt)}</span>
                     {creator.isBlocked && (
                       <>
                         <span className="text-zinc-600">•</span>
@@ -792,8 +793,8 @@ export default function CreatorDetailPage() {
                     )}
                   </div>
                   
-                  {/* Quick Actions */}
-                  <div className="flex flex-wrap gap-2 mt-4">
+                  {/* Quick Actions - Horizontal scroll on mobile */}
+                  <div className="flex flex-wrap gap-2 mt-3 sm:mt-4">
                     <QuickActionButton 
                       icon="📧" 
                       label="Send Email" 
@@ -815,8 +816,8 @@ export default function CreatorDetailPage() {
                 </div>
               </div>
 
-              {/* Stats Grid */}
-              <div className="grid grid-cols-3 lg:grid-cols-6 gap-3 lg:gap-2 w-full lg:w-auto">
+              {/* Stats Grid - 3 cols on mobile, 6 on desktop */}
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
                 <MiniStatCard 
                   icon="📱" 
                   label="TikTok" 
@@ -858,13 +859,13 @@ export default function CreatorDetailPage() {
             </div>
           </div>
 
-          {/* Collaboration Selector */}
+          {/* Collaboration Selector - Horizontal scroll on mobile */}
           {allCollaborations.length > 1 && (
-            <div className="mb-6">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-zinc-400 text-sm">Viewing Collaboration:</span>
+            <div className="mb-4 sm:mb-6">
+              <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                <span className="text-zinc-400 text-xs sm:text-sm">Viewing Collaboration:</span>
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1">
                 {allCollaborations.map((collab) => (
                   <CollabPill
                     key={collab.id}
@@ -881,61 +882,61 @@ export default function CreatorDetailPage() {
           {!selectedCollab && (
             creator?.source === 'tiktok' ? (
               /* TikTok Creator View - Show submissions & rewards instead of collab */
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 {/* TikTok Creator Info Banner */}
-                <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6">
+                <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl sm:rounded-2xl p-4 sm:p-6">
                   <div className="flex items-center gap-3 mb-4">
-                    <span className="text-2xl">🎵</span>
+                    <span className="text-xl sm:text-2xl">🎵</span>
                     <div>
-                      <h3 className="text-white font-semibold">TikTok Shop Creator</h3>
-                      <p className="text-zinc-400 text-sm">
+                      <h3 className="text-white font-semibold text-sm sm:text-base">TikTok Shop Creator</h3>
+                      <p className="text-zinc-400 text-xs sm:text-sm">
                         This creator joined through TikTok Shop and submits content for rewards.
                       </p>
                     </div>
                   </div>
                   
                   {/* Quick Stats */}
-                  <div className="grid grid-cols-3 gap-4 mt-4">
-                    <div className="text-center p-3 bg-zinc-800/50 rounded-xl">
-                      <div className="text-2xl font-bold text-orange-400">{submissions.length}</div>
-                      <div className="text-zinc-500 text-xs">Submissions</div>
+                  <div className="grid grid-cols-3 gap-2 sm:gap-4 mt-4">
+                    <div className="text-center p-2 sm:p-3 bg-zinc-800/50 rounded-lg sm:rounded-xl">
+                      <div className="text-xl sm:text-2xl font-bold text-orange-400">{submissions.length}</div>
+                      <div className="text-zinc-500 text-[10px] sm:text-xs">Submissions</div>
                     </div>
-                    <div className="text-center p-3 bg-zinc-800/50 rounded-xl">
-                      <div className="text-2xl font-bold text-green-400">
+                    <div className="text-center p-2 sm:p-3 bg-zinc-800/50 rounded-lg sm:rounded-xl">
+                      <div className="text-xl sm:text-2xl font-bold text-green-400">
                         {submissions.filter(s => s.status === 'approved').length}
                       </div>
-                      <div className="text-zinc-500 text-xs">Approved</div>
+                      <div className="text-zinc-500 text-[10px] sm:text-xs">Approved</div>
                     </div>
-                    <div className="text-center p-3 bg-zinc-800/50 rounded-xl">
-                      <div className="text-2xl font-bold text-purple-400">{redemptions.length}</div>
-                      <div className="text-zinc-500 text-xs">Rewards Earned</div>
+                    <div className="text-center p-2 sm:p-3 bg-zinc-800/50 rounded-lg sm:rounded-xl">
+                      <div className="text-xl sm:text-2xl font-bold text-purple-400">{redemptions.length}</div>
+                      <div className="text-zinc-500 text-[10px] sm:text-xs">Rewards</div>
                     </div>
                   </div>
                 </div>
 
                 {/* Submission History */}
-                <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6">
+                <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl sm:rounded-2xl p-4 sm:p-6">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
-                      <span className="text-xl">📊</span>
-                      <h3 className="text-white font-semibold">Content Submissions</h3>
+                      <span className="text-lg sm:text-xl">📊</span>
+                      <h3 className="text-white font-semibold text-sm sm:text-base">Content Submissions</h3>
                     </div>
-                    <span className="text-zinc-500 text-sm">{submissions.length} total</span>
+                    <span className="text-zinc-500 text-xs sm:text-sm">{submissions.length} total</span>
                   </div>
                   
                   {loadingTikTokData ? (
                     <div className="flex items-center justify-center py-8">
-                      <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+                      <div className="w-5 h-5 sm:w-6 sm:h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
                     </div>
                   ) : submissions.length > 0 ? (
-                    <div className="space-y-3 max-h-80 overflow-y-auto">
+                    <div className="space-y-2 sm:space-y-3 max-h-60 sm:max-h-80 overflow-y-auto">
                       {submissions.slice(0, 10).map((sub: any) => (
                         <div 
                           key={sub.id} 
-                          className="flex items-center justify-between p-3 bg-zinc-800/30 rounded-xl hover:bg-zinc-800/50 transition-colors"
+                          className="flex items-center justify-between p-2.5 sm:p-3 bg-zinc-800/30 rounded-lg sm:rounded-xl hover:bg-zinc-800/50 transition-colors"
                         >
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm ${
+                          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                            <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center text-xs sm:text-sm flex-shrink-0 ${
                               sub.type === 'milestone' ? 'bg-purple-500/20 text-purple-400' : 'bg-blue-500/20 text-blue-400'
                             }`}>
                               {sub.type === 'milestone' ? '⭐' : '📊'}
@@ -945,16 +946,16 @@ export default function CreatorDetailPage() {
                                 href={sub.tiktokUrl} 
                                 target="_blank" 
                                 rel="noopener noreferrer"
-                                className="text-orange-400 hover:text-orange-300 text-sm truncate block"
+                                className="text-orange-400 hover:text-orange-300 text-xs sm:text-sm truncate block"
                               >
-                                {sub.tiktokUrl?.replace('https://www.tiktok.com/', '').slice(0, 40)}...
+                                {sub.tiktokUrl?.replace('https://www.tiktok.com/', '').slice(0, 30)}...
                               </a>
-                              <div className="text-zinc-500 text-xs">
+                              <div className="text-zinc-500 text-[10px] sm:text-xs">
                                 {new Date(sub.submittedAt).toLocaleDateString()}
                               </div>
                             </div>
                           </div>
-                          <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          <div className={`px-2 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium flex-shrink-0 ${
                             sub.status === 'approved' 
                               ? 'bg-green-500/20 text-green-400' 
                               : sub.status === 'rejected'
@@ -966,113 +967,115 @@ export default function CreatorDetailPage() {
                         </div>
                       ))}
                       {submissions.length > 10 && (
-                        <p className="text-zinc-500 text-sm text-center py-2">
+                        <p className="text-zinc-500 text-xs sm:text-sm text-center py-2">
                           + {submissions.length - 10} more submissions
                         </p>
                       )}
                     </div>
                   ) : (
-                    <div className="text-center py-8">
-                      <div className="text-3xl mb-2">📭</div>
-                      <p className="text-zinc-500">No submissions yet</p>
+                    <div className="text-center py-6 sm:py-8">
+                      <div className="text-2xl sm:text-3xl mb-2">📭</div>
+                      <p className="text-zinc-500 text-sm">No submissions yet</p>
                     </div>
                   )}
                 </div>
 
                 {/* Rewards Earned */}
-                <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6">
+                <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl sm:rounded-2xl p-4 sm:p-6">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
-                      <span className="text-xl">🎁</span>
-                      <h3 className="text-white font-semibold">Rewards Earned</h3>
+                      <span className="text-lg sm:text-xl">🎁</span>
+                      <h3 className="text-white font-semibold text-sm sm:text-base">Rewards Earned</h3>
                     </div>
-                    <span className="text-zinc-500 text-sm">{redemptions.length} total</span>
+                    <span className="text-zinc-500 text-xs sm:text-sm">{redemptions.length} total</span>
                   </div>
                   
                   {loadingTikTokData ? (
                     <div className="flex items-center justify-center py-8">
-                      <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+                      <div className="w-5 h-5 sm:w-6 sm:h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
                     </div>
                   ) : redemptions.length > 0 ? (
-                    <div className="space-y-3">
+                    <div className="space-y-2 sm:space-y-3">
                       {redemptions.map((redemption: any) => (
                         <div 
                           key={redemption.id} 
-                          className="flex items-center justify-between p-3 bg-zinc-800/30 rounded-xl"
+                          className="flex items-center justify-between p-2.5 sm:p-3 bg-zinc-800/30 rounded-lg sm:rounded-xl"
                         >
-                          <div className="flex items-center gap-3">
-                            <span className="text-xl">💰</span>
+                          <div className="flex items-center gap-2 sm:gap-3">
+                            <span className="text-lg sm:text-xl">💰</span>
                             <div>
-                              <div className="text-white font-medium">{redemption.rewardName}</div>
-                              <div className="text-zinc-500 text-xs">
+                              <div className="text-white font-medium text-sm sm:text-base">{redemption.rewardName}</div>
+                              <div className="text-zinc-500 text-[10px] sm:text-xs">
                                 {new Date(redemption.createdAt).toLocaleDateString()}
                               </div>
                             </div>
                           </div>
-                          <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          <div className={`px-2 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium ${
                             redemption.status === 'fulfilled' 
                               ? 'bg-green-500/20 text-green-400' 
                               : redemption.status === 'ready_to_fulfill'
                                 ? 'bg-blue-500/20 text-blue-400'
                                 : 'bg-yellow-500/20 text-yellow-400'
                           }`}>
-                            {redemption.status === 'awaiting_claim' ? 'Awaiting Claim' : 
-                             redemption.status === 'ready_to_fulfill' ? 'Ready to Fulfill' :
+                            {redemption.status === 'awaiting_claim' ? 'Awaiting' : 
+                             redemption.status === 'ready_to_fulfill' ? 'Ready' :
                              redemption.status}
                           </div>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-8">
-                      <div className="text-3xl mb-2">🎁</div>
-                      <p className="text-zinc-500">No rewards earned yet</p>
+                    <div className="text-center py-6 sm:py-8">
+                      <div className="text-2xl sm:text-3xl mb-2">🎁</div>
+                      <p className="text-zinc-500 text-sm">No rewards earned yet</p>
                     </div>
                   )}
                 </div>
               </div>
             ) : (
               /* Instagram/Manual Creator - Show original "No Collaboration" message */
-              <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-2xl p-6 text-center">
-                <div className="text-4xl mb-3">📋</div>
-                <h3 className="text-yellow-400 font-semibold mb-2">No Active Collaboration</h3>
-                <p className="text-zinc-400 text-sm">
+              <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl sm:rounded-2xl p-4 sm:p-6 text-center">
+                <div className="text-3xl sm:text-4xl mb-3">📋</div>
+                <h3 className="text-yellow-400 font-semibold mb-2 text-sm sm:text-base">No Active Collaboration</h3>
+                <p className="text-zinc-400 text-xs sm:text-sm">
                   This creator doesn't have any collaborations yet.
                 </p>
               </div>
             )
           )}
 
-          {/* Main Content Grid */}
+          {/* Main Content Grid - Stack on mobile */}
           {selectedCollab && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Left Column - 2/3 */}
-              <div className="lg:col-span-2 space-y-6">
-                {/* Content Submissions */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+              {/* Left Column - Full width on mobile, 2/3 on desktop */}
+              <div className="lg:col-span-2 space-y-4 sm:space-y-6">
+                {/* Content Submissions - FIXED: Only show 1 slot, not 3 */}
                 <SectionCard 
                   icon="🎥" 
                   title="Content Submissions"
                   action={
-                    <div className="flex items-center gap-3">
-                      <ProgressRing progress={(selectedCollab.contentSubmissions.length / 1) * 100} size={40} />
-                      <span className="text-zinc-400 text-sm">{selectedCollab.contentSubmissions.length}/1</span>
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <ProgressRing 
+                        progress={(selectedCollab.contentSubmissions.length / 1) * 100} 
+                        size={32} 
+                        strokeWidth={3}
+                      />
+                      <span className="text-zinc-400 text-xs sm:text-sm">{selectedCollab.contentSubmissions.length}/1</span>
                     </div>
                   }
                 >
-                  <div className="space-y-3">
-                    {[0, 1, 2].map((index) => (
-                      <ContentSubmissionCard
-                        key={index}
-                        index={index}
-                        submission={selectedCollab.contentSubmissions[index]}
-                        isCompleted={index < selectedCollab.contentSubmissions.length}
-                      />
-                    ))}
+                  {/* FIXED: Only render 1 submission slot instead of 3 */}
+                  <div className="space-y-2 sm:space-y-3">
+                    <ContentSubmissionCard
+                      index={0}
+                      submission={selectedCollab.contentSubmissions[0]}
+                      isCompleted={selectedCollab.contentSubmissions.length >= 1}
+                    />
                   </div>
                   
                   {/* Content Deadline Warning */}
                   {selectedCollab.status === 'delivered' && daysRemaining !== null && (
-                    <div className={`mt-4 p-4 rounded-xl border ${
+                    <div className={`mt-3 sm:mt-4 p-3 sm:p-4 rounded-lg sm:rounded-xl border ${
                       daysRemaining <= 3 
                         ? 'bg-red-500/10 border-red-500/20' 
                         : 'bg-orange-500/10 border-orange-500/20'
@@ -1081,9 +1084,9 @@ export default function CreatorDetailPage() {
                         daysRemaining <= 3 ? 'text-red-400' : 'text-orange-400'
                       }`}>
                         <span>⏰</span>
-                        <span className="font-medium">Content Deadline</span>
+                        <span className="font-medium text-sm sm:text-base">Content Deadline</span>
                       </div>
-                      <p className="text-sm text-zinc-400">
+                      <p className="text-xs sm:text-sm text-zinc-400">
                         {daysRemaining > 0 
                           ? `${daysRemaining} days remaining` 
                           : 'Deadline passed!'
@@ -1097,109 +1100,113 @@ export default function CreatorDetailPage() {
                 <SectionCard icon="👤" title="Creator Profile">
                   <div className="space-y-3">
                     <div>
-                      <div className="text-zinc-500 text-xs uppercase tracking-wider mb-1">Email</div>
-                      <div className="text-white">{creator.email}</div>
+                      <div className="text-zinc-500 text-[10px] sm:text-xs uppercase tracking-wider mb-1">Email</div>
+                      <div className="text-white text-sm sm:text-base break-all">{creator.email}</div>
                     </div>
-                    <div>
-                      <div className="text-zinc-500 text-xs uppercase tracking-wider mb-1">TikTok</div>
-                      <a 
-                        href={`https://tiktok.com/@${creator.tiktokHandle.replace('@', '')}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-orange-400 hover:text-orange-300 transition-colors inline-flex items-center gap-2"
-                      >
-                        @{creator.tiktokHandle.replace('@', '')}
-                        <span className="text-zinc-500 text-sm">({formatFollowers(creator.tiktokFollowers)})</span>
-                      </a>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <div className="text-zinc-500 text-[10px] sm:text-xs uppercase tracking-wider mb-1">TikTok</div>
+                        <a 
+                          href={`https://tiktok.com/@${creator.tiktokHandle.replace('@', '')}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-orange-400 hover:text-orange-300 transition-colors text-sm sm:text-base"
+                        >
+                          @{creator.tiktokHandle.replace('@', '')}
+                          <span className="text-zinc-500 text-xs sm:text-sm ml-1">({formatFollowers(creator.tiktokFollowers)})</span>
+                        </a>
+                      </div>
+                      <div>
+                        <div className="text-zinc-500 text-[10px] sm:text-xs uppercase tracking-wider mb-1">Instagram</div>
+                        <a 
+                          href={`https://instagram.com/${creator.instagramHandle.replace('@', '')}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-orange-400 hover:text-orange-300 transition-colors text-sm sm:text-base"
+                        >
+                          @{creator.instagramHandle.replace('@', '')}
+                          <span className="text-zinc-500 text-xs sm:text-sm ml-1">({formatFollowers(creator.instagramFollowers)})</span>
+                        </a>
+                      </div>
                     </div>
-                    <div>
-                      <div className="text-zinc-500 text-xs uppercase tracking-wider mb-1">Instagram</div>
-                      <a 
-                        href={`https://instagram.com/${creator.instagramHandle.replace('@', '')}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-orange-400 hover:text-orange-300 transition-colors inline-flex items-center gap-2"
-                      >
-                        @{creator.instagramHandle.replace('@', '')}
-                        <span className="text-zinc-500 text-sm">({formatFollowers(creator.instagramFollowers)})</span>
-                      </a>
-                    </div>
-                    <div>
-                      <div className="text-zinc-500 text-xs uppercase tracking-wider mb-1">Best Content</div>
-                      <a 
-                        href={creator.bestContentUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-orange-400 hover:text-orange-300 transition-colors inline-flex items-center gap-1"
-                      >
-                        View Content
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                        </svg>
-                      </a>
-                    </div>
-                    <div>
-                      <div className="text-zinc-500 text-xs uppercase tracking-wider mb-1">Previous Brands</div>
-                      <span className={creator.previousBrands ? 'text-green-400' : 'text-zinc-500'}>
-                        {creator.previousBrands ? '✓ Yes' : 'No'}
-                      </span>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <div className="text-zinc-500 text-[10px] sm:text-xs uppercase tracking-wider mb-1">Best Content</div>
+                        <a 
+                          href={creator.bestContentUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-orange-400 hover:text-orange-300 transition-colors inline-flex items-center gap-1 text-sm sm:text-base"
+                        >
+                          View
+                          <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                        </a>
+                      </div>
+                      <div>
+                        <div className="text-zinc-500 text-[10px] sm:text-xs uppercase tracking-wider mb-1">Previous Brands</div>
+                        <span className={`text-sm sm:text-base ${creator.previousBrands ? 'text-green-400' : 'text-zinc-500'}`}>
+                          {creator.previousBrands ? '✓ Yes' : 'No'}
+                        </span>
+                      </div>
                     </div>
                     {(creator.height || creator.weight) && (
                       <div>
-                        <div className="text-zinc-500 text-xs uppercase tracking-wider mb-1">Fit Info</div>
-                        <span className="text-white">{creator.height || '—'} / {creator.weight || '—'}</span>
+                        <div className="text-zinc-500 text-[10px] sm:text-xs uppercase tracking-wider mb-1">Fit Info</div>
+                        <span className="text-white text-sm sm:text-base">{creator.height || '—'} / {creator.weight || '—'}</span>
                       </div>
                     )}
                   </div>
                   
                   {/* Why Collab */}
                   <div className="mt-4 pt-4 border-t border-zinc-800">
-                    <div className="text-zinc-500 text-xs uppercase tracking-wider mb-2">Why They Want to Collab</div>
-                    <p className="text-zinc-300 text-sm leading-relaxed">{creator.whyCollab}</p>
+                    <div className="text-zinc-500 text-[10px] sm:text-xs uppercase tracking-wider mb-2">Why They Want to Collab</div>
+                    <p className="text-zinc-300 text-xs sm:text-sm leading-relaxed">{creator.whyCollab}</p>
                   </div>
                 </SectionCard>
 
                 {/* Collaboration Details */}
                 <SectionCard icon="📦" title={`Collaboration #${selectedCollab.collabNumber}`}>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="p-4 bg-zinc-800/30 rounded-xl">
-                      <div className="text-zinc-500 text-xs uppercase tracking-wider mb-1">Product</div>
-                      <div className="text-white font-medium">{selectedCollab.product}</div>
-                      <div className="text-zinc-400 text-sm">Size {selectedCollab.size}</div>
+                  <div className="grid grid-cols-2 gap-2 sm:gap-4">
+                    <div className="p-3 sm:p-4 bg-zinc-800/30 rounded-lg sm:rounded-xl">
+                      <div className="text-zinc-500 text-[10px] sm:text-xs uppercase tracking-wider mb-1">Product</div>
+                      <div className="text-white font-medium text-sm sm:text-base">{selectedCollab.product}</div>
+                      <div className="text-zinc-400 text-xs sm:text-sm">Size {selectedCollab.size}</div>
                     </div>
-                    <div className="p-4 bg-zinc-800/30 rounded-xl">
-                      <div className="text-zinc-500 text-xs uppercase tracking-wider mb-1">Collab ID</div>
-                      <div className="text-orange-400 font-mono text-sm">{selectedCollab.collabDisplayId}</div>
+                    <div className="p-3 sm:p-4 bg-zinc-800/30 rounded-lg sm:rounded-xl">
+                      <div className="text-zinc-500 text-[10px] sm:text-xs uppercase tracking-wider mb-1">Collab ID</div>
+                      <div className="text-orange-400 font-mono text-xs sm:text-sm break-all">{selectedCollab.collabDisplayId}</div>
                     </div>
-                    <div className="p-4 bg-zinc-800/30 rounded-xl">
-                      <div className="text-zinc-500 text-xs uppercase tracking-wider mb-1">Started</div>
-                      <div className="text-white">{formatDate(selectedCollab.createdAt)}</div>
+                    <div className="p-3 sm:p-4 bg-zinc-800/30 rounded-lg sm:rounded-xl">
+                      <div className="text-zinc-500 text-[10px] sm:text-xs uppercase tracking-wider mb-1">Started</div>
+                      <div className="text-white text-sm sm:text-base">{formatDate(selectedCollab.createdAt)}</div>
                     </div>
-                    <div className="p-4 bg-zinc-800/30 rounded-xl">
-                      <div className="text-zinc-500 text-xs uppercase tracking-wider mb-1">Status</div>
+                    <div className="p-3 sm:p-4 bg-zinc-800/30 rounded-lg sm:rounded-xl">
+                      <div className="text-zinc-500 text-[10px] sm:text-xs uppercase tracking-wider mb-1">Status</div>
                       <StatusBadge status={selectedCollab.status} />
                     </div>
                   </div>
                   
                   {/* Shipping Address */}
                   <div className="mt-4 pt-4 border-t border-zinc-800">
-                    <div className="text-zinc-500 text-xs uppercase tracking-wider mb-2">Shipping Address</div>
-                    <p className="text-zinc-300">{formattedAddress}</p>
+                    <div className="text-zinc-500 text-[10px] sm:text-xs uppercase tracking-wider mb-2">Shipping Address</div>
+                    <p className="text-zinc-300 text-xs sm:text-sm">{formattedAddress}</p>
                   </div>
                 </SectionCard>
               </div>
 
-              {/* Right Column - 1/3 */}
-              <div className="space-y-6">
+              {/* Right Column - Full width on mobile, 1/3 on desktop */}
+              <div className="space-y-4 sm:space-y-6">
                 {/* Status & Actions */}
                 <SectionCard icon="⚙️" title="Status & Actions">
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
                     <div>
-                      <label className="text-zinc-500 text-xs uppercase tracking-wider block mb-2">Status</label>
+                      <label className="text-zinc-500 text-[10px] sm:text-xs uppercase tracking-wider block mb-2">Status</label>
                       <select
                         value={editedStatus}
                         onChange={(e) => setEditedStatus(e.target.value as CollaborationStatus | '')}
-                        className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-orange-500 transition-colors"
+                        className="w-full bg-zinc-800 border border-zinc-700 rounded-lg sm:rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-white text-sm sm:text-base focus:outline-none focus:border-orange-500 transition-colors"
                       >
                         {CREATOR_STATUSES.map((status) => (
                           <option 
@@ -1208,7 +1215,7 @@ export default function CreatorDetailPage() {
                             className="bg-zinc-900"
                             disabled={status.value === 'delivered'}
                           >
-                            {status.label} {status.value === 'delivered' ? '(Use button below)' : ''}
+                            {status.label} {status.value === 'delivered' ? '(Use button)' : ''}
                           </option>
                         ))}
                       </select>
@@ -1217,7 +1224,7 @@ export default function CreatorDetailPage() {
                     <button
                       onClick={handleSaveChanges}
                       disabled={saving}
-                      className="w-full py-3 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-500/50 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+                      className="w-full py-2.5 sm:py-3 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-500/50 text-white font-semibold rounded-lg sm:rounded-xl transition-colors flex items-center justify-center gap-2 text-sm sm:text-base active:scale-[0.98]"
                     >
                       {saving && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
                       {saving ? 'Saving...' : 'Save Changes'}
@@ -1228,31 +1235,31 @@ export default function CreatorDetailPage() {
                 {/* Shipment Tracking */}
                 <SectionCard icon="📦" title="Shipment Tracking">
                   {selectedCollab.trackingNumber ? (
-                    <div className="space-y-4">
+                    <div className="space-y-3 sm:space-y-4">
                       {/* Tracking Info Card */}
-                      <div className="p-4 bg-zinc-800/30 rounded-xl space-y-2">
+                      <div className="p-3 sm:p-4 bg-zinc-800/30 rounded-lg sm:rounded-xl space-y-2">
                         <div className="flex items-center justify-between">
-                          <span className="text-zinc-400 text-sm">Tracking #</span>
-                          <span className="text-orange-400 font-mono text-sm">{selectedCollab.trackingNumber}</span>
+                          <span className="text-zinc-400 text-xs sm:text-sm">Tracking #</span>
+                          <span className="text-orange-400 font-mono text-xs sm:text-sm">{selectedCollab.trackingNumber}</span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-zinc-400 text-sm">Carrier</span>
-                          <span className="text-white">{selectedCollab.carrier || 'Unknown'}</span>
+                          <span className="text-zinc-400 text-xs sm:text-sm">Carrier</span>
+                          <span className="text-white text-sm">{selectedCollab.carrier || 'Unknown'}</span>
                         </div>
                       </div>
                       
                       {/* Shipping Timeline */}
-                      <div className="space-y-2">
+                      <div className="space-y-1.5 sm:space-y-2">
                         {selectedCollab.shippedAt && (
                           <div className="flex items-center gap-2 text-green-400">
                             <span>✓</span>
-                            <span className="text-sm">Shipped on {formatDate(selectedCollab.shippedAt)}</span>
+                            <span className="text-xs sm:text-sm">Shipped {formatDate(selectedCollab.shippedAt)}</span>
                           </div>
                         )}
                         {selectedCollab.deliveredAt && (
                           <div className="flex items-center gap-2 text-green-400">
                             <span>✓</span>
-                            <span className="text-sm">Delivered on {formatDate(selectedCollab.deliveredAt)}</span>
+                            <span className="text-xs sm:text-sm">Delivered {formatDate(selectedCollab.deliveredAt)}</span>
                           </div>
                         )}
                       </div>
@@ -1262,7 +1269,7 @@ export default function CreatorDetailPage() {
                         <button
                           onClick={handleMarkDelivered}
                           disabled={isMarkingDelivered}
-                          className="w-full py-2.5 bg-green-500 hover:bg-green-600 disabled:bg-green-500/50 text-white font-medium rounded-xl transition-colors flex items-center justify-center gap-2"
+                          className="w-full py-2 sm:py-2.5 bg-green-500 hover:bg-green-600 disabled:bg-green-500/50 text-white font-medium rounded-lg sm:rounded-xl transition-colors flex items-center justify-center gap-2 text-sm active:scale-[0.98]"
                         >
                           {isMarkingDelivered ? (
                             <>
@@ -1289,9 +1296,9 @@ export default function CreatorDetailPage() {
 
                 {/* Review */}
                 <SectionCard icon="⭐" title="Review">
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
                     <div>
-                      <label className="text-zinc-500 text-xs uppercase tracking-wider block mb-3">Creator Rating</label>
+                      <label className="text-zinc-500 text-[10px] sm:text-xs uppercase tracking-wider block mb-2 sm:mb-3">Creator Rating</label>
                       <StarRating
                         rating={editedRating}
                         editable={true}
@@ -1301,20 +1308,20 @@ export default function CreatorDetailPage() {
                     </div>
                     
                     <div>
-                      <label className="text-zinc-500 text-xs uppercase tracking-wider block mb-2">Internal Notes</label>
+                      <label className="text-zinc-500 text-[10px] sm:text-xs uppercase tracking-wider block mb-2">Internal Notes</label>
                       <textarea
                         value={editedNotes}
                         onChange={(e) => setEditedNotes(e.target.value)}
                         placeholder="Leave notes about this creator..."
-                        rows={4}
-                        className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500 transition-colors resize-none"
+                        rows={3}
+                        className="w-full bg-zinc-800 border border-zinc-700 rounded-lg sm:rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-white text-sm placeholder-zinc-500 focus:outline-none focus:border-orange-500 transition-colors resize-none"
                       />
                     </div>
                     
                     <button
                       onClick={handleSaveChanges}
                       disabled={saving}
-                      className="w-full py-2.5 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-500/50 text-white font-medium rounded-xl transition-colors"
+                      className="w-full py-2 sm:py-2.5 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-500/50 text-white font-medium rounded-lg sm:rounded-xl transition-colors text-sm active:scale-[0.98]"
                     >
                       Save Review
                     </button>
@@ -1323,7 +1330,7 @@ export default function CreatorDetailPage() {
 
                 {/* Activity Timeline */}
                 <SectionCard icon="📋" title="Activity Timeline">
-                  <div className="max-h-80 overflow-y-auto pr-2">
+                  <div className="max-h-60 sm:max-h-80 overflow-y-auto pr-2">
                     {timeline.length > 0 ? (
                       timeline.map((item, index) => (
                         <TimelineItem
@@ -1336,7 +1343,7 @@ export default function CreatorDetailPage() {
                         />
                       ))
                     ) : (
-                      <p className="text-zinc-500 text-sm text-center py-4">No activity yet</p>
+                      <p className="text-zinc-500 text-xs sm:text-sm text-center py-4">No activity yet</p>
                     )}
                   </div>
                 </SectionCard>

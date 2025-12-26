@@ -1,4 +1,6 @@
 // src/app/admin/leaderboard/gmv/page.tsx
+// Mobile-Responsive Version
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -18,7 +20,7 @@ import { LeaderboardEntry } from '@/types';
 import { getCurrentMonth, getPreviousMonths } from '@/lib/week-utils';
 
 // ============================================
-// GMV Prize Display Component (Green Theme)
+// GMV Prize Display Component - Mobile Optimized
 // ============================================
 interface GMVPrizeDisplayProps {
   prizes: { first: string; second: string; third: string };
@@ -26,53 +28,49 @@ interface GMVPrizeDisplayProps {
 
 function GMVPrizeDisplay({ prizes }: GMVPrizeDisplayProps) {
   return (
-    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-green-500/20 via-emerald-500/20 to-teal-500/20 border border-green-500/30 p-1">
-      {/* Shimmer effect */}
+    <div className="relative overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-r from-green-500/20 via-emerald-500/20 to-teal-500/20 border border-green-500/30 p-0.5 sm:p-1">
       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full animate-shimmer" />
 
-      <div className="relative bg-zinc-900/80 rounded-xl p-5">
-        <div className="flex items-center gap-2 mb-4">
-          <span className="text-2xl animate-bounce">💸</span>
-          <h3 className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-emerald-400 to-teal-400">
+      <div className="relative bg-zinc-900/80 rounded-lg sm:rounded-xl p-3 sm:p-5">
+        <div className="flex items-center justify-center gap-2 mb-3 sm:mb-4">
+          <span className="text-xl sm:text-2xl animate-bounce">💸</span>
+          <h3 className="text-sm sm:text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-emerald-400 to-teal-400">
             TOP SELLER REWARDS!
           </h3>
-          <span className="text-2xl animate-bounce" style={{ animationDelay: '0.1s' }}>🛒</span>
+          <span className="text-xl sm:text-2xl animate-bounce" style={{ animationDelay: '0.1s' }}>🛒</span>
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
           {/* 1st Place */}
           <div className="relative group">
-            <div className="absolute inset-0 bg-yellow-500/20 rounded-xl blur-xl group-hover:blur-2xl transition-all opacity-0 group-hover:opacity-100" />
-            <div className="relative bg-zinc-800/80 border border-yellow-500/30 rounded-xl p-4 text-center hover:scale-105 transition-transform cursor-default">
-              <div className="text-3xl mb-1">🥇</div>
-              <div className="text-yellow-400 font-bold text-sm">1st Place</div>
-              <div className="text-white font-bold text-lg">{prizes.first}</div>
+            <div className="relative bg-zinc-800/80 border border-yellow-500/30 rounded-lg sm:rounded-xl p-2 sm:p-4 text-center hover:scale-105 transition-transform cursor-default">
+              <div className="text-2xl sm:text-3xl mb-0.5 sm:mb-1">🥇</div>
+              <div className="text-yellow-400 font-bold text-[10px] sm:text-sm">1st Place</div>
+              <div className="text-white font-bold text-xs sm:text-lg truncate">{prizes.first}</div>
             </div>
           </div>
 
           {/* 2nd Place */}
           <div className="relative group">
-            <div className="absolute inset-0 bg-zinc-400/20 rounded-xl blur-xl group-hover:blur-2xl transition-all opacity-0 group-hover:opacity-100" />
-            <div className="relative bg-zinc-800/80 border border-zinc-500/30 rounded-xl p-4 text-center hover:scale-105 transition-transform cursor-default">
-              <div className="text-3xl mb-1">🥈</div>
-              <div className="text-zinc-300 font-bold text-sm">2nd Place</div>
-              <div className="text-white font-bold text-lg">{prizes.second}</div>
+            <div className="relative bg-zinc-800/80 border border-zinc-500/30 rounded-lg sm:rounded-xl p-2 sm:p-4 text-center hover:scale-105 transition-transform cursor-default">
+              <div className="text-2xl sm:text-3xl mb-0.5 sm:mb-1">🥈</div>
+              <div className="text-zinc-300 font-bold text-[10px] sm:text-sm">2nd Place</div>
+              <div className="text-white font-bold text-xs sm:text-lg truncate">{prizes.second}</div>
             </div>
           </div>
 
           {/* 3rd Place */}
           <div className="relative group">
-            <div className="absolute inset-0 bg-amber-700/20 rounded-xl blur-xl group-hover:blur-2xl transition-all opacity-0 group-hover:opacity-100" />
-            <div className="relative bg-zinc-800/80 border border-amber-700/30 rounded-xl p-4 text-center hover:scale-105 transition-transform cursor-default">
-              <div className="text-3xl mb-1">🥉</div>
-              <div className="text-amber-500 font-bold text-sm">3rd Place</div>
-              <div className="text-white font-bold text-lg">{prizes.third}</div>
+            <div className="relative bg-zinc-800/80 border border-amber-700/30 rounded-lg sm:rounded-xl p-2 sm:p-4 text-center hover:scale-105 transition-transform cursor-default">
+              <div className="text-2xl sm:text-3xl mb-0.5 sm:mb-1">🥉</div>
+              <div className="text-amber-500 font-bold text-[10px] sm:text-sm">3rd Place</div>
+              <div className="text-white font-bold text-xs sm:text-lg truncate">{prizes.third}</div>
             </div>
           </div>
         </div>
 
-        <div className="mt-4 text-center">
-          <span className="text-zinc-400 text-sm">💰 Drive the most sales to win! 💰</span>
+        <div className="mt-3 sm:mt-4 text-center">
+          <span className="text-zinc-400 text-xs sm:text-sm">💰 Drive the most sales to win! 💰</span>
         </div>
       </div>
     </div>
@@ -80,7 +78,7 @@ function GMVPrizeDisplay({ prizes }: GMVPrizeDisplayProps) {
 }
 
 // ============================================
-// GMV Leaderboard Row Component
+// GMV Leaderboard Row Component - Mobile Optimized
 // ============================================
 interface GMVLeaderboardRowProps {
   entry: LeaderboardEntry & { orders?: number };
@@ -117,53 +115,53 @@ function GMVLeaderboardRow({ entry, onEdit, onDelete }: GMVLeaderboardRowProps) 
 
   return (
     <div
-      className={`flex items-center gap-4 p-4 rounded-xl border ${style.bg} ${style.border} transition-all duration-300 hover:scale-[1.01]`}
+      className={`flex items-center gap-2 sm:gap-4 p-3 sm:p-4 rounded-lg sm:rounded-xl border ${style.bg} ${style.border} transition-all duration-300 hover:scale-[1.01]`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* Rank */}
-      <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold ${style.text} ${isTopThree ? 'text-2xl' : 'bg-zinc-800 text-lg'}`}>
+      <div className={`w-9 h-9 sm:w-12 sm:h-12 rounded-full flex items-center justify-center font-bold ${style.text} ${isTopThree ? 'text-xl sm:text-2xl' : 'bg-zinc-800 text-sm sm:text-lg'} flex-shrink-0`}>
         {style.icon || entry.rank}
       </div>
 
       {/* Creator */}
-      <div className="flex items-center gap-3 flex-1">
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white font-bold">
+      <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white font-bold text-sm sm:text-base flex-shrink-0">
           {entry.creatorName.charAt(0).toUpperCase()}
         </div>
-        <div>
-          <div className="text-white font-medium">{entry.creatorName}</div>
-          <div className="text-zinc-500 text-sm">@{entry.creatorHandle}</div>
+        <div className="min-w-0">
+          <div className="text-white font-medium text-sm sm:text-base truncate">{entry.creatorName}</div>
+          <div className="text-zinc-500 text-xs sm:text-sm truncate">@{entry.creatorHandle}</div>
         </div>
       </div>
 
       {/* GMV & Orders */}
-      <div className="text-right">
-        <div className={`text-2xl font-bold ${isTopThree ? 'text-green-400' : 'text-white'}`}>
+      <div className="text-right flex-shrink-0">
+        <div className={`text-base sm:text-2xl font-bold ${isTopThree ? 'text-green-400' : 'text-white'}`}>
           {formatCurrency(entry.value)}
         </div>
         {entry.orders !== undefined && (
-          <div className="text-zinc-500 text-sm">{entry.orders} orders</div>
+          <div className="text-zinc-500 text-[10px] sm:text-sm">{entry.orders} orders</div>
         )}
       </div>
 
-      {/* Action buttons on hover */}
-      <div className={`flex gap-2 transition-opacity ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
+      {/* Action buttons - Always visible on mobile, hover on desktop */}
+      <div className={`flex gap-1 sm:gap-2 transition-opacity ${isHovered ? 'opacity-100' : 'sm:opacity-0 opacity-100'}`}>
         <button
           onClick={(e) => { e.stopPropagation(); onEdit(); }}
-          className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-700 rounded-lg transition-colors"
+          className="p-1.5 sm:p-2 text-zinc-400 hover:text-white hover:bg-zinc-700 rounded-lg transition-colors active:scale-[0.95]"
           title="Edit"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
           </svg>
         </button>
         <button
           onClick={(e) => { e.stopPropagation(); onDelete(); }}
-          className="p-2 text-zinc-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+          className="p-1.5 sm:p-2 text-zinc-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors active:scale-[0.95]"
           title="Delete"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
           </svg>
         </button>
@@ -173,7 +171,7 @@ function GMVLeaderboardRow({ entry, onEdit, onDelete }: GMVLeaderboardRowProps) 
 }
 
 // ============================================
-// Past Month Card with Inline Expansion
+// Past Month Card - Mobile Optimized
 // ============================================
 interface PastMonthData {
   period: string;
@@ -202,32 +200,32 @@ function PastMonthCard({ month, isExpanded, onToggle }: PastMonthCardProps) {
   };
 
   return (
-    <div className="border border-zinc-800 rounded-xl overflow-hidden transition-all duration-300 hover:border-zinc-700">
+    <div className="border border-zinc-800 rounded-lg sm:rounded-xl overflow-hidden transition-all duration-300 hover:border-zinc-700">
       <button
         onClick={onToggle}
-        className="w-full p-4 bg-zinc-800/30 text-left hover:bg-zinc-800/50 transition-all flex items-center justify-between"
+        className="w-full p-3 sm:p-4 bg-zinc-800/30 text-left hover:bg-zinc-800/50 transition-all flex items-center justify-between gap-2 active:scale-[0.99]"
       >
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            <span className="text-white font-medium">{month.name}</span>
-            <span className="px-2 py-0.5 bg-green-500/20 text-green-400 text-xs rounded-full font-medium">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 sm:gap-3 mb-1 flex-wrap">
+            <span className="text-white font-medium text-sm sm:text-base truncate">{month.name}</span>
+            <span className="px-1.5 sm:px-2 py-0.5 bg-green-500/20 text-green-400 text-[10px] sm:text-xs rounded-full font-medium flex-shrink-0">
               {formatCurrency(month.totalGMV)}
             </span>
           </div>
-          <div className="flex items-center gap-4 text-sm">
+          <div className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm flex-wrap">
             <span className="text-zinc-400">{month.participants} creators</span>
-            <span className="text-zinc-600">•</span>
-            <span className="text-zinc-400">{month.totalOrders} orders</span>
+            <span className="text-zinc-600 hidden xs:inline">•</span>
+            <span className="text-zinc-400 hidden xs:inline">{month.totalOrders} orders</span>
             {month.winner && (
               <>
-                <span className="text-zinc-600">•</span>
-                <span className="text-green-400">Winner: @{month.winner}</span>
+                <span className="text-zinc-600 hidden sm:inline">•</span>
+                <span className="text-green-400 hidden sm:inline">Winner: @{month.winner}</span>
               </>
             )}
           </div>
         </div>
         <svg
-          className={`w-5 h-5 text-zinc-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+          className={`w-4 h-4 sm:w-5 sm:h-5 text-zinc-400 transition-transform flex-shrink-0 ${isExpanded ? 'rotate-180' : ''}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -238,19 +236,19 @@ function PastMonthCard({ month, isExpanded, onToggle }: PastMonthCardProps) {
 
       {/* Expanded Content */}
       {isExpanded && (
-        <div className="p-4 border-t border-zinc-800 bg-zinc-900/50 animate-scale-in">
+        <div className="p-3 sm:p-4 border-t border-zinc-800 bg-zinc-900/50 animate-scale-in">
           {/* Final Standings */}
           {month.leaderboard.length > 0 && (
-            <div className="mb-4">
-              <h4 className="text-sm font-medium text-zinc-400 mb-3">Final Standings</h4>
-              <div className="space-y-2">
+            <div className="mb-3 sm:mb-4">
+              <h4 className="text-xs sm:text-sm font-medium text-zinc-400 mb-2 sm:mb-3">Final Standings</h4>
+              <div className="space-y-1.5 sm:space-y-2">
                 {month.leaderboard.slice(0, 3).map((entry, index) => {
                   const icons = ['🥇', '🥈', '🥉'];
                   return (
-                    <div key={entry.handle} className="flex items-center gap-3 p-2 bg-zinc-800/50 rounded-lg">
-                      <span className="text-lg">{icons[index]}</span>
-                      <span className="text-white flex-1">@{entry.handle}</span>
-                      <span className="text-green-400 font-medium">{formatCurrency(entry.gmv)}</span>
+                    <div key={entry.handle} className="flex items-center gap-2 sm:gap-3 p-2 bg-zinc-800/50 rounded-lg">
+                      <span className="text-lg sm:text-xl">{icons[index]}</span>
+                      <span className="text-white flex-1 text-sm sm:text-base truncate">@{entry.handle}</span>
+                      <span className="text-green-400 font-medium text-xs sm:text-sm">{formatCurrency(entry.gmv)}</span>
                     </div>
                   );
                 })}
@@ -259,18 +257,18 @@ function PastMonthCard({ month, isExpanded, onToggle }: PastMonthCardProps) {
           )}
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-3 gap-3">
-            <div className="p-3 bg-zinc-800/50 rounded-lg text-center">
-              <div className="text-lg font-bold text-blue-400">{month.participants}</div>
-              <div className="text-zinc-500 text-xs">Creators</div>
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
+            <div className="p-2 sm:p-3 bg-zinc-800/50 rounded-lg text-center">
+              <div className="text-base sm:text-lg font-bold text-blue-400">{month.participants}</div>
+              <div className="text-zinc-500 text-[10px] sm:text-xs">Creators</div>
             </div>
-            <div className="p-3 bg-zinc-800/50 rounded-lg text-center">
-              <div className="text-lg font-bold text-purple-400">{month.totalOrders}</div>
-              <div className="text-zinc-500 text-xs">Orders</div>
+            <div className="p-2 sm:p-3 bg-zinc-800/50 rounded-lg text-center">
+              <div className="text-base sm:text-lg font-bold text-purple-400">{month.totalOrders}</div>
+              <div className="text-zinc-500 text-[10px] sm:text-xs">Orders</div>
             </div>
-            <div className="p-3 bg-zinc-800/50 rounded-lg text-center">
-              <div className="text-lg font-bold text-green-400">{formatCurrency(month.totalGMV)}</div>
-              <div className="text-zinc-500 text-xs">Total GMV</div>
+            <div className="p-2 sm:p-3 bg-zinc-800/50 rounded-lg text-center">
+              <div className="text-sm sm:text-lg font-bold text-green-400">{formatCurrency(month.totalGMV)}</div>
+              <div className="text-zinc-500 text-[10px] sm:text-xs">Total GMV</div>
             </div>
           </div>
         </div>
@@ -280,28 +278,30 @@ function PastMonthCard({ month, isExpanded, onToggle }: PastMonthCardProps) {
 }
 
 // ============================================
-// Tab Button Component
+// Tab Button Component - Mobile Optimized
 // ============================================
 interface TabButtonProps {
   label: string;
+  shortLabel?: string;
   active: boolean;
   onClick: () => void;
   count?: number;
 }
 
-function TabButton({ label, active, onClick, count }: TabButtonProps) {
+function TabButton({ label, shortLabel, active, onClick, count }: TabButtonProps) {
   return (
     <button
       onClick={onClick}
-      className={`px-5 py-2.5 rounded-xl font-medium transition-all flex items-center gap-2 ${
+      className={`px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg sm:rounded-xl font-medium transition-all flex items-center gap-1.5 sm:gap-2 text-sm sm:text-base active:scale-[0.98] ${
         active
           ? 'bg-green-500 text-white'
           : 'bg-zinc-800/50 text-zinc-400 hover:text-white hover:bg-zinc-800'
       }`}
     >
-      {label}
+      <span className="sm:hidden">{shortLabel || label}</span>
+      <span className="hidden sm:inline">{label}</span>
       {count !== undefined && (
-        <span className={`px-2 py-0.5 rounded-full text-xs ${
+        <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs ${
           active ? 'bg-white/20' : 'bg-zinc-700'
         }`}>
           {count}
@@ -354,7 +354,7 @@ export default function GMVLeaderboardAdminPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [successAnimation, setSuccessAnimation] = useState<{ icon: string; message: string } | null>(null);
 
-  // Prizes (can be made configurable later)
+  // Prizes
   const prizes = { first: '$100 Cash', second: '$50 Credit', third: 'Free Product' };
 
   // ============================================
@@ -398,7 +398,6 @@ export default function GMVLeaderboardAdminPage() {
       setEntries(data.entries || []);
       setAvailableMonths(data.availableMonths || getPreviousMonths(6));
 
-      // Load past months data for the Past tab
       await loadPastMonthsData(token);
     } catch (err) {
       console.error('Error loading leaderboard:', err);
@@ -410,10 +409,10 @@ export default function GMVLeaderboardAdminPage() {
 
   const loadPastMonthsData = async (token: string) => {
     try {
-      const months = getPreviousMonths(6).slice(1); // Skip current month
+      const months = getPreviousMonths(6).slice(1);
       const pastData: PastMonthData[] = [];
 
-      for (const month of months.slice(0, 3)) { // Load last 3 months
+      for (const month of months.slice(0, 3)) {
         const response = await fetch(`/api/admin/leaderboard/gmv?period=${month}`, {
           headers: { 'Authorization': `Bearer ${token}` },
         });
@@ -529,7 +528,6 @@ export default function GMVLeaderboardAdminPage() {
       const token = await getAuthToken();
       if (!token) throw new Error('Not authenticated');
 
-      // Parse bulk text (format: handle, amount per line)
       const lines = bulkText.trim().split('\n');
       const parsedEntries = lines.map(line => {
         const parts = line.split(/[,\t]+/).map(p => p.trim());
@@ -629,17 +627,18 @@ export default function GMVLeaderboardAdminPage() {
     }).format(amount);
   };
 
-  // Generate month options for dropdown
   const monthOptions = useMemo(() => {
-    const options: { value: string; label: string }[] = [];
+    const options: { value: string; label: string; shortLabel: string }[] = [];
     const now = new Date();
     for (let i = 0; i < 12; i++) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
       const label = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      const shortLabel = d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
       options.push({
         value,
         label: i === 0 ? `${label} (Current)` : label,
+        shortLabel: i === 0 ? `${shortLabel} (Now)` : shortLabel,
       });
     }
     return options;
@@ -654,7 +653,7 @@ export default function GMVLeaderboardAdminPage() {
         <div className="min-h-screen bg-zinc-950">
           <Navbar />
           <div className="flex items-center justify-center h-[80vh]">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500" />
+            <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-t-2 border-b-2 border-green-500" />
           </div>
         </div>
       </ProtectedRoute>
@@ -667,17 +666,17 @@ export default function GMVLeaderboardAdminPage() {
   return (
     <ProtectedRoute allowedRoles={['admin']}>
       <div className="min-h-screen bg-zinc-950 relative overflow-hidden">
-        {/* Background Gradient Orbs (Green theme) */}
+        {/* Background Gradient Orbs */}
         <div className="fixed inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute -top-40 -right-40 w-96 h-96 bg-green-500/10 rounded-full blur-3xl" />
-          <div className="absolute bottom-1/4 -left-40 w-80 h-80 bg-emerald-500/5 rounded-full blur-3xl" />
+          <div className="absolute -top-40 -right-40 w-64 sm:w-96 h-64 sm:h-96 bg-green-500/10 rounded-full blur-3xl" />
+          <div className="absolute bottom-1/4 -left-40 w-56 sm:w-80 h-56 sm:h-80 bg-emerald-500/5 rounded-full blur-3xl" />
         </div>
 
         <Navbar />
 
-        <main className="relative max-w-5xl mx-auto px-4 sm:px-6 py-8 pt-24">
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <main className="relative max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 pt-20 sm:pt-24">
+          {/* Header - Stack on mobile */}
+          <div className="flex flex-col gap-4 mb-4 sm:mb-6">
             <PageHeader 
               title="GMV Competition"
               subtitle="Manage GMV-based competitions"
@@ -686,40 +685,42 @@ export default function GMVLeaderboardAdminPage() {
               align="left"
             />
 
-            {/* Header Actions (only show when on Current tab with data) */}
+            {/* Header Actions - Only when has data */}
             {activeTab === 'current' && entries.length > 0 && (
-              <div className="flex gap-3">
+              <div className="flex gap-2 sm:gap-3 flex-wrap">
                 <button
                   onClick={() => setShowFinalizeModal(true)}
-                  className="px-4 py-2.5 bg-zinc-800 text-white rounded-xl font-medium hover:bg-zinc-700 transition-colors flex items-center gap-2"
+                  className="px-3 sm:px-4 py-2 sm:py-2.5 bg-zinc-800 text-white rounded-lg sm:rounded-xl font-medium hover:bg-zinc-700 transition-colors flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm active:scale-[0.98]"
                 >
-                  <span>✓</span> Finalize Month
+                  <span>✓</span> <span className="hidden xs:inline">Finalize</span>
                 </button>
                 <button
                   onClick={() => setShowBulkModal(true)}
-                  className="px-4 py-2.5 bg-zinc-800 text-white rounded-xl font-medium hover:bg-zinc-700 transition-colors flex items-center gap-2"
+                  className="px-3 sm:px-4 py-2 sm:py-2.5 bg-zinc-800 text-white rounded-lg sm:rounded-xl font-medium hover:bg-zinc-700 transition-colors flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm active:scale-[0.98]"
                 >
-                  <span>↑</span> Bulk Import
+                  <span>↑</span> Bulk
                 </button>
                 <button
                   onClick={() => setShowAddModal(true)}
-                  className="px-4 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-semibold hover:from-green-600 hover:to-emerald-700 transition-all flex items-center gap-2 shadow-lg shadow-green-500/20"
+                  className="px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg sm:rounded-xl font-semibold hover:from-green-600 hover:to-emerald-700 transition-all flex items-center gap-1.5 sm:gap-2 shadow-lg shadow-green-500/20 text-xs sm:text-sm active:scale-[0.98]"
                 >
-                  <span>+</span> Add Entry
+                  <span>+</span> Add
                 </button>
               </div>
             )}
           </div>
 
           {/* Tab Navigation */}
-          <div className="flex gap-2 mb-6">
+          <div className="flex gap-2 mb-4 sm:mb-6">
             <TabButton
               label="Current Month"
+              shortLabel="Current"
               active={activeTab === 'current'}
               onClick={() => setActiveTab('current')}
             />
             <TabButton
               label="Past Months"
+              shortLabel="Past"
               active={activeTab === 'past'}
               onClick={() => setActiveTab('past')}
               count={pastMonthsData.length}
@@ -729,11 +730,11 @@ export default function GMVLeaderboardAdminPage() {
           {activeTab === 'current' && (
             <>
               {/* Month Selector */}
-              <div className="flex items-center gap-4 mb-6">
+              <div className="flex flex-col xs:flex-row items-start xs:items-center gap-2 sm:gap-4 mb-4 sm:mb-6">
                 <select
                   value={selectedMonth}
                   onChange={(e) => setSelectedMonth(e.target.value)}
-                  className="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-green-500 transition-colors"
+                  className="bg-zinc-800 border border-zinc-700 rounded-lg sm:rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-white text-sm focus:outline-none focus:border-green-500 transition-colors"
                 >
                   {monthOptions.map((opt) => (
                     <option key={opt.value} value={opt.value}>
@@ -741,54 +742,54 @@ export default function GMVLeaderboardAdminPage() {
                     </option>
                   ))}
                 </select>
-                <span className="text-zinc-500 text-sm">
-                  Gross Merchandise Value from creator-driven sales
+                <span className="text-zinc-500 text-xs sm:text-sm">
+                  GMV from creator-driven sales
                 </span>
               </div>
             </>
           )}
 
           {loading ? (
-            <div className="flex items-center justify-center py-16">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500" />
+            <div className="flex items-center justify-center py-12 sm:py-16">
+              <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-t-2 border-b-2 border-green-500" />
             </div>
           ) : error ? (
-            <div className="text-center py-16">
-              <p className="text-red-400 mb-4">{error}</p>
+            <div className="text-center py-12 sm:py-16">
+              <p className="text-red-400 mb-4 text-sm sm:text-base">{error}</p>
               <button
                 onClick={loadLeaderboard}
-                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm active:scale-[0.98]"
               >
                 Retry
               </button>
             </div>
           ) : activeTab === 'current' ? (
             /* CURRENT MONTH TAB */
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {entries.length === 0 ? (
                 /* No Data State */
-                <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-8">
-                  <div className="text-center py-8">
-                    <div className="text-6xl mb-4">📊</div>
-                    <h2 className="text-2xl font-bold text-white mb-2">No GMV Data Yet</h2>
-                    <p className="text-zinc-400 mb-6 max-w-md mx-auto">
-                      Add creator sales data to track performance and reward top sellers this month!
+                <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl sm:rounded-2xl p-4 sm:p-8">
+                  <div className="text-center py-6 sm:py-8">
+                    <div className="text-5xl sm:text-6xl mb-3 sm:mb-4">📊</div>
+                    <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">No GMV Data Yet</h2>
+                    <p className="text-zinc-400 text-sm sm:text-base mb-4 sm:mb-6 max-w-md mx-auto">
+                      Add creator sales data to track performance and reward top sellers!
                     </p>
-                    <div className="flex justify-center gap-3">
+                    <div className="flex flex-col xs:flex-row justify-center gap-2 sm:gap-3">
                       <button
                         onClick={() => setShowAddModal(true)}
-                        className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-semibold hover:from-green-600 hover:to-emerald-700 transition-all inline-flex items-center gap-2 shadow-lg shadow-green-500/20"
+                        className="px-5 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg sm:rounded-xl font-semibold hover:from-green-600 hover:to-emerald-700 transition-all inline-flex items-center justify-center gap-2 shadow-lg shadow-green-500/20 text-sm sm:text-base active:scale-[0.98]"
                       >
                         <span>+</span> Add First Entry
                       </button>
                       <button
                         onClick={() => setShowBulkModal(true)}
-                        className="px-6 py-3 bg-zinc-800 text-white rounded-xl font-medium hover:bg-zinc-700 transition-colors inline-flex items-center gap-2"
+                        className="px-5 sm:px-6 py-2.5 sm:py-3 bg-zinc-800 text-white rounded-lg sm:rounded-xl font-medium hover:bg-zinc-700 transition-colors inline-flex items-center justify-center gap-2 text-sm sm:text-base active:scale-[0.98]"
                       >
                         <span>↑</span> Bulk Import
                       </button>
                     </div>
-                    <p className="text-zinc-500 text-sm mt-4">
+                    <p className="text-zinc-500 text-xs sm:text-sm mt-4">
                       or view{' '}
                       <button
                         onClick={() => setActiveTab('past')}
@@ -806,37 +807,37 @@ export default function GMVLeaderboardAdminPage() {
                   <GMVPrizeDisplay prizes={prizes} />
 
                   {/* Stats Cards */}
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-3 gap-2 sm:gap-4">
                     <GlowCard glowColor="green">
-                      <div className="text-3xl font-bold text-green-400 mb-1">
+                      <div className="text-lg sm:text-3xl font-bold text-green-400 mb-0.5 sm:mb-1">
                         {formatCurrency(stats.totalGMV)}
                       </div>
-                      <div className="text-zinc-500 text-sm">Total GMV</div>
+                      <div className="text-zinc-500 text-[10px] sm:text-sm">Total GMV</div>
                     </GlowCard>
                     <GlowCard glowColor="purple">
-                      <div className="text-3xl font-bold text-purple-400 mb-1">
+                      <div className="text-xl sm:text-3xl font-bold text-purple-400 mb-0.5 sm:mb-1">
                         <AnimatedCounter value={stats.totalOrders} />
                       </div>
-                      <div className="text-zinc-500 text-sm">Total Orders</div>
+                      <div className="text-zinc-500 text-[10px] sm:text-sm">Total Orders</div>
                     </GlowCard>
                     <GlowCard glowColor="blue">
-                      <div className="text-3xl font-bold text-blue-400 mb-1">
+                      <div className="text-xl sm:text-3xl font-bold text-blue-400 mb-0.5 sm:mb-1">
                         <AnimatedCounter value={stats.participants} />
                       </div>
-                      <div className="text-zinc-500 text-sm">Creators</div>
+                      <div className="text-zinc-500 text-[10px] sm:text-sm">Creators</div>
                     </GlowCard>
                   </div>
 
                   {/* Leaderboard */}
-                  <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl overflow-hidden">
-                    <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
-                      <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                  <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl sm:rounded-2xl overflow-hidden">
+                    <div className="p-3 sm:p-4 border-b border-zinc-800 flex items-center justify-between">
+                      <h3 className="text-base sm:text-lg font-semibold text-white flex items-center gap-2">
                         <span>🏆</span> Leaderboard
                       </h3>
-                      <span className="text-zinc-500 text-sm">Hover rows to edit/delete</span>
+                      <span className="text-zinc-500 text-[10px] sm:text-sm hidden xs:inline">Tap rows to edit</span>
                     </div>
 
-                    <div className="p-4 space-y-3">
+                    <div className="p-3 sm:p-4 space-y-2 sm:space-y-3">
                       {entries.map((entry) => (
                         <GMVLeaderboardRow
                           key={entry.id}
@@ -855,21 +856,21 @@ export default function GMVLeaderboardAdminPage() {
             </div>
           ) : (
             /* PAST MONTHS TAB */
-            <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl overflow-hidden">
-              <div className="p-4 border-b border-zinc-800">
-                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+            <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl sm:rounded-2xl overflow-hidden">
+              <div className="p-3 sm:p-4 border-b border-zinc-800">
+                <h3 className="text-base sm:text-lg font-semibold text-white flex items-center gap-2">
                   <span>📜</span> Past Months
                 </h3>
               </div>
 
               {pastMonthsData.length === 0 ? (
-                <div className="text-center py-12">
-                  <div className="text-4xl mb-2">📊</div>
-                  <p className="text-zinc-400">No past month data yet</p>
-                  <p className="text-zinc-500 text-sm">Completed months will appear here</p>
+                <div className="text-center py-10 sm:py-12">
+                  <div className="text-3xl sm:text-4xl mb-2">📊</div>
+                  <p className="text-zinc-400 text-sm sm:text-base">No past month data yet</p>
+                  <p className="text-zinc-500 text-xs sm:text-sm">Completed months will appear here</p>
                 </div>
               ) : (
-                <div className="p-4 space-y-3">
+                <div className="p-3 sm:p-4 space-y-2 sm:space-y-3">
                   {pastMonthsData.map((month) => (
                     <PastMonthCard
                       key={month.period}
@@ -884,70 +885,73 @@ export default function GMVLeaderboardAdminPage() {
           )}
         </main>
 
-        {/* ADD/EDIT MODAL */}
+        {/* ADD/EDIT MODAL - Mobile Optimized */}
         {showAddModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
             <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={closeAddModal} />
-            <div className="relative bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-md w-full animate-scale-in">
-              <div className="flex items-center gap-3 mb-6">
-                <span className="text-3xl">{editingEntry ? '✏️' : '➕'}</span>
-                <h3 className="text-xl font-bold text-white">
+            <div className="relative bg-zinc-900 border-t sm:border border-zinc-800 rounded-t-2xl sm:rounded-2xl p-4 sm:p-6 w-full sm:max-w-md sm:mx-4 animate-scale-in safe-bottom">
+              <div className="sm:hidden w-12 h-1 bg-zinc-600 rounded-full mx-auto mb-4" />
+              
+              <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+                <span className="text-2xl sm:text-3xl">{editingEntry ? '✏️' : '➕'}</span>
+                <h3 className="text-lg sm:text-xl font-bold text-white">
                   {editingEntry ? 'Edit GMV Entry' : 'Add GMV Entry'}
                 </h3>
               </div>
 
-              <form onSubmit={handleAddOrEdit} className="space-y-4">
+              <form onSubmit={handleAddOrEdit} className="space-y-3 sm:space-y-4">
                 <div>
-                  <label className="block text-zinc-400 text-sm mb-2">Creator ID or Handle</label>
+                  <label className="block text-zinc-400 text-xs sm:text-sm mb-1.5 sm:mb-2">Creator ID or Handle</label>
                   <input
                     type="text"
                     value={formCreatorId}
                     onChange={(e) => setFormCreatorId(e.target.value)}
                     placeholder="e.g., @dKjumps or CRT-2024-001"
                     disabled={!!editingEntry}
-                    className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-green-500 transition-colors disabled:opacity-50"
+                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-zinc-800 border border-zinc-700 rounded-lg sm:rounded-xl text-white text-sm placeholder-zinc-500 focus:outline-none focus:border-green-500 transition-colors disabled:opacity-50"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-zinc-400 text-sm mb-2">GMV Amount ($)</label>
-                  <input
-                    type="number"
-                    value={formGmvAmount}
-                    onChange={(e) => setFormGmvAmount(e.target.value)}
-                    placeholder="e.g., 2450"
-                    min="0"
-                    step="0.01"
-                    className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-green-500 transition-colors"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-zinc-400 text-sm mb-2">Orders (optional)</label>
-                  <input
-                    type="number"
-                    value={formOrders}
-                    onChange={(e) => setFormOrders(e.target.value)}
-                    placeholder="e.g., 23"
-                    min="0"
-                    className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-green-500 transition-colors"
-                  />
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-zinc-400 text-xs sm:text-sm mb-1.5 sm:mb-2">GMV ($)</label>
+                    <input
+                      type="number"
+                      value={formGmvAmount}
+                      onChange={(e) => setFormGmvAmount(e.target.value)}
+                      placeholder="2450"
+                      min="0"
+                      step="0.01"
+                      className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-zinc-800 border border-zinc-700 rounded-lg sm:rounded-xl text-white text-sm placeholder-zinc-500 focus:outline-none focus:border-green-500 transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-zinc-400 text-xs sm:text-sm mb-1.5 sm:mb-2">Orders</label>
+                    <input
+                      type="number"
+                      value={formOrders}
+                      onChange={(e) => setFormOrders(e.target.value)}
+                      placeholder="23"
+                      min="0"
+                      className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-zinc-800 border border-zinc-700 rounded-lg sm:rounded-xl text-white text-sm placeholder-zinc-500 focus:outline-none focus:border-green-500 transition-colors"
+                    />
+                  </div>
                 </div>
 
                 <div className="flex gap-3 pt-2">
                   <button
                     type="button"
                     onClick={closeAddModal}
-                    className="flex-1 py-3 bg-zinc-800 text-zinc-300 rounded-xl font-medium hover:bg-zinc-700 transition-colors"
+                    className="flex-1 py-2.5 sm:py-3 bg-zinc-800 text-zinc-300 rounded-lg sm:rounded-xl font-medium hover:bg-zinc-700 transition-colors text-sm active:scale-[0.98]"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={formSubmitting || !formCreatorId.trim() || !formGmvAmount}
-                    className="flex-1 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-medium hover:from-green-600 hover:to-emerald-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="flex-1 py-2.5 sm:py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg sm:rounded-xl font-medium hover:from-green-600 hover:to-emerald-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 text-sm active:scale-[0.98]"
                   >
-                    {formSubmitting ? 'Saving...' : 'Save Entry'}
+                    {formSubmitting ? 'Saving...' : 'Save'}
                   </button>
                 </div>
               </form>
@@ -955,45 +959,47 @@ export default function GMVLeaderboardAdminPage() {
           </div>
         )}
 
-        {/* BULK IMPORT MODAL */}
+        {/* BULK IMPORT MODAL - Mobile Optimized */}
         {showBulkModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
             <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => !bulkSubmitting && setShowBulkModal(false)} />
-            <div className="relative bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-lg w-full animate-scale-in">
-              <div className="flex items-center gap-3 mb-4">
-                <span className="text-3xl">📋</span>
-                <h3 className="text-xl font-bold text-white">Bulk Import</h3>
+            <div className="relative bg-zinc-900 border-t sm:border border-zinc-800 rounded-t-2xl sm:rounded-2xl p-4 sm:p-6 w-full sm:max-w-lg sm:mx-4 max-h-[90vh] overflow-y-auto animate-scale-in safe-bottom">
+              <div className="sm:hidden w-12 h-1 bg-zinc-600 rounded-full mx-auto mb-4" />
+              
+              <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+                <span className="text-2xl sm:text-3xl">📋</span>
+                <h3 className="text-lg sm:text-xl font-bold text-white">Bulk Import</h3>
               </div>
-              <p className="text-zinc-400 text-sm mb-4">
-                Paste data from Euka export. Format: one entry per line, handle and amount separated by comma or tab.
+              <p className="text-zinc-400 text-xs sm:text-sm mb-3 sm:mb-4">
+                Paste data from Euka export. Format: handle, amount per line.
               </p>
 
-              <form onSubmit={handleBulkImport} className="space-y-4">
+              <form onSubmit={handleBulkImport} className="space-y-3 sm:space-y-4">
                 <div>
-                  <label className="block text-zinc-400 text-sm mb-2">Data (handle, amount)</label>
+                  <label className="block text-zinc-400 text-xs sm:text-sm mb-1.5 sm:mb-2">Data (handle, amount)</label>
                   <textarea
                     value={bulkText}
                     onChange={(e) => setBulkText(e.target.value)}
-                    placeholder={`@creator1, 1500\n@creator2, 890\n@creator3, 450`}
-                    rows={8}
-                    className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-green-500 transition-colors font-mono text-sm resize-none"
+                    placeholder={`@creator1, 1500\n@creator2, 890`}
+                    rows={6}
+                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-zinc-800 border border-zinc-700 rounded-lg sm:rounded-xl text-white text-sm placeholder-zinc-500 focus:outline-none focus:border-green-500 transition-colors font-mono resize-none"
                   />
                 </div>
 
                 {bulkResults && (
-                  <div className={`p-3 rounded-lg ${
+                  <div className={`p-2.5 sm:p-3 rounded-lg text-sm ${
                     bulkResults.failed > 0 ? 'bg-yellow-500/20 border border-yellow-500/30' : 'bg-green-500/20 border border-green-500/30'
                   }`}>
                     <p className={bulkResults.failed > 0 ? 'text-yellow-400' : 'text-green-400'}>
                       ✓ {bulkResults.success} imported, {bulkResults.failed} failed
                     </p>
                     {bulkResults.errors.length > 0 && (
-                      <div className="mt-2 text-xs text-zinc-400 max-h-20 overflow-y-auto">
-                        {bulkResults.errors.slice(0, 5).map((err, i) => (
+                      <div className="mt-2 text-[10px] sm:text-xs text-zinc-400 max-h-16 overflow-y-auto">
+                        {bulkResults.errors.slice(0, 3).map((err, i) => (
                           <div key={i}>• {err}</div>
                         ))}
-                        {bulkResults.errors.length > 5 && (
-                          <div>...and {bulkResults.errors.length - 5} more errors</div>
+                        {bulkResults.errors.length > 3 && (
+                          <div>...and {bulkResults.errors.length - 3} more</div>
                         )}
                       </div>
                     )}
@@ -1005,14 +1011,14 @@ export default function GMVLeaderboardAdminPage() {
                     type="button"
                     onClick={() => setShowBulkModal(false)}
                     disabled={bulkSubmitting}
-                    className="flex-1 py-3 bg-zinc-800 text-zinc-300 rounded-xl font-medium hover:bg-zinc-700 transition-colors disabled:opacity-50"
+                    className="flex-1 py-2.5 sm:py-3 bg-zinc-800 text-zinc-300 rounded-lg sm:rounded-xl font-medium hover:bg-zinc-700 transition-colors disabled:opacity-50 text-sm active:scale-[0.98]"
                   >
                     Close
                   </button>
                   <button
                     type="submit"
                     disabled={bulkSubmitting || !bulkText.trim()}
-                    className="flex-1 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-medium hover:from-green-600 hover:to-emerald-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="flex-1 py-2.5 sm:py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg sm:rounded-xl font-medium hover:from-green-600 hover:to-emerald-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 text-sm active:scale-[0.98]"
                   >
                     {bulkSubmitting ? 'Importing...' : 'Import'}
                   </button>
@@ -1031,7 +1037,7 @@ export default function GMVLeaderboardAdminPage() {
           }}
           onConfirm={handleDelete}
           title="Delete Entry?"
-          message={`Are you sure you want to delete ${deletingEntry?.creatorName}'s GMV entry? This action cannot be undone.`}
+          message={`Delete ${deletingEntry?.creatorName}'s GMV entry?`}
           confirmLabel="Delete"
           confirmColor="red"
           isProcessing={isDeleting}
@@ -1044,8 +1050,8 @@ export default function GMVLeaderboardAdminPage() {
           onClose={() => setShowFinalizeModal(false)}
           onConfirm={handleFinalize}
           title="Finalize Month?"
-          message="This will lock the current standings and create reward records for the top 3 creators. Make sure all GMV data is accurate before finalizing."
-          confirmLabel="Finalize & Reward Winners"
+          message="This will lock standings and create rewards for top 3."
+          confirmLabel="Finalize"
           confirmColor="green"
           isProcessing={isFinalizing}
           icon="🏁"
@@ -1068,6 +1074,9 @@ export default function GMVLeaderboardAdminPage() {
           }
           .animate-shimmer {
             animation: shimmer 3s infinite;
+          }
+          .safe-bottom {
+            padding-bottom: max(1rem, env(safe-area-inset-bottom));
           }
         `}</style>
       </div>

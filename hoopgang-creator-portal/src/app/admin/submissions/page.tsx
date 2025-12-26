@@ -1,4 +1,6 @@
 // src/app/admin/submissions/page.tsx
+// Mobile-Responsive Version
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -122,38 +124,40 @@ function formatFileSize(bytes?: number): string {
 }
 
 // ============================================
-// Badge Components
+// Badge Components - Mobile Optimized
 // ============================================
-function TypeBadge({ type }: { type: V3SubmissionType }) {
+function TypeBadge({ type, size = 'default' }: { type: V3SubmissionType; size?: 'sm' | 'default' }) {
   const config = {
     volume: { bg: 'bg-blue-500/20', text: 'text-blue-400', border: 'border-blue-500/30', label: 'Volume' },
     milestone: { bg: 'bg-purple-500/20', text: 'text-purple-400', border: 'border-purple-500/30', label: 'Milestone' },
   };
   const style = config[type] || config.volume;
+  const sizeClass = size === 'sm' ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-1 text-xs';
 
   return (
-    <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${style.bg} ${style.text} ${style.border}`}>
+    <span className={`${sizeClass} rounded-full font-medium border ${style.bg} ${style.text} ${style.border}`}>
       {style.label}
     </span>
   );
 }
 
-function SubmissionStatusBadge({ status }: { status: V3SubmissionStatus }) {
+function SubmissionStatusBadge({ status, size = 'default' }: { status: V3SubmissionStatus; size?: 'sm' | 'default' }) {
   const config = {
     pending: { bg: 'bg-yellow-500/20', text: 'text-yellow-400', border: 'border-yellow-500/30', label: 'Pending' },
     approved: { bg: 'bg-green-500/20', text: 'text-green-400', border: 'border-green-500/30', label: 'Approved' },
     rejected: { bg: 'bg-red-500/20', text: 'text-red-400', border: 'border-red-500/30', label: 'Rejected' },
   };
   const style = config[status] || config.pending;
+  const sizeClass = size === 'sm' ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-1 text-xs';
 
   return (
-    <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${style.bg} ${style.text} ${style.border}`}>
+    <span className={`${sizeClass} rounded-full font-medium border ${style.bg} ${style.text} ${style.border}`}>
       {style.label}
     </span>
   );
 }
 
-function FormatBadge({ format }: { format: V3SubmissionFormat | undefined }) {
+function FormatBadge({ format, size = 'default' }: { format: V3SubmissionFormat | undefined; size?: 'sm' | 'default' }) {
   const actualFormat = format || 'url';
   const config = {
     url: { bg: 'bg-cyan-500/20', text: 'text-cyan-400', border: 'border-cyan-500/30', label: 'URL', Icon: LinkIcon },
@@ -161,17 +165,18 @@ function FormatBadge({ format }: { format: V3SubmissionFormat | undefined }) {
   };
   const style = config[actualFormat] || config.url;
   const Icon = style.Icon;
+  const sizeClass = size === 'sm' ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-1 text-xs';
 
   return (
-    <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${style.bg} ${style.text} ${style.border} inline-flex items-center gap-1`}>
-      <Icon className="w-3 h-3" />
+    <span className={`${sizeClass} rounded-full font-medium border ${style.bg} ${style.text} ${style.border} inline-flex items-center gap-1`}>
+      <Icon className={size === 'sm' ? 'w-2.5 h-2.5' : 'w-3 h-3'} />
       {style.label}
     </span>
   );
 }
 
-function TierBadge({ tier }: { tier: string | null | undefined }) {
-  if (!tier) return <span className="text-zinc-600">—</span>;
+function TierBadge({ tier, size = 'default' }: { tier: string | null | undefined; size?: 'sm' | 'default' }) {
+  if (!tier) return <span className="text-zinc-600 text-xs">—</span>;
 
   const config: Record<string, { bg: string; text: string; border: string; label: string }> = {
     '100k': { bg: 'bg-amber-500/20', text: 'text-amber-400', border: 'border-amber-500/30', label: '100K' },
@@ -179,16 +184,17 @@ function TierBadge({ tier }: { tier: string | null | undefined }) {
     '1m': { bg: 'bg-red-500/20', text: 'text-red-400', border: 'border-red-500/30', label: '1M+' },
   };
   const style = config[tier.toLowerCase()] || config['100k'];
+  const sizeClass = size === 'sm' ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-1 text-xs';
 
   return (
-    <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${style.bg} ${style.text} ${style.border}`}>
+    <span className={`${sizeClass} rounded-full font-medium border ${style.bg} ${style.text} ${style.border}`}>
       {style.label}
     </span>
   );
 }
 
 // ============================================
-// Download Progress Modal Component
+// Download Progress Modal Component - Mobile Optimized
 // ============================================
 interface DownloadProgressModalProps {
   isOpen: boolean;
@@ -210,20 +216,20 @@ function DownloadProgressModal({
   const progress = totalFiles > 0 ? (currentFile / totalFiles) * 100 : 0;
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-6 w-full max-w-md mx-4 animate-fade-in-up">
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-zinc-900 border border-zinc-700 rounded-xl sm:rounded-2xl p-4 sm:p-6 w-full max-w-md animate-fade-in-up">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-white">Creating ZIP File</h3>
+          <h3 className="text-base sm:text-lg font-semibold text-white">Creating ZIP File</h3>
           <button 
             onClick={onCancel}
-            className="text-zinc-400 hover:text-white transition-colors"
+            className="text-zinc-400 hover:text-white transition-colors p-1"
           >
             <XMarkIcon className="w-5 h-5" />
           </button>
         </div>
 
         <div className="mb-4">
-          <div className="flex items-center justify-between text-sm mb-2">
+          <div className="flex items-center justify-between text-xs sm:text-sm mb-2">
             <span className="text-zinc-400">Downloading files...</span>
             <span className="text-white font-medium">{currentFile} / {totalFiles}</span>
           </div>
@@ -235,7 +241,7 @@ function DownloadProgressModal({
           </div>
         </div>
 
-        <div className="text-sm text-zinc-500 truncate">
+        <div className="text-xs sm:text-sm text-zinc-500 truncate">
           {currentFileName ? `📁 ${currentFileName}` : 'Preparing...'}
         </div>
       </div>
@@ -244,7 +250,7 @@ function DownloadProgressModal({
 }
 
 // ============================================
-// Video Preview Modal Component
+// Video Preview Modal Component - Mobile Optimized
 // ============================================
 interface VideoPreviewModalProps {
   isOpen: boolean;
@@ -269,25 +275,28 @@ function VideoPreviewModal({
   const isPending = submission.status === 'pending';
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-zinc-900 border border-zinc-700 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden animate-fade-in-up flex flex-col">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center z-50">
+      <div className="bg-zinc-900 border-t sm:border border-zinc-700 rounded-t-2xl sm:rounded-2xl w-full sm:max-w-4xl sm:mx-4 max-h-[95vh] sm:max-h-[90vh] overflow-hidden animate-fade-in-up flex flex-col">
+        {/* Mobile Drag Indicator */}
+        <div className="sm:hidden w-12 h-1 bg-zinc-600 rounded-full mx-auto mt-2 mb-1" />
+        
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-zinc-800">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center text-white font-bold">
+        <div className="flex items-center justify-between p-3 sm:p-4 border-b border-zinc-800">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
               {submission.creatorName.charAt(0).toUpperCase()}
             </div>
-            <div>
-              <div className="text-white font-medium">{submission.creatorName}</div>
-              <div className="text-zinc-500 text-sm">@{submission.creatorHandle}</div>
+            <div className="min-w-0">
+              <div className="text-white font-medium text-sm sm:text-base truncate">{submission.creatorName}</div>
+              <div className="text-zinc-500 text-xs sm:text-sm">@{submission.creatorHandle}</div>
             </div>
           </div>
           
-          <div className="flex items-center gap-3">
-            <SubmissionStatusBadge status={submission.status} />
+          <div className="flex items-center gap-2 sm:gap-3">
+            <SubmissionStatusBadge status={submission.status} size="sm" />
             <button 
               onClick={onClose}
-              className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"
+              className="p-1.5 sm:p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"
             >
               <XMarkIcon className="w-5 h-5" />
             </button>
@@ -295,63 +304,63 @@ function VideoPreviewModal({
         </div>
 
         {/* Video Player */}
-        <div className="flex-1 bg-black flex items-center justify-center min-h-[300px] max-h-[60vh]">
+        <div className="flex-1 bg-black flex items-center justify-center min-h-[200px] sm:min-h-[300px] max-h-[50vh] sm:max-h-[60vh]">
           {submission.fileUrl ? (
             <video 
               src={submission.fileUrl}
               controls
               autoPlay
+              playsInline
               className="max-w-full max-h-full"
-              style={{ maxHeight: '60vh' }}
             >
               Your browser does not support the video tag.
             </video>
           ) : (
             <div className="text-zinc-500 flex flex-col items-center gap-2">
-              <VideoIcon className="w-12 h-12" />
-              <span>Video not available</span>
+              <VideoIcon className="w-10 h-10 sm:w-12 sm:h-12" />
+              <span className="text-sm">Video not available</span>
             </div>
           )}
         </div>
 
         {/* Footer with Info & Actions */}
-        <div className="p-4 border-t border-zinc-800 bg-zinc-900/50">
+        <div className="p-3 sm:p-4 border-t border-zinc-800 bg-zinc-900/50 safe-bottom">
           {/* File Info Row */}
-          <div className="flex flex-wrap items-center gap-4 mb-4 text-sm">
-            <div className="flex items-center gap-2 text-zinc-400">
-              <VideoIcon className="w-4 h-4" />
-              <span className="text-zinc-300">{submission.fileName || 'Untitled Video'}</span>
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4 mb-3 sm:mb-4 text-xs sm:text-sm">
+            <div className="flex items-center gap-1.5 text-zinc-400">
+              <VideoIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="text-zinc-300 truncate max-w-[120px] sm:max-w-none">{submission.fileName || 'Untitled'}</span>
             </div>
-            <div className="text-zinc-500">
+            <div className="text-zinc-500 hidden xs:block">
               {formatFileSize(submission.fileSize)}
             </div>
             <div className="text-zinc-500">
-              {date} at {time}
+              {date}
             </div>
-            <FormatBadge format={submission.submissionFormat} />
-            <TypeBadge type={submission.type} />
+            <FormatBadge format={submission.submissionFormat} size="sm" />
+            <TypeBadge type={submission.type} size="sm" />
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
             <button
               onClick={() => {
                 if (submission.fileUrl) {
                   window.open(submission.fileUrl, '_blank');
                 }
               }}
-              className="px-4 py-2 bg-zinc-800 text-zinc-300 rounded-xl text-sm font-medium hover:bg-zinc-700 transition-colors flex items-center gap-2"
+              className="px-4 py-2 bg-zinc-800 text-zinc-300 rounded-lg sm:rounded-xl text-sm font-medium hover:bg-zinc-700 transition-colors flex items-center justify-center gap-2 order-2 sm:order-1"
             >
               <DownloadIcon className="w-4 h-4" />
               Download
             </button>
 
             {isPending ? (
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3 order-1 sm:order-2">
                 <button
                   onClick={() => onReject(submission)}
                   disabled={isProcessing}
-                  className="px-6 py-2.5 bg-red-500/20 text-red-400 rounded-xl text-sm font-medium hover:bg-red-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="flex-1 sm:flex-none px-4 sm:px-6 py-2 sm:py-2.5 bg-red-500/20 text-red-400 rounded-lg sm:rounded-xl text-sm font-medium hover:bg-red-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 active:scale-[0.98]"
                 >
                   {isProcessing ? (
                     <div className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
@@ -363,7 +372,7 @@ function VideoPreviewModal({
                 <button
                   onClick={() => onApprove(submission)}
                   disabled={isProcessing}
-                  className="px-6 py-2.5 bg-green-500 text-white rounded-xl text-sm font-medium hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="flex-1 sm:flex-none px-4 sm:px-6 py-2 sm:py-2.5 bg-green-500 text-white rounded-lg sm:rounded-xl text-sm font-medium hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 active:scale-[0.98]"
                 >
                   {isProcessing ? (
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -374,7 +383,7 @@ function VideoPreviewModal({
                 </button>
               </div>
             ) : (
-              <div className="text-zinc-500 text-sm">
+              <div className="text-zinc-500 text-sm text-center sm:text-right order-1 sm:order-2">
                 {submission.status === 'approved' ? '✅ Already approved' : '🚫 Already rejected'}
               </div>
             )}
@@ -386,7 +395,118 @@ function VideoPreviewModal({
 }
 
 // ============================================
-// Submission Row Component
+// Submission Card Component (Mobile View)
+// ============================================
+interface SubmissionCardProps {
+  submission: EnrichedSubmission;
+  isSelected: boolean;
+  onSelect: (id: string, checked: boolean) => void;
+  onReview: (submission: EnrichedSubmission) => void;
+  onDownload: (submission: EnrichedSubmission) => void;
+}
+
+function SubmissionCard({ submission, isSelected, onSelect, onReview, onDownload }: SubmissionCardProps) {
+  const needsReview = submission.status === 'pending' && submission.type === 'milestone';
+  const isFile = submission.submissionFormat === 'file';
+  const { date, time } = formatRelativeDate(submission.submittedAt);
+
+  return (
+    <div 
+      className={`p-3 bg-zinc-900/50 border rounded-xl transition-all ${
+        isSelected ? 'border-orange-500/50 bg-orange-500/10' : 
+        needsReview ? 'border-yellow-500/30 bg-yellow-500/5' : 
+        'border-zinc-800 hover:border-zinc-700'
+      }`}
+    >
+      {/* Header Row */}
+      <div className="flex items-start justify-between gap-2 mb-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={(e) => onSelect(submission.id, e.target.checked)}
+            className="w-4 h-4 rounded border-zinc-600 bg-zinc-800 text-orange-500 focus:ring-orange-500 focus:ring-offset-0 cursor-pointer flex-shrink-0"
+          />
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
+            {submission.creatorName.charAt(0).toUpperCase()}
+          </div>
+          <div className="min-w-0">
+            <div className="text-white font-medium text-sm truncate">{submission.creatorName}</div>
+            <div className="text-zinc-500 text-xs truncate">@{submission.creatorHandle}</div>
+          </div>
+        </div>
+        <SubmissionStatusBadge status={submission.status} size="sm" />
+      </div>
+
+      {/* Content Preview */}
+      <div className="mb-3">
+        {isFile ? (
+          <div 
+            className="flex items-center gap-2 p-2 bg-zinc-800/50 rounded-lg cursor-pointer"
+            onClick={() => onDownload(submission)}
+          >
+            <div className="w-10 h-10 bg-zinc-700 rounded-lg flex items-center justify-center relative group">
+              <VideoIcon className="w-4 h-4 text-zinc-400" />
+              <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <PlayIcon className="w-4 h-4 text-white" />
+              </div>
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-white text-xs truncate">{submission.fileName || 'Untitled Video'}</div>
+              <div className="text-zinc-500 text-[10px]">{formatFileSize(submission.fileSize)}</div>
+            </div>
+          </div>
+        ) : (
+          <a
+            href={submission.tiktokUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-orange-400 hover:text-orange-300 text-xs break-all line-clamp-2"
+          >
+            {submission.tiktokUrl}
+          </a>
+        )}
+      </div>
+
+      {/* Badges Row */}
+      <div className="flex flex-wrap items-center gap-1.5 mb-3">
+        <FormatBadge format={submission.submissionFormat} size="sm" />
+        <TypeBadge type={submission.type} size="sm" />
+        {submission.claimedTier && <TierBadge tier={submission.claimedTier} size="sm" />}
+      </div>
+
+      {/* Footer Row */}
+      <div className="flex items-center justify-between pt-2 border-t border-zinc-800">
+        <div className="text-zinc-500 text-[10px]">
+          {date} • {time}
+        </div>
+        <div className="flex items-center gap-2">
+          {isFile && submission.fileUrl && (
+            <button
+              onClick={() => onDownload(submission)}
+              className="p-1.5 text-zinc-400 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors"
+            >
+              <DownloadIcon className="w-4 h-4" />
+            </button>
+          )}
+          <button
+            onClick={() => onReview(submission)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors active:scale-[0.98] ${
+              needsReview 
+                ? 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30'
+                : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-300'
+            }`}
+          >
+            {needsReview ? 'Review' : 'View'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================
+// Submission Row Component (Desktop View)
 // ============================================
 interface SubmissionRowProps {
   submission: EnrichedSubmission;
@@ -548,7 +668,7 @@ function SubmissionRow({ submission, isSelected, onSelect, onReview, onDownload 
 }
 
 // ============================================
-// Bulk Action Bar Component
+// Bulk Action Bar Component - Mobile Optimized
 // ============================================
 interface BulkActionBarProps {
   selectedCount: number;
@@ -572,50 +692,95 @@ function BulkActionBar({
   if (selectedCount === 0) return null;
 
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-zinc-900 border border-zinc-700 rounded-2xl px-6 py-4 shadow-2xl flex items-center gap-4 z-50 animate-fade-in-up">
-      <div className="flex flex-col">
-        <span className="text-white font-medium">{selectedCount} selected</span>
-        {selectedFileCount > 0 && (
-          <span className="text-zinc-500 text-xs">
-            {selectedFileCount} file{selectedFileCount !== 1 ? 's' : ''} • {formatFileSize(totalFileSize)}
-          </span>
-        )}
-      </div>
-      
-      <div className="w-px h-8 bg-zinc-700" />
-      
-      <div className="flex items-center gap-2">
-        {/* Download ZIP button - only show if files selected */}
-        {selectedFileCount > 0 && (
+    <div className="fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] sm:w-auto bg-zinc-900 border border-zinc-700 rounded-xl sm:rounded-2xl px-4 sm:px-6 py-3 sm:py-4 shadow-2xl z-50 animate-fade-in-up">
+      {/* Mobile Layout */}
+      <div className="sm:hidden">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <span className="text-white font-medium text-sm">{selectedCount} selected</span>
+            {selectedFileCount > 0 && (
+              <span className="text-zinc-500 text-xs block">
+                {selectedFileCount} file{selectedFileCount !== 1 ? 's' : ''}
+              </span>
+            )}
+          </div>
           <button
-            onClick={onDownloadZip}
-            className="px-4 py-2 bg-emerald-500/20 text-emerald-400 rounded-xl text-sm font-medium hover:bg-emerald-500/30 transition-colors flex items-center gap-2"
+            onClick={onClear}
+            className="text-zinc-400 hover:text-white text-xs"
           >
-            <DownloadIcon className="w-4 h-4" />
-            Download ZIP
+            Clear
           </button>
-        )}
+        </div>
+        <div className="flex items-center gap-2">
+          {selectedFileCount > 0 && (
+            <button
+              onClick={onDownloadZip}
+              className="flex-1 py-2 bg-emerald-500/20 text-emerald-400 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 active:scale-[0.98]"
+            >
+              <DownloadIcon className="w-3.5 h-3.5" />
+              ZIP
+            </button>
+          )}
+          <button
+            onClick={onApprove}
+            className="flex-1 py-2 bg-green-500/20 text-green-400 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 active:scale-[0.98]"
+          >
+            ✓ Approve
+          </button>
+          <button
+            onClick={onReject}
+            className="flex-1 py-2 bg-red-500/20 text-red-400 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 active:scale-[0.98]"
+          >
+            ✕ Reject
+          </button>
+        </div>
+      </div>
+
+      {/* Desktop Layout */}
+      <div className="hidden sm:flex items-center gap-4">
+        <div className="flex flex-col">
+          <span className="text-white font-medium">{selectedCount} selected</span>
+          {selectedFileCount > 0 && (
+            <span className="text-zinc-500 text-xs">
+              {selectedFileCount} file{selectedFileCount !== 1 ? 's' : ''} • {formatFileSize(totalFileSize)}
+            </span>
+          )}
+        </div>
+        
+        <div className="w-px h-8 bg-zinc-700" />
+        
+        <div className="flex items-center gap-2">
+          {selectedFileCount > 0 && (
+            <button
+              onClick={onDownloadZip}
+              className="px-4 py-2 bg-emerald-500/20 text-emerald-400 rounded-xl text-sm font-medium hover:bg-emerald-500/30 transition-colors flex items-center gap-2"
+            >
+              <DownloadIcon className="w-4 h-4" />
+              Download ZIP
+            </button>
+          )}
+          
+          <button
+            onClick={onApprove}
+            className="px-4 py-2 bg-green-500/20 text-green-400 rounded-xl text-sm font-medium hover:bg-green-500/30 transition-colors flex items-center gap-2"
+          >
+            <span>✓</span> Approve All
+          </button>
+          <button
+            onClick={onReject}
+            className="px-4 py-2 bg-red-500/20 text-red-400 rounded-xl text-sm font-medium hover:bg-red-500/30 transition-colors flex items-center gap-2"
+          >
+            <span>✕</span> Reject All
+          </button>
+        </div>
         
         <button
-          onClick={onApprove}
-          className="px-4 py-2 bg-green-500/20 text-green-400 rounded-xl text-sm font-medium hover:bg-green-500/30 transition-colors flex items-center gap-2"
+          onClick={onClear}
+          className="px-4 py-2 text-zinc-400 hover:text-white transition-colors text-sm"
         >
-          <span>✓</span> Approve All
-        </button>
-        <button
-          onClick={onReject}
-          className="px-4 py-2 bg-red-500/20 text-red-400 rounded-xl text-sm font-medium hover:bg-red-500/30 transition-colors flex items-center gap-2"
-        >
-          <span>✕</span> Reject All
+          Clear
         </button>
       </div>
-      
-      <button
-        onClick={onClear}
-        className="px-4 py-2 text-zinc-400 hover:text-white transition-colors text-sm"
-      >
-        Clear
-      </button>
     </div>
   );
 }
@@ -1171,7 +1336,7 @@ export default function AdminSubmissionsPage() {
         <div className="min-h-screen bg-zinc-950">
           <Navbar />
           <div className="flex items-center justify-center h-[80vh]">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500" />
+            <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-t-2 border-b-2 border-orange-500" />
           </div>
         </div>
       </ProtectedRoute>
@@ -1183,13 +1348,13 @@ export default function AdminSubmissionsPage() {
       <div className="min-h-screen bg-zinc-950 relative overflow-hidden">
         {/* Background Gradient Orbs */}
         <div className="fixed inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute -top-40 -right-40 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl" />
-          <div className="absolute top-1/2 -left-40 w-80 h-80 bg-purple-500/5 rounded-full blur-3xl" />
+          <div className="absolute -top-40 -right-40 w-64 sm:w-96 h-64 sm:h-96 bg-blue-500/5 rounded-full blur-3xl" />
+          <div className="absolute top-1/2 -left-40 w-56 sm:w-80 h-56 sm:h-80 bg-purple-500/5 rounded-full blur-3xl" />
         </div>
 
         <Navbar />
 
-        <main className="relative max-w-7xl mx-auto px-4 sm:px-6 py-8 pt-24">
+        <main className="relative max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 pt-20 sm:pt-24">
           {/* Header */}
           <PageHeader 
             title="Content Submissions"
@@ -1199,60 +1364,60 @@ export default function AdminSubmissionsPage() {
             align="left"
           />
 
-          {/* Stats Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-8">
+          {/* Stats Cards - 2 cols mobile, 3 cols tablet, 6 cols desktop */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-4 mb-6 sm:mb-8">
             <GlowCard glowColor="blue">
-              <div className="text-3xl font-bold text-white mb-1">
+              <div className="text-2xl sm:text-3xl font-bold text-white mb-0.5 sm:mb-1">
                 <AnimatedCounter value={stats.total} />
               </div>
-              <div className="text-zinc-500 text-sm">Total</div>
+              <div className="text-zinc-500 text-xs sm:text-sm">Total</div>
             </GlowCard>
 
             <GlowCard glowColor="yellow" urgent={stats.pending > 0}>
-              <div className="text-3xl font-bold text-yellow-400 mb-1">
+              <div className="text-2xl sm:text-3xl font-bold text-yellow-400 mb-0.5 sm:mb-1">
                 <AnimatedCounter value={stats.pending} />
               </div>
-              <div className="text-yellow-400/70 text-sm">Pending</div>
+              <div className="text-yellow-400/70 text-xs sm:text-sm">Pending</div>
             </GlowCard>
 
             <GlowCard glowColor="blue">
-              <div className="text-3xl font-bold text-blue-400 mb-1">
+              <div className="text-2xl sm:text-3xl font-bold text-blue-400 mb-0.5 sm:mb-1">
                 <AnimatedCounter value={stats.volume} />
               </div>
-              <div className="text-zinc-500 text-sm">Volume</div>
+              <div className="text-zinc-500 text-xs sm:text-sm">Volume</div>
             </GlowCard>
 
             <GlowCard glowColor="purple">
-              <div className="text-3xl font-bold text-purple-400 mb-1">
+              <div className="text-2xl sm:text-3xl font-bold text-purple-400 mb-0.5 sm:mb-1">
                 <AnimatedCounter value={stats.milestones} />
               </div>
-              <div className="text-zinc-500 text-sm">Milestones</div>
+              <div className="text-zinc-500 text-xs sm:text-sm">Milestones</div>
             </GlowCard>
 
             <GlowCard glowColor="green">
-              <div className="text-3xl font-bold text-emerald-400 mb-1">
+              <div className="text-2xl sm:text-3xl font-bold text-emerald-400 mb-0.5 sm:mb-1">
                 <AnimatedCounter value={stats.files} />
               </div>
-              <div className="text-zinc-500 text-sm">Video Files</div>
+              <div className="text-zinc-500 text-xs sm:text-sm">Files</div>
             </GlowCard>
 
             <GlowCard glowColor="orange">
-              <div className="text-3xl font-bold text-cyan-400 mb-1">
+              <div className="text-2xl sm:text-3xl font-bold text-cyan-400 mb-0.5 sm:mb-1">
                 <AnimatedCounter value={stats.urls} />
               </div>
-              <div className="text-zinc-500 text-sm">TikTok URLs</div>
+              <div className="text-zinc-500 text-xs sm:text-sm">URLs</div>
             </GlowCard>
           </div>
 
           {/* Table Section */}
-          <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl overflow-hidden">
+          <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl sm:rounded-2xl overflow-hidden">
             {/* Table Header */}
-            <div className="p-6 border-b border-zinc-800">
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div className="p-4 sm:p-6 border-b border-zinc-800">
+              <div className="flex flex-col gap-4">
                 {/* Search */}
-                <div className="relative flex-1 max-w-md">
+                <div className="relative">
                   <div className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </div>
@@ -1260,26 +1425,26 @@ export default function AdminSubmissionsPage() {
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search by name, handle, URL, or filename..."
-                    className="w-full bg-zinc-800/50 border border-zinc-700 rounded-xl pl-10 pr-4 py-2.5 text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all"
+                    placeholder="Search by name, handle, URL..."
+                    className="w-full bg-zinc-800/50 border border-zinc-700 rounded-lg sm:rounded-xl pl-9 sm:pl-10 pr-4 py-2 sm:py-2.5 text-white text-sm placeholder-zinc-500 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all"
                   />
                 </div>
 
-                {/* Dropdowns */}
-                <div className="flex flex-wrap gap-2">
+                {/* Dropdowns - 2 cols on mobile, row on desktop */}
+                <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
                   <select
                     value={formatFilter}
                     onChange={(e) => setFormatFilter(e.target.value as V3SubmissionFormat | '')}
-                    className="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-zinc-300 focus:outline-none focus:border-orange-500"
+                    className="bg-zinc-800 border border-zinc-700 rounded-lg sm:rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-zinc-300 text-sm focus:outline-none focus:border-orange-500"
                   >
                     <option value="">All Formats</option>
-                    <option value="url">TikTok URLs</option>
-                    <option value="file">Video Files</option>
+                    <option value="url">URLs</option>
+                    <option value="file">Files</option>
                   </select>
                   <select
                     value={typeFilter}
                     onChange={(e) => setTypeFilter(e.target.value as V3SubmissionType | '')}
-                    className="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-zinc-300 focus:outline-none focus:border-orange-500"
+                    className="bg-zinc-800 border border-zinc-700 rounded-lg sm:rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-zinc-300 text-sm focus:outline-none focus:border-orange-500"
                   >
                     <option value="">All Types</option>
                     <option value="volume">Volume</option>
@@ -1288,9 +1453,9 @@ export default function AdminSubmissionsPage() {
                   <select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value as V3SubmissionStatus | '')}
-                    className="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-zinc-300 focus:outline-none focus:border-orange-500"
+                    className="bg-zinc-800 border border-zinc-700 rounded-lg sm:rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-zinc-300 text-sm focus:outline-none focus:border-orange-500"
                   >
-                    <option value="">All Statuses</option>
+                    <option value="">All Status</option>
                     <option value="pending">Pending</option>
                     <option value="approved">Approved</option>
                     <option value="rejected">Rejected</option>
@@ -1298,20 +1463,20 @@ export default function AdminSubmissionsPage() {
                   <select
                     value={weekFilter}
                     onChange={(e) => setWeekFilter(e.target.value)}
-                    className="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-zinc-300 focus:outline-none focus:border-orange-500"
+                    className="bg-zinc-800 border border-zinc-700 rounded-lg sm:rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-zinc-300 text-sm focus:outline-none focus:border-orange-500"
                   >
                     <option value="">All Weeks</option>
                     {weekOptions.map((week) => (
                       <option key={week} value={week}>
-                        {week} {week === getCurrentWeek() ? '(Current)' : ''}
+                        {week} {week === getCurrentWeek() ? '(Now)' : ''}
                       </option>
                     ))}
                   </select>
                 </div>
               </div>
 
-              {/* Filter Pills */}
-              <div className="flex flex-wrap gap-2 mt-4">
+              {/* Filter Pills - Horizontal scroll on mobile */}
+              <div className="flex gap-2 mt-4 overflow-x-auto pb-1 scrollbar-hide -mx-1 px-1">
                 <FilterPill
                   label="All"
                   active={!formatFilter && !typeFilter && !statusFilter}
@@ -1355,8 +1520,8 @@ export default function AdminSubmissionsPage() {
               </div>
             </div>
 
-            {/* Table */}
-            <div className="overflow-x-auto">
+            {/* Desktop Table - Hidden on mobile */}
+            <div className="hidden md:block overflow-x-auto">
               {loading ? (
                 <div className="flex items-center justify-center py-12">
                   <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-orange-500" />
@@ -1423,12 +1588,72 @@ export default function AdminSubmissionsPage() {
               )}
             </div>
 
+            {/* Mobile Card View - Hidden on desktop */}
+            <div className="md:hidden p-4 space-y-3">
+              {/* Select All for Mobile */}
+              {filteredSubmissions.length > 0 && (
+                <div className="flex items-center justify-between px-1 mb-2">
+                  <label className="flex items-center gap-2 text-zinc-400 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={allSelected}
+                      onChange={(e) => handleSelectAll(e.target.checked)}
+                      className="w-4 h-4 rounded border-zinc-600 bg-zinc-800 text-orange-500 focus:ring-orange-500 focus:ring-offset-0 cursor-pointer"
+                    />
+                    Select All
+                  </label>
+                  <span className="text-zinc-500 text-xs">{filteredSubmissions.length} items</span>
+                </div>
+              )}
+              
+              {loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-orange-500" />
+                </div>
+              ) : error ? (
+                <div className="text-center py-12">
+                  <p className="text-red-400 text-sm">{error}</p>
+                  <button
+                    onClick={loadSubmissions}
+                    className="mt-4 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors text-sm"
+                  >
+                    Retry
+                  </button>
+                </div>
+              ) : filteredSubmissions.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="text-3xl mb-3">📭</div>
+                  <div className="text-zinc-400 text-sm">No submissions found</div>
+                  <div className="text-zinc-500 text-xs mt-1">Try adjusting your filters</div>
+                </div>
+              ) : (
+                filteredSubmissions.map((submission) => (
+                  <SubmissionCard
+                    key={submission.id}
+                    submission={submission}
+                    isSelected={selectedIds.has(submission.id)}
+                    onSelect={handleSelect}
+                    onReview={(sub) => {
+                      if (sub.type === 'milestone' && sub.status === 'pending') {
+                        handleMilestoneReviewClick(sub);
+                      } else if (sub.submissionFormat === 'file') {
+                        handleOpenPreview(sub);
+                      } else {
+                        handleReviewClick(sub);
+                      }
+                    }}
+                    onDownload={handleDownloadFile}
+                  />
+                ))
+              )}
+            </div>
+
             {/* Table Footer */}
-            <div className="px-6 py-4 border-t border-zinc-800 bg-zinc-900/30 flex items-center justify-between">
-              <span className="text-zinc-500 text-sm">
-                Showing {filteredSubmissions.length} of {allSubmissions.length} submissions
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-zinc-800 bg-zinc-900/30 flex flex-col sm:flex-row items-center justify-between gap-2">
+              <span className="text-zinc-500 text-xs sm:text-sm">
+                {filteredSubmissions.length} of {allSubmissions.length} submissions
               </span>
-              <span className="text-zinc-400 text-sm">Page 1 of 1</span>
+              <span className="text-zinc-400 text-xs sm:text-sm">Page 1 of 1</span>
             </div>
           </div>
         </main>
