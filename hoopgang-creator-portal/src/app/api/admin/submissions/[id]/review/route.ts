@@ -83,7 +83,9 @@ export async function PUT(
               : reward.storeCreditValue 
                 ? 'store_credit' 
                 : 'product',
-          cashAmount: reward.cashValue,
+          cashValue: reward.cashValue,
+          storeCreditValue: reward.storeCreditValue,
+          productName: reward.productName,
         });
       }
 

@@ -44,3 +44,6 @@ export { AdminSidebar } from './AdminSidebar';
 
 // Page Header component
 export { PageHeader } from './PageHeader';
+
+// Milestone Review Modal
+export { MilestoneReviewModal } from './MilestoneReviewModal';

@@ -11,7 +11,8 @@ import {
   FilterPill,
   ConfirmModal,
   SuccessAnimation,
-  PageHeader
+  PageHeader,
+  MilestoneReviewModal,
 } from '@/components/ui';
 import { ProtectedRoute } from '@/components/auth';
 import { auth } from '@/lib/firebase';
@@ -665,6 +666,10 @@ export default function AdminSubmissionsPage() {
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [isPreviewProcessing, setIsPreviewProcessing] = useState(false);
 
+  // Milestone review modal state
+  const [milestoneReviewSubmission, setMilestoneReviewSubmission] = useState<EnrichedSubmission | null>(null);
+  const [isMilestoneReviewOpen, setIsMilestoneReviewOpen] = useState(false);
+
   const weekOptions = getPreviousWeeks(8);
 
   // ============================================
@@ -1013,7 +1018,12 @@ export default function AdminSubmissionsPage() {
   };
 
   const handleReviewClick = (submission: EnrichedSubmission) => {
-    router.push(`/admin/submissions/${submission.id}`);
+    // Milestones open in modal, others navigate to detail page
+    if (submission.type === 'milestone' && submission.status === 'pending') {
+      handleMilestoneReviewClick(submission);
+    } else {
+      router.push(`/admin/submissions/${submission.id}`);
+    }
   };
 
   // ============================================
@@ -1088,6 +1098,68 @@ export default function AdminSubmissionsPage() {
     } finally {
       setIsPreviewProcessing(false);
     }
+  };
+
+  // ============================================
+  // Milestone Review Modal Handlers
+  // ============================================
+  const handleMilestoneReviewClick = (submission: EnrichedSubmission) => {
+    setMilestoneReviewSubmission(submission);
+    setIsMilestoneReviewOpen(true);
+  };
+
+  const handleMilestoneApprove = async (submissionId: string, verifiedViews: number) => {
+    const token = await getAuthToken();
+    if (!token) throw new Error('Not authenticated');
+
+    const response = await fetch(`/api/admin/submissions/${submissionId}/review`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        decision: 'approved',
+        verifiedViews,
+      }),
+    });
+
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.error || 'Failed to approve milestone');
+    }
+
+    setSuccessAnimation({ icon: '🎉', message: 'Milestone Approved! Reward Unlocked!' });
+    setIsMilestoneReviewOpen(false);
+    setMilestoneReviewSubmission(null);
+    await loadSubmissions();
+  };
+
+  const handleMilestoneReject = async (submissionId: string, reason: string) => {
+    const token = await getAuthToken();
+    if (!token) throw new Error('Not authenticated');
+
+    const response = await fetch(`/api/admin/submissions/${submissionId}/review`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        decision: 'rejected',
+        rejectionReason: reason,
+      }),
+    });
+
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.error || 'Failed to reject milestone');
+    }
+
+    setSuccessAnimation({ icon: '🚫', message: 'Milestone Rejected' });
+    setIsMilestoneReviewOpen(false);
+    setMilestoneReviewSubmission(null);
+    await loadSubmissions();
   };
 
   // ============================================
@@ -1334,7 +1406,15 @@ export default function AdminSubmissionsPage() {
                         submission={submission}
                         isSelected={selectedIds.has(submission.id)}
                         onSelect={handleSelect}
-                        onReview={submission.submissionFormat === 'file' ? handleOpenPreview : handleReviewClick}
+                        onReview={(sub) => {
+                          if (sub.type === 'milestone' && sub.status === 'pending') {
+                            handleMilestoneReviewClick(sub);
+                          } else if (sub.submissionFormat === 'file') {
+                            handleOpenPreview(sub);
+                          } else {
+                            handleReviewClick(sub);
+                          }
+                        }}
                         onDownload={handleDownloadFile}
                       />
                     ))}
@@ -1416,6 +1496,18 @@ export default function AdminSubmissionsPage() {
           onApprove={handlePreviewApprove}
           onReject={handlePreviewReject}
           isProcessing={isPreviewProcessing}
+        />
+
+        {/* Milestone Review Modal */}
+        <MilestoneReviewModal
+          isOpen={isMilestoneReviewOpen}
+          onClose={() => {
+            setIsMilestoneReviewOpen(false);
+            setMilestoneReviewSubmission(null);
+          }}
+          submission={milestoneReviewSubmission}
+          onApprove={handleMilestoneApprove}
+          onReject={handleMilestoneReject}
         />
       </div>
     </ProtectedRoute>
