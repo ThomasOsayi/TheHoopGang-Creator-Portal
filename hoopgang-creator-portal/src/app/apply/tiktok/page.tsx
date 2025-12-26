@@ -1,4 +1,5 @@
 // src/app/apply/tiktok/page.tsx
+// Mobile-Responsive Version
 
 'use client';
 
@@ -49,7 +50,8 @@ const InstagramLogo = ({ className = "w-5 h-5" }: { className?: string }) => (
 
 type Step = 1 | 2 | 3 | 4;
 
-const stepLabels = ['Username', 'Social Stats', 'Confirm', 'Account'];
+const stepLabels = ['Username', 'Social', 'Confirm', 'Account'];
+const stepLabelsShort = ['1', '2', '3', '4'];
 
 function TiktokApplyContent() {
   const router = useRouter();
@@ -328,11 +330,11 @@ function TiktokApplyContent() {
   };
 
   const inputClasses =
-    'w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent hover:bg-white/[0.08] transition-all';
-  const labelClasses = 'block text-white/50 text-xs uppercase tracking-wider mb-2';
+    'w-full bg-white/5 border border-white/10 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-white text-sm sm:text-base placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent hover:bg-white/[0.08] transition-all';
+  const labelClasses = 'block text-white/50 text-[10px] sm:text-xs uppercase tracking-wider mb-1.5 sm:mb-2';
 
   return (
-    <div className="min-h-screen bg-zinc-950 py-12 px-4 relative overflow-hidden">
+    <div className="min-h-screen bg-zinc-950 py-8 sm:py-12 px-4 relative overflow-hidden">
       {/* Background Gradient Orbs - TikTok colors */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute -top-40 -right-40 w-96 h-96 bg-[#25F4EE]/10 rounded-full blur-3xl" />
@@ -342,46 +344,47 @@ function TiktokApplyContent() {
 
       <div className="max-w-lg mx-auto relative z-10">
         {/* Header */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-6 sm:mb-8">
           {/* Back Link */}
           <Link 
             href="/apply" 
-            className="inline-flex items-center gap-2 text-white/50 hover:text-white/80 transition-colors mb-6"
+            className="inline-flex items-center gap-1.5 sm:gap-2 text-white/50 hover:text-white/80 transition-colors mb-4 sm:mb-6 text-sm"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Back to platform selection
+            <span className="hidden sm:inline">Back to platform selection</span>
+            <span className="sm:hidden">Back</span>
           </Link>
 
           {/* TikTok Badge */}
-          <div className="flex items-center justify-center gap-3 mb-6">
-            <div className="w-12 h-12 bg-black rounded-xl flex items-center justify-center border border-zinc-800">
-              <TiktokLogo className="w-7 h-7" />
+          <div className="flex items-center justify-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-black rounded-lg sm:rounded-xl flex items-center justify-center border border-zinc-800">
+              <TiktokLogo className="w-5 h-5 sm:w-7 sm:h-7" />
             </div>
             <div className="text-left">
-              <p className="text-white/50 text-xs uppercase tracking-wider">Signing up via</p>
-              <p className="text-white font-semibold">TikTok Shop</p>
+              <p className="text-white/50 text-[10px] sm:text-xs uppercase tracking-wider">Signing up via</p>
+              <p className="text-white font-semibold text-sm sm:text-base">TikTok Shop</p>
             </div>
           </div>
 
-          <h1 className="text-3xl font-black text-white mb-2">
+          <h1 className="text-2xl sm:text-3xl font-black text-white mb-1 sm:mb-2">
             Quick Creator Setup
           </h1>
-          <p className="text-white/60">
-            Your shipping info is already on file from your order
+          <p className="text-white/60 text-sm sm:text-base">
+            Your shipping info is already on file
           </p>
         </div>
 
-        {/* Progress Bar - FIXED */}
-        <div className="mb-8">
+        {/* Progress Bar */}
+        <div className="mb-6 sm:mb-8">
           <div className="flex items-center justify-between relative">
             {/* Background line */}
-            <div className="absolute top-4 left-0 right-0 h-1 bg-zinc-800 mx-8" />
+            <div className="absolute top-3 sm:top-4 left-0 right-0 h-0.5 sm:h-1 bg-zinc-800 mx-6 sm:mx-8" />
             
             {/* Progress line */}
             <div 
-              className="absolute top-4 left-0 h-1 bg-gradient-to-r from-[#25F4EE] to-[#FE2C55] mx-8 transition-all duration-500"
+              className="absolute top-3 sm:top-4 left-0 h-0.5 sm:h-1 bg-gradient-to-r from-[#25F4EE] to-[#FE2C55] mx-6 sm:mx-8 transition-all duration-500"
               style={{ 
                 width: `calc(${((currentStep - 1) / 3) * 100}% - ${currentStep === 1 ? 0 : (4 - currentStep) * 16}px)`,
               }}
@@ -392,7 +395,7 @@ function TiktokApplyContent() {
               <div key={step} className="relative z-10 flex flex-col items-center">
                 <div
                   className={`
-                    w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all
+                    w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold transition-all
                     ${currentStep >= step 
                       ? 'bg-gradient-to-r from-[#25F4EE] to-[#FE2C55] text-white' 
                       : 'bg-zinc-800 text-zinc-500'
@@ -400,14 +403,14 @@ function TiktokApplyContent() {
                   `}
                 >
                   {currentStep > step ? (
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                     </svg>
                   ) : (
                     step
                   )}
                 </div>
-                <span className="text-xs text-white/40 mt-2 whitespace-nowrap">
+                <span className="text-[10px] sm:text-xs text-white/40 mt-1.5 sm:mt-2 whitespace-nowrap hidden xs:block">
                   {stepLabels[step - 1]}
                 </span>
               </div>
@@ -416,11 +419,11 @@ function TiktokApplyContent() {
         </div>
 
         {/* Form Card */}
-        <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl p-8 hover:border-white/20 transition-all duration-300">
+        <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl sm:rounded-3xl p-5 sm:p-8 hover:border-white/20 transition-all duration-300">
           {/* Error Message */}
           {error && (
-            <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl text-sm flex items-start gap-3 mb-6">
-              <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm flex items-start gap-2 sm:gap-3 mb-4 sm:mb-6">
+              <svg className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <div>
@@ -447,20 +450,20 @@ function TiktokApplyContent() {
 
           {/* Success State */}
           {success ? (
-            <div className="text-center py-8">
-              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-500/20 border border-green-500/30 mb-6">
-                <svg className="w-10 h-10 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="text-center py-6 sm:py-8">
+              <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-green-500/20 border border-green-500/30 mb-4 sm:mb-6">
+                <svg className="w-8 h-8 sm:w-10 sm:h-10 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h2 className="text-2xl font-bold text-white mb-2">Account Created!</h2>
-              <p className="text-white/60 mb-4">
+              <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">Account Created!</h2>
+              <p className="text-white/60 text-sm sm:text-base mb-3 sm:mb-4">
                 Check your email to verify your account.
               </p>
-              <p className="text-white/40 text-sm">
+              <p className="text-white/40 text-xs sm:text-sm">
                 Redirecting to your dashboard...
               </p>
-              <div className="mt-6">
+              <div className="mt-4 sm:mt-6">
                 <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto" />
               </div>
             </div>
@@ -470,11 +473,11 @@ function TiktokApplyContent() {
               {/* STEP 1: Enter Username */}
               {/* ============================================ */}
               {currentStep === 1 && (
-                <div className="space-y-6">
+                <div className="space-y-4 sm:space-y-6">
                   <div className="text-center mb-2">
-                    <h2 className="text-xl font-bold text-white mb-2">Enter Your TikTok Username</h2>
-                    <p className="text-white/50 text-sm">
-                      Use the same username you ordered with on TikTok Shop
+                    <h2 className="text-lg sm:text-xl font-bold text-white mb-1 sm:mb-2">Enter Your TikTok Username</h2>
+                    <p className="text-white/50 text-xs sm:text-sm">
+                      Use the same username you ordered with
                     </p>
                   </div>
 
@@ -483,7 +486,7 @@ function TiktokApplyContent() {
                       TikTok Username
                     </label>
                     <div className="relative">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30">@</span>
+                      <span className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-white/30 text-sm">@</span>
                       <input
                         type="text"
                         id="username"
@@ -491,7 +494,7 @@ function TiktokApplyContent() {
                         onChange={(e) => setUsername(e.target.value.replace('@', ''))}
                         onKeyDown={(e) => e.key === 'Enter' && handleLookup()}
                         placeholder="your_tiktok_handle"
-                        className={`${inputClasses} pl-8`}
+                        className={`${inputClasses} pl-7 sm:pl-8`}
                         autoFocus
                         autoComplete="off"
                       />
@@ -501,24 +504,24 @@ function TiktokApplyContent() {
                   <button
                     onClick={handleLookup}
                     disabled={lookupLoading || !username.trim()}
-                    className="w-full py-4 bg-gradient-to-r from-[#25F4EE] to-[#FE2C55] hover:opacity-90 text-white font-bold text-lg rounded-xl transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:shadow-[#FE2C55]/25 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
+                    className="w-full py-3 sm:py-4 bg-gradient-to-r from-[#25F4EE] to-[#FE2C55] hover:opacity-90 text-white font-bold text-base sm:text-lg rounded-xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-[#FE2C55]/25 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
                   >
                     {lookupLoading ? (
                       <>
-                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        Looking up...
+                        <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span className="text-sm sm:text-base">Looking up...</span>
                       </>
                     ) : (
                       <>
-                        Find My Order
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <span className="text-sm sm:text-base">Find My Order</span>
+                        <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
                       </>
                     )}
                   </button>
 
-                  <p className="text-center text-white/40 text-sm">
+                  <p className="text-center text-white/40 text-xs sm:text-sm">
                     Haven&apos;t ordered from TikTok Shop?{' '}
                     <Link href="/apply/instagram" className="text-cyan-400 hover:text-cyan-300 transition-colors">
                       Apply via Instagram
@@ -528,28 +531,28 @@ function TiktokApplyContent() {
               )}
 
               {/* ============================================ */}
-              {/* STEP 2: Social Stats (NEW) */}
+              {/* STEP 2: Social Stats */}
               {/* ============================================ */}
               {currentStep === 2 && (
-                <div className="space-y-6">
+                <div className="space-y-4 sm:space-y-6">
                   <div className="text-center mb-2">
-                    <h2 className="text-xl font-bold text-white mb-2">Tell Us About Your Audience</h2>
-                    <p className="text-white/50 text-sm">
-                      This helps us match you with the right opportunities
+                    <h2 className="text-lg sm:text-xl font-bold text-white mb-1 sm:mb-2">Tell Us About Your Audience</h2>
+                    <p className="text-white/50 text-xs sm:text-sm">
+                      Helps us match you with opportunities
                     </p>
                   </div>
 
                   {/* TikTok Stats */}
-                  <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4">
-                    <div className="flex items-center gap-2 mb-4">
-                      <TiktokLogo className="w-5 h-5" />
-                      <span className="text-white font-medium">TikTok</span>
-                      <span className="text-white/50 text-sm">@{username}</span>
+                  <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-3 sm:p-4">
+                    <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                      <TiktokLogo className="w-4 h-4 sm:w-5 sm:h-5" />
+                      <span className="text-white font-medium text-sm sm:text-base">TikTok</span>
+                      <span className="text-white/50 text-xs sm:text-sm">@{username}</span>
                     </div>
                     
                     <div>
                       <label htmlFor="tiktokFollowers" className={labelClasses}>
-                        How many followers do you have? <span className="text-red-400">*</span>
+                        How many followers? <span className="text-red-400">*</span>
                       </label>
                       <input
                         type="text"
@@ -564,26 +567,26 @@ function TiktokApplyContent() {
                   </div>
 
                   {/* Instagram Stats */}
-                  <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4">
-                    <div className="flex items-center gap-2 mb-4">
-                      <InstagramLogo className="w-5 h-5" />
-                      <span className="text-white font-medium">Instagram</span>
+                  <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-3 sm:p-4">
+                    <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                      <InstagramLogo className="w-4 h-4 sm:w-5 sm:h-5" />
+                      <span className="text-white font-medium text-sm sm:text-base">Instagram</span>
                     </div>
                     
-                    <div className="space-y-4">
+                    <div className="space-y-3 sm:space-y-4">
                       <div>
                         <label htmlFor="instagramHandle" className={labelClasses}>
                           Instagram Username <span className="text-red-400">*</span>
                         </label>
                         <div className="relative">
-                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30">@</span>
+                          <span className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-white/30 text-sm">@</span>
                           <input
                             type="text"
                             id="instagramHandle"
                             value={instagramHandle}
                             onChange={(e) => setInstagramHandle(e.target.value.replace('@', ''))}
                             placeholder="your_instagram_handle"
-                            className={`${inputClasses} pl-8`}
+                            className={`${inputClasses} pl-7 sm:pl-8`}
                             required
                           />
                         </div>
@@ -606,22 +609,22 @@ function TiktokApplyContent() {
                     </div>
                   </div>
 
-                  <div className="flex gap-3">
+                  <div className="flex gap-2 sm:gap-3">
                     <button
                       onClick={handleBack}
-                      className="px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-medium rounded-xl transition-all"
+                      className="px-4 sm:px-6 py-2.5 sm:py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-medium rounded-xl transition-all active:scale-[0.98]"
                     >
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                       </svg>
                     </button>
                     <button
                       onClick={handleSocialStatsSubmit}
                       disabled={!tiktokFollowers.trim() || !instagramHandle.trim() || !instagramFollowers.trim()}
-                      className="flex-1 py-3 bg-gradient-to-r from-[#25F4EE] to-[#FE2C55] hover:opacity-90 text-white font-bold rounded-xl transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
+                      className="flex-1 py-2.5 sm:py-3 bg-gradient-to-r from-[#25F4EE] to-[#FE2C55] hover:opacity-90 text-white font-bold rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
                     >
-                      Continue
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <span className="text-sm sm:text-base">Continue</span>
+                      <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
                     </button>
@@ -633,85 +636,83 @@ function TiktokApplyContent() {
               {/* STEP 3: Confirm Identity */}
               {/* ============================================ */}
               {currentStep === 3 && lookupResult && (
-                <div className="space-y-6">
+                <div className="space-y-4 sm:space-y-6">
                   <div className="text-center mb-2">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-500/20 border border-green-500/30 mb-4">
-                      <svg className="w-8 h-8 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-green-500/20 border border-green-500/30 mb-3 sm:mb-4">
+                      <svg className="w-6 h-6 sm:w-8 sm:h-8 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
                     </div>
-                    <h2 className="text-xl font-bold text-white mb-2">We Found Your Order!</h2>
-                    <p className="text-white/50 text-sm">
-                      Please confirm this is your information
+                    <h2 className="text-lg sm:text-xl font-bold text-white mb-1 sm:mb-2">We Found Your Order!</h2>
+                    <p className="text-white/50 text-xs sm:text-sm">
+                      Confirm this is your information
                     </p>
                   </div>
 
                   {/* Order Info Card */}
-                  <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-5 space-y-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-black rounded-lg flex items-center justify-center">
-                        <TiktokLogo className="w-6 h-6" />
+                  <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4 sm:p-5 space-y-3 sm:space-y-4">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-black rounded-lg flex items-center justify-center">
+                        <TiktokLogo className="w-4 h-4 sm:w-6 sm:h-6" />
                       </div>
                       <div>
-                        <p className="text-white/50 text-xs">TikTok Username</p>
-                        <p className="text-white font-medium">@{username}</p>
+                        <p className="text-white/50 text-[10px] sm:text-xs">TikTok Username</p>
+                        <p className="text-white font-medium text-sm sm:text-base">@{username}</p>
                       </div>
                     </div>
 
-                    <div className="border-t border-zinc-800 pt-4 space-y-3">
-                      <div className="flex justify-between">
-                        <span className="text-white/50 text-sm">Name</span>
+                    <div className="border-t border-zinc-800 pt-3 sm:pt-4 space-y-2 sm:space-y-3">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-white/50">Name</span>
                         <span className="text-white font-medium">{lookupResult.maskedName}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-white/50 text-sm">Ships to</span>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-white/50">Ships to</span>
                         <span className="text-white font-medium text-right">
                           {lookupResult.maskedAddress}<br />
                           <span className="text-white/70">{lookupResult.maskedCity}</span>
                         </span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-white/50 text-sm">Size Ordered</span>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-white/50">Size</span>
                         <span className="text-white font-medium">{lookupResult.sizeOrdered}</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Social Stats Summary */}
-                  <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4">
-                    <p className="text-white/50 text-xs uppercase tracking-wider mb-3">Your Social Stats</p>
-                    <div className="flex flex-wrap gap-3">
-                      <div className="flex items-center gap-2 bg-black/30 px-3 py-1.5 rounded-lg">
-                        <TiktokLogo className="w-4 h-4" />
-                        <span className="text-white font-medium">{tiktokFollowers}</span>
-                        <span className="text-white/50 text-sm">followers</span>
+                  <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-3 sm:p-4">
+                    <p className="text-white/50 text-[10px] sm:text-xs uppercase tracking-wider mb-2 sm:mb-3">Your Social Stats</p>
+                    <div className="flex flex-wrap gap-2 sm:gap-3">
+                      <div className="flex items-center gap-1.5 sm:gap-2 bg-black/30 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg">
+                        <TiktokLogo className="w-3 h-3 sm:w-4 sm:h-4" />
+                        <span className="text-white font-medium text-xs sm:text-sm">{tiktokFollowers}</span>
                       </div>
                       {instagramHandle && (
-                        <div className="flex items-center gap-2 bg-black/30 px-3 py-1.5 rounded-lg">
-                          <InstagramLogo className="w-4 h-4" />
-                          <span className="text-white font-medium">{instagramFollowers || '—'}</span>
-                          <span className="text-white/50 text-sm">followers</span>
+                        <div className="flex items-center gap-1.5 sm:gap-2 bg-black/30 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg">
+                          <InstagramLogo className="w-3 h-3 sm:w-4 sm:h-4" />
+                          <span className="text-white font-medium text-xs sm:text-sm">{instagramFollowers || '—'}</span>
                         </div>
                       )}
                     </div>
                   </div>
 
-                  <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-xl p-4">
-                    <p className="text-cyan-400 text-sm text-center">
-                      🔒 Your full information is protected and will be revealed after you create your account
+                  <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-xl p-3 sm:p-4">
+                    <p className="text-cyan-400 text-xs sm:text-sm text-center">
+                      🔒 Your full info is protected until you create your account
                     </p>
                   </div>
 
-                  <div className="flex gap-3">
+                  <div className="flex gap-2 sm:gap-3">
                     <button
                       onClick={() => handleConfirmIdentity(false)}
-                      className="flex-1 py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-medium rounded-xl transition-all"
+                      className="flex-1 py-2.5 sm:py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-medium rounded-xl transition-all active:scale-[0.98] text-sm sm:text-base"
                     >
                       No, go back
                     </button>
                     <button
                       onClick={() => handleConfirmIdentity(true)}
-                      className="flex-1 py-3 bg-gradient-to-r from-[#25F4EE] to-[#FE2C55] hover:opacity-90 text-white font-bold rounded-xl transition-all hover:scale-[1.02]"
+                      className="flex-1 py-2.5 sm:py-3 bg-gradient-to-r from-[#25F4EE] to-[#FE2C55] hover:opacity-90 text-white font-bold rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98] text-sm sm:text-base"
                     >
                       Yes, this is me
                     </button>
@@ -723,26 +724,26 @@ function TiktokApplyContent() {
               {/* STEP 4: Create Account */}
               {/* ============================================ */}
               {currentStep === 4 && (
-                <div className="space-y-6">
+                <div className="space-y-4 sm:space-y-6">
                   <div className="text-center mb-2">
-                    <h2 className="text-xl font-bold text-white mb-2">Create Your Account</h2>
-                    <p className="text-white/50 text-sm">
-                      Just add your email and password to finish
+                    <h2 className="text-lg sm:text-xl font-bold text-white mb-1 sm:mb-2">Create Your Account</h2>
+                    <p className="text-white/50 text-xs sm:text-sm">
+                      Add your email and password to finish
                     </p>
                   </div>
 
                   {/* Pre-filled info reminder */}
-                  <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 flex items-start gap-3">
-                    <svg className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-3 sm:p-4 flex items-start gap-2 sm:gap-3">
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5 text-green-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
-                    <div className="text-sm">
+                    <div className="text-xs sm:text-sm">
                       <p className="text-green-400 font-medium">Shipping info ready!</p>
                       <p className="text-white/50">Your address from TikTok Shop will be used</p>
                     </div>
                   </div>
 
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
                     <div>
                       <label htmlFor="email" className={labelClasses}>
                         Email Address <span className="text-red-400">*</span>
@@ -790,30 +791,30 @@ function TiktokApplyContent() {
                     </div>
                   </div>
 
-                  <div className="flex gap-3">
+                  <div className="flex gap-2 sm:gap-3">
                     <button
                       onClick={handleBack}
                       disabled={claimLoading}
-                      className="px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-medium rounded-xl transition-all disabled:opacity-50"
+                      className="px-4 sm:px-6 py-2.5 sm:py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-medium rounded-xl transition-all active:scale-[0.98] disabled:opacity-50"
                     >
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                       </svg>
                     </button>
                     <button
                       onClick={handleCreateAccount}
                       disabled={claimLoading || !email || !password || !confirmPassword}
-                      className="flex-1 py-3 bg-gradient-to-r from-[#25F4EE] to-[#FE2C55] hover:opacity-90 text-white font-bold rounded-xl transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
+                      className="flex-1 py-2.5 sm:py-3 bg-gradient-to-r from-[#25F4EE] to-[#FE2C55] hover:opacity-90 text-white font-bold rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
                     >
                       {claimLoading ? (
                         <>
-                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                          Creating Account...
+                          <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          <span className="text-sm sm:text-base hidden xs:inline">Creating...</span>
                         </>
                       ) : (
                         <>
-                          Create Account
-                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <span className="text-sm sm:text-base">Create Account</span>
+                          <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                           </svg>
                         </>
@@ -821,8 +822,8 @@ function TiktokApplyContent() {
                     </button>
                   </div>
 
-                  <p className="text-center text-white/40 text-xs">
-                    By creating an account, you agree to post 1 TikTok within 14 days of receiving your product.
+                  <p className="text-center text-white/40 text-[10px] sm:text-xs">
+                    By creating an account, you agree to post 1 TikTok within 14 days.
                   </p>
                 </div>
               )}
@@ -832,7 +833,7 @@ function TiktokApplyContent() {
 
         {/* Already have account */}
         {!success && (
-          <p className="text-center text-white/50 text-sm mt-6">
+          <p className="text-center text-white/50 text-xs sm:text-sm mt-4 sm:mt-6">
             Already have an account?{' '}
             <Link href="/login" className="text-cyan-400 hover:text-cyan-300 transition-colors">
               Sign in here

@@ -1,4 +1,6 @@
 // src/app/creator/submit/page.tsx
+// Mobile-Responsive Version
+
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
@@ -285,9 +287,9 @@ function SubmitContentPageContent() {
     const diffDays = Math.floor(diffHours / 24);
     
     if (diffHours < 1) return 'Just now';
-    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays === 1) return 'Yesterday';
-    return `${diffDays} days ago`;
+    return `${diffDays}d ago`;
   };
 
   // Extract shortened URL for display
@@ -297,9 +299,9 @@ function SubmitContentPageContent() {
       if (match) {
         return `@${match[1]}/video/${match[2].slice(0, 3)}...`;
       }
-      return url.slice(0, 30) + '...';
+      return url.slice(0, 25) + '...';
     } catch {
-      return url.slice(0, 30) + '...';
+      return url.slice(0, 25) + '...';
     }
   };
 
@@ -468,7 +470,7 @@ function SubmitContentPageContent() {
         onClose={() => setShowSuccessToast(false)}
       />
 
-      <main className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 py-8">
+      <main className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {/* Header */}
         <PageHeader 
           title="Submit Content"
@@ -477,23 +479,26 @@ function SubmitContentPageContent() {
           accentColor="green"
         />
 
-        {/* Competition Banner */}
+        {/* Competition Banner - Mobile Optimized */}
         {!competitionLoading && activeCompetition?.status === 'active' && (
-          <div className="mb-6 p-4 bg-gradient-to-r from-green-500/10 via-emerald-500/5 to-green-500/10 border border-green-500/30 rounded-2xl animate-fade-in-up">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="relative">
-                  <span className="w-3 h-3 bg-green-500 rounded-full animate-pulse inline-block" />
+          <div className="mb-6 p-3 sm:p-4 bg-gradient-to-r from-green-500/10 via-emerald-500/5 to-green-500/10 border border-green-500/30 rounded-2xl animate-fade-in-up">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="relative flex-shrink-0">
+                  <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-green-500 rounded-full animate-pulse inline-block" />
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">🏆</span>
-                  <span className="text-green-400 font-bold">{activeCompetition.name} is LIVE!</span>
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-xl sm:text-2xl flex-shrink-0">🏆</span>
+                  <div className="min-w-0">
+                    <span className="text-green-400 font-bold text-sm sm:text-base block truncate">{activeCompetition.name} is LIVE!</span>
+                    <span className="text-zinc-400 text-xs sm:text-sm hidden sm:block">Submissions count toward leaderboard</span>
+                  </div>
                 </div>
-                <span className="text-zinc-400 hidden sm:inline">Your submissions count toward the leaderboard</span>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center justify-between sm:justify-end gap-3 pl-6 sm:pl-0">
+                <span className="text-zinc-500 text-xs sm:hidden">Ends in</span>
                 <div className="text-right">
-                  <div className="text-zinc-500 text-xs mb-1">Ends in</div>
+                  <div className="text-zinc-500 text-xs mb-0.5 hidden sm:block">Ends in</div>
                   <LiveCountdown targetDate={new Date(activeCompetition.endsAt)} size="md" />
                 </div>
               </div>
@@ -502,47 +507,55 @@ function SubmitContentPageContent() {
         )}
 
         {!competitionLoading && (!activeCompetition || activeCompetition.status !== 'active') && (
-          <div className="mb-6 p-4 bg-zinc-900/50 border border-zinc-800 rounded-2xl animate-fade-in-up">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">📊</span>
+          <div className="mb-6 p-3 sm:p-4 bg-zinc-900/50 border border-zinc-800 rounded-2xl animate-fade-in-up">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <span className="text-xl sm:text-2xl flex-shrink-0">📊</span>
                 <div>
-                  <span className="text-zinc-300 font-medium">No active competition</span>
-                  <p className="text-zinc-500 text-sm">Your submissions will still be tracked</p>
+                  <span className="text-zinc-300 font-medium text-sm sm:text-base">No active competition</span>
+                  <p className="text-zinc-500 text-xs sm:text-sm">Your submissions will still be tracked</p>
                 </div>
               </div>
-              <div className="text-right">
-                <div className="text-zinc-500 text-xs mb-1">Week resets in</div>
-                <LiveCountdown targetDate={getWeekEnd(getCurrentWeek())} size="md" />
+              <div className="flex items-center justify-between sm:justify-end gap-3 pl-7 sm:pl-0">
+                <span className="text-zinc-500 text-xs sm:hidden">Week resets in</span>
+                <div className="text-right">
+                  <div className="text-zinc-500 text-xs mb-0.5 hidden sm:block">Week resets in</div>
+                  <LiveCountdown targetDate={getWeekEnd(getCurrentWeek())} size="md" />
+                </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Stats Row - 3 Large Cards */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
-          <GlowCard glowColor="orange" delay="0.1s" className="text-center py-8 hover:border-green-500/30 hover:shadow-[0_0_25px_-5px_rgba(34,197,94,0.25)]">
-            <div className="text-4xl font-bold text-white mb-2">
+        {/* Stats Row - Responsive: Stack on mobile, 3 cols on tablet+ */}
+        <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6 sm:mb-8">
+          <GlowCard glowColor="orange" delay="0.1s" className="text-center py-4 sm:py-8 hover:border-green-500/30 hover:shadow-[0_0_25px_-5px_rgba(34,197,94,0.25)]">
+            <div className="text-2xl sm:text-4xl font-bold text-white mb-1 sm:mb-2">
               {statsLoading ? (
-                <Skeleton className="w-12 h-10 mx-auto" />
+                <Skeleton className="w-8 sm:w-12 h-7 sm:h-10 mx-auto" />
               ) : activeCompetition?.status === 'active' ? (
                 <AnimatedCounter value={volumeStats.weeklyCount} />
               ) : (
                 <span className="text-zinc-500">—</span>
               )}
             </div>
-            <div className="text-zinc-400">
-              {activeCompetition?.status === 'active' ? 'This Competition' : 'Competition'}
+            <div className="text-zinc-400 text-xs sm:text-base">
+              {activeCompetition?.status === 'active' ? (
+                <span className="hidden sm:inline">This Competition</span>
+              ) : (
+                <span className="hidden sm:inline">Competition</span>
+              )}
+              <span className="sm:hidden">Comp</span>
             </div>
             {activeCompetition?.status !== 'active' && (
-              <div className="text-zinc-600 text-xs">No active competition</div>
+              <div className="text-zinc-600 text-[10px] sm:text-xs hidden sm:block">No active competition</div>
             )}
           </GlowCard>
           
-          <GlowCard glowColor="orange" delay="0.15s" className="text-center py-8 border-orange-500/30 hover:border-amber-500/30 hover:shadow-[0_0_25px_-5px_rgba(245,158,11,0.25)]">
-            <div className="text-4xl font-bold text-orange-400 mb-2">
+          <GlowCard glowColor="orange" delay="0.15s" className="text-center py-4 sm:py-8 border-orange-500/30 hover:border-amber-500/30 hover:shadow-[0_0_25px_-5px_rgba(245,158,11,0.25)]">
+            <div className="text-2xl sm:text-4xl font-bold text-orange-400 mb-1 sm:mb-2">
               {statsLoading ? (
-                <Skeleton className="w-16 h-10 mx-auto" />
+                <Skeleton className="w-10 sm:w-16 h-7 sm:h-10 mx-auto" />
               ) : activeCompetition?.status === 'active' && volumeStats.currentRank ? (
                 <>
                   #<AnimatedCounter value={volumeStats.currentRank} />
@@ -551,72 +564,72 @@ function SubmitContentPageContent() {
                 <span className="text-zinc-500">—</span>
               )}
             </div>
-            <div className="text-zinc-400">Your Rank</div>
+            <div className="text-zinc-400 text-xs sm:text-base">Rank</div>
             {activeCompetition?.status === 'active' && volumeStats.totalCreators > 0 ? (
-              <div className="text-zinc-500 text-sm">of {volumeStats.totalCreators} creators</div>
+              <div className="text-zinc-500 text-[10px] sm:text-sm">of {volumeStats.totalCreators}</div>
             ) : (
-              <div className="text-zinc-600 text-xs">No active competition</div>
+              <div className="text-zinc-600 text-[10px] sm:text-xs hidden sm:block">No competition</div>
             )}
           </GlowCard>
           
-          <GlowCard glowColor="orange" delay="0.2s" className="text-center py-8 hover:border-blue-500/30 hover:shadow-[0_0_25px_-5px_rgba(59,130,246,0.25)]">
-            <div className="text-4xl font-bold text-white mb-2">
+          <GlowCard glowColor="orange" delay="0.2s" className="text-center py-4 sm:py-8 hover:border-blue-500/30 hover:shadow-[0_0_25px_-5px_rgba(59,130,246,0.25)]">
+            <div className="text-2xl sm:text-4xl font-bold text-white mb-1 sm:mb-2">
               {statsLoading ? (
-                <Skeleton className="w-12 h-10 mx-auto" />
+                <Skeleton className="w-8 sm:w-12 h-7 sm:h-10 mx-auto" />
               ) : (
                 <AnimatedCounter value={volumeStats.allTimeCount} />
               )}
             </div>
-            <div className="text-zinc-400">All-Time</div>
+            <div className="text-zinc-400 text-xs sm:text-base">All-Time</div>
           </GlowCard>
         </div>
 
         {/* Drop Your TikTok Link Card */}
-        <GlowCard glowColor="orange" delay="0.25s" className="mb-8">
-          <div className="text-center mb-6">
-            <h2 className="text-xl font-bold text-white mb-2">Drop Your TikTok Link</h2>
-            <p className="text-zinc-400">Paste your TikTok URL and we&apos;ll add it to your stats</p>
+        <GlowCard glowColor="orange" delay="0.25s" className="mb-6 sm:mb-8">
+          <div className="text-center mb-4 sm:mb-6">
+            <h2 className="text-lg sm:text-xl font-bold text-white mb-1 sm:mb-2">Drop Your TikTok Link</h2>
+            <p className="text-zinc-400 text-sm">Paste your TikTok URL and we&apos;ll add it to your stats</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
             <div className="relative">
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500">
-                <TikTokIcon className="w-5 h-5" />
+              <div className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-zinc-500">
+                <TikTokIcon className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
               <input
                 type="url"
                 value={tiktokUrl}
                 onChange={(e) => setTiktokUrl(e.target.value)}
                 placeholder="https://www.tiktok.com/@username/video/..."
-                className="w-full bg-zinc-800/50 border border-zinc-700 rounded-xl pl-12 pr-4 py-4 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all"
+                className="w-full bg-zinc-800/50 border border-zinc-700 rounded-xl pl-10 sm:pl-12 pr-4 py-3 sm:py-4 text-white text-sm sm:text-base placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all"
               />
             </div>
             
             <button
               type="submit"
               disabled={!tiktokUrl.trim() || submitting || !validateTikTokUrl(tiktokUrl)}
-              className="w-full py-4 bg-zinc-800 hover:bg-zinc-700 disabled:bg-zinc-800 disabled:cursor-not-allowed text-white disabled:text-zinc-500 font-semibold rounded-xl transition-all"
+              className="w-full py-3 sm:py-4 bg-zinc-800 hover:bg-zinc-700 disabled:bg-zinc-800 disabled:cursor-not-allowed text-white disabled:text-zinc-500 font-semibold rounded-xl transition-all active:scale-[0.98]"
             >
               {submitting ? (
                 <span className="flex items-center justify-center gap-2">
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Submitting...
+                  <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span className="text-sm sm:text-base">Submitting...</span>
                 </span>
               ) : (
-                'Submit to Leaderboard →'
+                <span className="text-sm sm:text-base">Submit to Leaderboard →</span>
               )}
             </button>
           </form>
         </GlowCard>
 
         {/* Upload Video File Card */}
-        <GlowCard glowColor="purple" delay="0.3s" className="mb-8">
-          <div className="text-center mb-6">
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <h2 className="text-xl font-bold text-white">Or Upload a Video</h2>
+        <GlowCard glowColor="purple" delay="0.3s" className="mb-6 sm:mb-8">
+          <div className="text-center mb-4 sm:mb-6">
+            <div className="flex items-center justify-center gap-2 mb-1 sm:mb-2">
+              <h2 className="text-lg sm:text-xl font-bold text-white">Or Upload a Video</h2>
               <span className="px-2 py-0.5 bg-purple-500/20 text-purple-400 text-xs font-medium rounded-full">NEW</span>
             </div>
-            <p className="text-zinc-400">Upload your video directly — no TikTok link needed</p>
+            <p className="text-zinc-400 text-sm">Upload your video directly — no TikTok link needed</p>
           </div>
 
           {/* Drop Zone */}
@@ -625,7 +638,7 @@ function SubmitContentPageContent() {
             onDragLeave={handleDrag}
             onDragOver={handleDrag}
             onDrop={handleDrop}
-            className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-300 ${
+            className={`relative border-2 border-dashed rounded-xl p-6 sm:p-8 text-center transition-all duration-300 ${
               dragActive 
                 ? 'border-purple-500 bg-purple-500/10' 
                 : selectedFile 
@@ -635,38 +648,38 @@ function SubmitContentPageContent() {
           >
             {!selectedFile ? (
               <>
-                <div className={`mx-auto mb-4 transition-colors ${dragActive ? 'text-purple-400' : 'text-zinc-500'}`}>
-                  <UploadIcon className="w-12 h-12 mx-auto" />
+                <div className={`mx-auto mb-3 sm:mb-4 transition-colors ${dragActive ? 'text-purple-400' : 'text-zinc-500'}`}>
+                  <UploadIcon className="w-10 h-10 sm:w-12 sm:h-12 mx-auto" />
                 </div>
-                <p className="text-white font-medium mb-1">
+                <p className="text-white font-medium mb-1 text-sm sm:text-base">
                   {dragActive ? 'Drop your video here' : 'Drag & drop your video'}
                 </p>
-                <p className="text-zinc-500 text-sm mb-4">or click to browse</p>
+                <p className="text-zinc-500 text-xs sm:text-sm mb-3 sm:mb-4">or tap to browse</p>
                 <input
                   type="file"
                   accept="video/mp4,video/quicktime,video/webm,video/x-msvideo,video/x-matroska"
                   onChange={handleFileSelect}
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 />
-                <div className="flex items-center justify-center gap-4 text-xs text-zinc-500">
+                <div className="flex items-center justify-center gap-2 sm:gap-4 text-[10px] sm:text-xs text-zinc-500">
                   <span>MP4, MOV, WebM</span>
                   <span>•</span>
                   <span>Max 100MB</span>
                 </div>
               </>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {/* Selected File Info */}
-                <div className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
-                      <FileVideoIcon className="w-5 h-5 text-purple-400" />
+                <div className="flex items-center justify-between p-2.5 sm:p-3 bg-zinc-800/50 rounded-lg gap-2">
+                  <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-purple-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <FileVideoIcon className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400" />
                     </div>
-                    <div className="text-left">
-                      <p className="text-white text-sm font-medium truncate max-w-[200px]">
+                    <div className="min-w-0">
+                      <p className="text-white text-xs sm:text-sm font-medium truncate">
                         {selectedFile.name}
                       </p>
-                      <p className="text-zinc-500 text-xs">
+                      <p className="text-zinc-500 text-[10px] sm:text-xs">
                         {formatFileSize(selectedFile.size)}
                       </p>
                     </div>
@@ -674,9 +687,9 @@ function SubmitContentPageContent() {
                   {!isUploading && (
                     <button
                       onClick={clearSelectedFile}
-                      className="p-2 text-zinc-500 hover:text-white hover:bg-zinc-700 rounded-lg transition-colors"
+                      className="p-1.5 sm:p-2 text-zinc-500 hover:text-white hover:bg-zinc-700 rounded-lg transition-colors flex-shrink-0"
                     >
-                      <XIcon />
+                      <XIcon className="w-4 h-4" />
                     </button>
                   )}
                 </div>
@@ -690,7 +703,7 @@ function SubmitContentPageContent() {
                         style={{ width: `${uploadProgress}%` }}
                       />
                     </div>
-                    <p className="text-zinc-400 text-sm">
+                    <p className="text-zinc-400 text-xs sm:text-sm">
                       Uploading... {uploadProgress}%
                     </p>
                   </div>
@@ -700,7 +713,7 @@ function SubmitContentPageContent() {
                 {!isUploading && (
                   <button
                     onClick={handleFileUpload}
-                    className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-semibold rounded-xl transition-all"
+                    className="w-full py-2.5 sm:py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-semibold rounded-xl transition-all active:scale-[0.98] text-sm sm:text-base"
                   >
                     Upload to Leaderboard →
                   </button>
@@ -710,36 +723,36 @@ function SubmitContentPageContent() {
           </div>
 
           {/* Info Note */}
-          <p className="text-zinc-500 text-xs text-center mt-4">
+          <p className="text-zinc-500 text-[10px] sm:text-xs text-center mt-3 sm:mt-4">
             📱 Video uploads count toward the leaderboard just like TikTok links
           </p>
         </GlowCard>
 
         {/* Recent Submissions */}
-        <GlowCard glowColor="orange" delay="0.35s" className="mb-8">
+        <GlowCard glowColor="orange" delay="0.35s" className="mb-6 sm:mb-8">
           <div className="flex items-center gap-2 mb-4">
-            <span className="text-xl">📋</span>
-            <h3 className="text-lg font-semibold text-white">Recent Submissions</h3>
+            <span className="text-lg sm:text-xl">📋</span>
+            <h3 className="text-base sm:text-lg font-semibold text-white">Recent Submissions</h3>
           </div>
 
           {recentSubmissions.length > 0 ? (
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               {recentSubmissions.map((submission) => (
                 <div 
                   key={submission.id}
-                  className="flex items-center justify-between p-3 bg-zinc-800/30 rounded-xl"
+                  className="flex items-center justify-between p-2.5 sm:p-3 bg-zinc-800/30 rounded-xl gap-2"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-green-500/20 rounded-full flex items-center justify-center">
-                      <svg className="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                  <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 bg-green-500/20 rounded-full flex items-center justify-center flex-shrink-0">
+                      <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                       </svg>
                     </div>
-                    <div>
-                      <div className="text-white text-sm">
+                    <div className="min-w-0">
+                      <div className="text-white text-xs sm:text-sm truncate">
                         {submission.tiktokUrl ? shortenUrl(submission.tiktokUrl) : '📁 Video Upload'}
                       </div>
-                      <div className="text-zinc-500 text-xs">{formatRelativeTime(submission.createdAt)}</div>
+                      <div className="text-zinc-500 text-[10px] sm:text-xs">{formatRelativeTime(submission.createdAt)}</div>
                     </div>
                   </div>
                   {submission.tiktokUrl && (
@@ -747,25 +760,25 @@ function SubmitContentPageContent() {
                       href={submission.tiktokUrl} 
                       target="_blank" 
                       rel="noopener noreferrer"
-                      className="text-zinc-500 hover:text-zinc-300 transition-colors"
+                      className="text-zinc-500 hover:text-zinc-300 transition-colors p-1.5 flex-shrink-0"
                     >
-                      <ExternalLinkIcon />
+                      <ExternalLinkIcon className="w-4 h-4" />
                     </a>
                   )}
                 </div>
               ))}
             </div>
           ) : (
-            <div className="text-center py-8 text-zinc-500">
-              <p>No submissions yet this week</p>
-              <p className="text-sm">Submit your first TikTok above!</p>
+            <div className="text-center py-6 sm:py-8 text-zinc-500">
+              <p className="text-sm">No submissions yet this week</p>
+              <p className="text-xs sm:text-sm">Submit your first TikTok above!</p>
             </div>
           )}
 
           <div className="mt-4 pt-4 border-t border-zinc-700/50 text-center">
             <Link 
               href="/creator/submissions"
-              className="text-zinc-400 hover:text-white transition-colors text-sm"
+              className="text-zinc-400 hover:text-white transition-colors text-xs sm:text-sm"
             >
               View All History →
             </Link>
@@ -773,23 +786,23 @@ function SubmitContentPageContent() {
         </GlowCard>
 
         {/* Milestone Bonuses */}
-        <GlowCard glowColor="amber" delay="0.4s" className="mb-8">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-2xl">🏆</span>
-            <h3 className="text-lg font-semibold text-white">Milestone Bonuses</h3>
+        <GlowCard glowColor="amber" delay="0.4s" className="mb-6 sm:mb-8">
+          <div className="flex items-center gap-2 mb-1 sm:mb-2">
+            <span className="text-xl sm:text-2xl">🏆</span>
+            <h3 className="text-base sm:text-lg font-semibold text-white">Milestone Bonuses</h3>
           </div>
-          <p className="text-zinc-400 text-sm mb-6">Got a viral video? Claim extra rewards!</p>
+          <p className="text-zinc-400 text-xs sm:text-sm mb-4 sm:mb-6">Got a viral video? Claim extra rewards!</p>
 
           {rewardsLoading ? (
             // Loading skeletons
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="h-32 bg-zinc-800/50 rounded-xl animate-pulse" />
-              <div className="h-32 bg-zinc-800/50 rounded-xl animate-pulse" />
-              <div className="h-32 bg-zinc-800/50 rounded-xl animate-pulse" />
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+              <div className="h-28 sm:h-32 bg-zinc-800/50 rounded-xl animate-pulse" />
+              <div className="h-28 sm:h-32 bg-zinc-800/50 rounded-xl animate-pulse" />
+              <div className="h-28 sm:h-32 bg-zinc-800/50 rounded-xl animate-pulse" />
             </div>
           ) : milestoneRewards.length > 0 ? (
-            // Dynamic rewards as cards
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            // Dynamic rewards as cards - Horizontal scroll on mobile
+            <div className="flex sm:grid sm:grid-cols-3 gap-3 sm:gap-4 overflow-x-auto pb-2 sm:pb-0 -mx-1 px-1 sm:mx-0 sm:px-0 scrollbar-hide">
               {milestoneRewards.map((reward) => {
                 const tierEmoji = reward.milestoneTier === '1m' ? '👑' : 
                                   reward.milestoneTier === '500k' ? '🔥' : '🎯';
@@ -800,26 +813,30 @@ function SubmitContentPageContent() {
                                   'from-purple-500/20 to-pink-500/10 border-purple-500/30';
                 
                 return (
-                  <Link href={`/creator/rewards?reward=${reward.id}`} key={reward.id} className="block group">
-                    <div className={`relative overflow-hidden rounded-xl border bg-gradient-to-br ${tierColor} p-4 h-full transition-all duration-300 hover:scale-[1.02] hover:shadow-lg`}>
+                  <Link 
+                    href={`/creator/rewards?reward=${reward.id}`} 
+                    key={reward.id} 
+                    className="block group flex-shrink-0 w-[140px] sm:w-auto"
+                  >
+                    <div className={`relative overflow-hidden rounded-xl border bg-gradient-to-br ${tierColor} p-3 sm:p-4 h-full transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg`}>
                       {/* Badge */}
-                      <div className="absolute top-2 right-2">
-                        <span className="px-2 py-0.5 bg-purple-500/30 text-purple-300 text-xs font-medium rounded-full">
+                      <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2">
+                        <span className="px-1.5 sm:px-2 py-0.5 bg-purple-500/30 text-purple-300 text-[10px] sm:text-xs font-medium rounded-full">
                           Milestone
                         </span>
                       </div>
                       
                       {/* Emoji */}
-                      <div className="text-4xl mb-3 group-hover:scale-110 transition-transform">
+                      <div className="text-3xl sm:text-4xl mb-2 sm:mb-3 group-hover:scale-110 transition-transform">
                         {tierEmoji}
                       </div>
                       
                       {/* Title */}
-                      <h4 className="text-white font-semibold mb-1">{tierLabel}</h4>
+                      <h4 className="text-white font-semibold text-sm sm:text-base mb-1">{tierLabel}</h4>
                       
                       {/* Reward Value */}
-                      <div className="mt-2">
-                        <span className="inline-block px-3 py-1 bg-zinc-800/80 text-green-400 text-sm font-medium rounded-full">
+                      <div className="mt-1.5 sm:mt-2">
+                        <span className="inline-block px-2 sm:px-3 py-0.5 sm:py-1 bg-zinc-800/80 text-green-400 text-[10px] sm:text-sm font-medium rounded-full">
                           {reward.description || reward.name}
                         </span>
                       </div>
@@ -830,15 +847,15 @@ function SubmitContentPageContent() {
             </div>
           ) : (
             // Fallback if no rewards configured
-            <div className="text-center py-8 text-zinc-500">
-              <p>Milestone rewards coming soon!</p>
+            <div className="text-center py-6 sm:py-8 text-zinc-500">
+              <p className="text-sm">Milestone rewards coming soon!</p>
             </div>
           )}
 
-          <div className="mt-6 text-center">
+          <div className="mt-4 sm:mt-6 text-center">
             <Link 
               href="/creator/rewards?filter=milestone"
-              className="text-zinc-400 hover:text-white transition-colors text-sm"
+              className="text-zinc-400 hover:text-white transition-colors text-xs sm:text-sm"
             >
               View All Rewards →
             </Link>
@@ -846,30 +863,30 @@ function SubmitContentPageContent() {
         </GlowCard>
 
         {/* Maximize Your Content - Pro Tips */}
-        <GlowCard glowColor="purple" delay="0.45s" className="mb-8">
-          <div className="flex items-center gap-2 mb-4">
-            <span className="text-2xl">💡</span>
-            <h3 className="text-lg font-semibold text-white">Maximize Your Content</h3>
+        <GlowCard glowColor="purple" delay="0.45s" className="mb-6 sm:mb-8">
+          <div className="flex items-center gap-2 mb-3 sm:mb-4">
+            <span className="text-xl sm:text-2xl">💡</span>
+            <h3 className="text-base sm:text-lg font-semibold text-white">Maximize Your Content</h3>
           </div>
 
-          <ul className="space-y-3">
-            <li className="flex items-start gap-2 text-zinc-400">
-              <span className="text-orange-400 mt-0.5">•</span>
+          <ul className="space-y-2 sm:space-y-3">
+            <li className="flex items-start gap-2 text-zinc-400 text-xs sm:text-base">
+              <span className="text-orange-400 mt-0.5 flex-shrink-0">•</span>
               <span>Tag <span className="text-orange-400">@thehoopgang</span> in every post for bonus visibility</span>
             </li>
-            <li className="flex items-start gap-2 text-zinc-400">
-              <span className="text-orange-400 mt-0.5">•</span>
+            <li className="flex items-start gap-2 text-zinc-400 text-xs sm:text-base">
+              <span className="text-orange-400 mt-0.5 flex-shrink-0">•</span>
               <span>Use trending sounds to boost your reach</span>
             </li>
-            <li className="flex items-start gap-2 text-zinc-400">
-              <span className="text-orange-400 mt-0.5">•</span>
+            <li className="flex items-start gap-2 text-zinc-400 text-xs sm:text-base">
+              <span className="text-orange-400 mt-0.5 flex-shrink-0">•</span>
               <span>Post during peak hours (6-9 PM) for maximum engagement</span>
             </li>
           </ul>
         </GlowCard>
 
         {/* Bottom Navigation */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
           <Link 
             href="/creator/leaderboard"
             className="text-zinc-400 hover:text-orange-400 transition-colors text-sm"

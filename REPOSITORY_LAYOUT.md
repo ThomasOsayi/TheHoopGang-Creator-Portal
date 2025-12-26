@@ -37,6 +37,7 @@
   - `creator/submit/page.tsx`
   - `creator/leaderboard/page.tsx`
   - `creator/rewards/page.tsx`
+  - `creator/redemptions/page.tsx`
   - `creator/submissions/page.tsx`
   - `creator/request-product/page.tsx`
 - **Admin pages**
@@ -56,7 +57,7 @@
   - `auth/lookup-tiktok/route.ts` – Public TikTok username lookup (returns masked data)
   - `auth/claim-tiktok/route.ts` – TikTok creator account claim endpoint
   - `competitions/active/route.ts` – Public active competition endpoint
-  - `creator/rewards/route.ts`, `creator/rewards/stats/route.ts`, `creator/redemptions/route.ts`, `creator/stats/route.ts`
+  - `creator/rewards/route.ts`, `creator/rewards/stats/route.ts`, `creator/redemptions/route.ts`, `creator/redemptions/[id]/claim/route.ts`, `creator/stats/route.ts`
   - `email/send/route.ts`, `leaderboard/route.ts`
   - `submissions/history/route.ts`, `submissions/volume/...`, `submissions/volume/milestone/...`, `submissions/volume/milestone/stats/...`
   - `tracking/route.ts`, `webhooks/tracking/route.ts`
@@ -346,8 +347,14 @@ api/
 │   │   │       └── route.ts    # Creator rewards stats API
 │   │   │                       # - GET: Fetch reward/earnings statistics for creators
 │   │   ├── redemptions/
-│   │   │   └── route.ts        # Creator redemptions API
-│   │   │                       # - GET: Fetch creator's redemption history
+│   │   │   ├── route.ts        # Creator redemptions API
+│   │   │   │                   # - GET: Fetch creator's redemption history
+│   │   │   └── [id]/
+│   │   │       └── claim/
+│   │   │           └── route.ts # Claim redemption API
+│   │   │                       # - POST: Claim a redemption (submit payment/shipping info)
+│   │   │                       # - Validates redemption ownership
+│   │   │                       # - Updates redemption status and fulfillment details
 │   │   └── stats/
 │   │       └── route.ts        # Creator stats API
 │   │                           # - GET: Fetch overall creator statistics
@@ -445,6 +452,14 @@ creator/
 │                               # - Leaderboard rewards display
 │                               # - Reward images and descriptions
 │                               # - Redemption status tracking
+│                               # - PageHeader component
+├── redemptions/
+│   └── page.tsx                # Creator redemptions page
+│                               # - View redemption history and status
+│                               # - Filter by status (available, processing, completed)
+│                               # - Claim redemptions (submit payment/shipping info)
+│                               # - Track redemption fulfillment progress
+│                               # - Display redemption details and amounts
 │                               # - PageHeader component
 └── submissions/
     └── page.tsx                # Creator submissions history page
@@ -673,12 +688,12 @@ creator/
 
 ## File Statistics
 
-### Pages (17+ `page.tsx` files)
+### Pages (18+ `page.tsx` files)
 - Root page, login, apply (general/tiktok/instagram), forgot-password, verify-email
 - Admin: creators list, creator detail, submissions list, submission review, volume leaderboard, GMV leaderboard, TikTok imports
-- Creator: dashboard, submit, leaderboard, rewards, submissions history, request-product
+- Creator: dashboard, submit, leaderboard, rewards, redemptions, submissions history, request-product
 
-### API Routes (36 files)
+### API Routes (37 files)
 - Auth: Email verification, TikTok lookup (public), TikTok claim endpoints
 - Email: Send email endpoint
 - Tracking API: POST, GET, DELETE handlers (simplified - no external API)
@@ -697,7 +712,7 @@ creator/
 - Admin Rewards: CRUD operations for rewards
 - Admin Redemptions: List and update redemption status
 - Creator Rewards: Fetch available rewards and stats
-- Creator Redemptions: Fetch creator redemption history
+- Creator Redemptions: Fetch creator redemption history, claim redemptions (submit payment/shipping info)
 - Creator Stats: Fetch creator statistics
 
 ### Components (35 files)
@@ -1372,6 +1387,13 @@ creator/
   - Conditional image rendering: Shows reward image if `imageUrl` exists, otherwise displays tier emoji
   - See redemption eligibility and status
   - Responsive card layout with hover effects
+- **Creator Redemptions Page** (`/creator/redemptions`):
+  - View redemption history with status filtering (available, processing, completed)
+  - Claim redemptions by submitting payment or shipping information
+  - Track redemption fulfillment progress
+  - Display redemption details including amounts, fulfillment types, and status
+  - Tab-based interface for organizing redemptions by status
+  - PageHeader component with consistent styling
 - **Rewards API Routes**:
   - `/api/admin/rewards` - List and create rewards (GET, POST)
   - `/api/admin/rewards/[id]` - Get and update individual rewards (GET, PUT)
@@ -1380,6 +1402,10 @@ creator/
   - `/api/admin/redemptions` - List all redemptions with filters (GET)
   - `/api/admin/redemptions/[id]` - Get and update redemption status (GET, PUT)
   - `/api/creator/redemptions` - Fetch creator's redemption history (GET)
+  - `/api/creator/redemptions/[id]/claim` - Claim a redemption (POST)
+    - Submit payment method (Venmo, PayPal, CashApp) or shipping address
+    - Validates redemption ownership and status
+    - Updates redemption with fulfillment details
 
 ### Dashboard V3 Stats Integration (Latest)
 - **Creator Dashboard** (`/creator/dashboard`):

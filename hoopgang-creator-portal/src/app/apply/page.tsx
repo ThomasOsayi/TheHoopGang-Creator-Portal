@@ -1,4 +1,5 @@
 // src/app/apply/page.tsx
+// Mobile-Responsive Version
 
 'use client';
 
@@ -89,7 +90,7 @@ function PlatformSelectionContent() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 py-12 px-4 relative overflow-hidden">
+    <div className="min-h-screen bg-zinc-950 py-8 sm:py-12 px-4 relative overflow-hidden">
       {/* Background Gradient Orbs */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute -top-40 -right-40 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl" />
@@ -99,9 +100,9 @@ function PlatformSelectionContent() {
 
       <div className="max-w-3xl mx-auto relative z-10">
         {/* Header */}
-        <div className="text-center mb-12">
-          <div className="relative w-20 h-20 mx-auto mb-6">
-            <div className="w-full h-full bg-zinc-800/50 rounded-2xl border border-white/10 flex items-center justify-center p-4">
+        <div className="text-center mb-8 sm:mb-12">
+          <div className="relative w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 sm:mb-6">
+            <div className="w-full h-full bg-zinc-800/50 rounded-xl sm:rounded-2xl border border-white/10 flex items-center justify-center p-3 sm:p-4">
               <Image
                 src="/images/THG_logo_orange.png"
                 alt="TheHoopGang"
@@ -111,71 +112,71 @@ function PlatformSelectionContent() {
               />
             </div>
           </div>
-          <h1 className="text-4xl font-black text-white mb-3">
+          <h1 className="text-2xl sm:text-4xl font-black text-white mb-2 sm:mb-3 px-2">
             Join the TheHoopGang Creator Squad
           </h1>
-          <p className="text-white/60 text-lg">
+          <p className="text-white/60 text-sm sm:text-lg">
             Get free gear. Create fire content. Get paid to hoop.
           </p>
         </div>
 
         {/* Platform Selection */}
-        <div className="mb-8">
-          <p className="text-center text-white/50 text-sm uppercase tracking-wider mb-6">
+        <div className="mb-6 sm:mb-8">
+          <p className="text-center text-white/50 text-xs sm:text-sm uppercase tracking-wider mb-4 sm:mb-6">
             Choose how you want to join
           </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             {/* TikTok Card */}
             <button
               onClick={() => handlePlatformSelect('tiktok')}
               onMouseEnter={() => setHoveredCard('tiktok')}
               onMouseLeave={() => setHoveredCard(null)}
               className={`
-                relative group text-left p-6 rounded-2xl border-2 transition-all duration-300
-                bg-black border-zinc-800
+                relative group text-left p-4 sm:p-6 rounded-xl sm:rounded-2xl border-2 transition-all duration-300
+                bg-black border-zinc-800 active:scale-[0.98]
                 hover:border-zinc-600 hover:scale-[1.02] hover:shadow-xl hover:shadow-black/50
                 ${hoveredCard === 'tiktok' ? 'border-zinc-600 scale-[1.02]' : ''}
               `}
             >
               {/* Gradient overlay on hover */}
               <div className={`
-                absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300
+                absolute inset-0 rounded-xl sm:rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300
                 bg-gradient-to-br from-[#25F4EE]/10 via-transparent to-[#FE2C55]/10
               `} />
               
               <div className="relative z-10">
                 {/* Logo */}
-                <div className="w-16 h-16 bg-zinc-900 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                  <TiktokLogo className="w-10 h-10" />
+                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-zinc-900 rounded-lg sm:rounded-xl flex items-center justify-center mb-3 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <TiktokLogo className="w-7 h-7 sm:w-10 sm:h-10" />
                 </div>
 
                 {/* Title */}
-                <h3 className="text-xl font-bold text-white mb-2">
+                <h3 className="text-lg sm:text-xl font-bold text-white mb-1.5 sm:mb-2">
                   TikTok Shop Creator
                 </h3>
 
                 {/* Description */}
-                <p className="text-white/60 text-sm mb-4">
+                <p className="text-white/60 text-xs sm:text-sm mb-3 sm:mb-4 pr-8 sm:pr-0">
                   Already ordered from our TikTok Shop? Sign up instantly with your order info pre-filled.
                 </p>
 
                 {/* Features */}
-                <div className="flex flex-wrap gap-2">
-                  <span className="px-3 py-1 bg-zinc-800/80 rounded-full text-xs text-white/70">
+                <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                  <span className="px-2 sm:px-3 py-0.5 sm:py-1 bg-zinc-800/80 rounded-full text-[10px] sm:text-xs text-white/70">
                     ⚡ Quick setup
                   </span>
-                  <span className="px-3 py-1 bg-zinc-800/80 rounded-full text-xs text-white/70">
-                    📦 Pre-filled info
+                  <span className="px-2 sm:px-3 py-0.5 sm:py-1 bg-zinc-800/80 rounded-full text-[10px] sm:text-xs text-white/70">
+                    📦 Pre-filled
                   </span>
-                  <span className="px-3 py-1 bg-zinc-800/80 rounded-full text-xs text-white/70">
+                  <span className="px-2 sm:px-3 py-0.5 sm:py-1 bg-zinc-800/80 rounded-full text-[10px] sm:text-xs text-white/70">
                     ✓ 3 steps
                   </span>
                 </div>
 
                 {/* Arrow indicator */}
-                <div className="absolute top-6 right-6 w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center group-hover:bg-zinc-700 transition-colors">
-                  <svg className="w-4 h-4 text-white/60 group-hover:text-white group-hover:translate-x-0.5 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="absolute top-4 sm:top-6 right-4 sm:right-6 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-zinc-800 flex items-center justify-center group-hover:bg-zinc-700 transition-colors">
+                  <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white/60 group-hover:text-white group-hover:translate-x-0.5 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </div>
@@ -188,8 +189,8 @@ function PlatformSelectionContent() {
               onMouseEnter={() => setHoveredCard('instagram')}
               onMouseLeave={() => setHoveredCard(null)}
               className={`
-                relative group text-left p-6 rounded-2xl border-2 transition-all duration-300
-                border-zinc-800
+                relative group text-left p-4 sm:p-6 rounded-xl sm:rounded-2xl border-2 transition-all duration-300
+                border-zinc-800 active:scale-[0.98]
                 hover:border-zinc-600 hover:scale-[1.02] hover:shadow-xl hover:shadow-purple-500/10
                 ${hoveredCard === 'instagram' ? 'border-zinc-600 scale-[1.02]' : ''}
               `}
@@ -199,47 +200,47 @@ function PlatformSelectionContent() {
             >
               {/* Gradient border effect on hover */}
               <div className={`
-                absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300
+                absolute inset-0 rounded-xl sm:rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300
                 bg-gradient-to-br from-purple-500/20 via-pink-500/10 to-orange-500/20
               `} />
               
               <div className="relative z-10">
                 {/* Logo */}
                 <div 
-                  className="w-16 h-16 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300"
+                  className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg sm:rounded-xl flex items-center justify-center mb-3 sm:mb-4 group-hover:scale-110 transition-transform duration-300"
                   style={{
                     background: 'linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)',
                   }}
                 >
-                  <InstagramLogo className="w-9 h-9" />
+                  <InstagramLogo className="w-6 h-6 sm:w-9 sm:h-9" />
                 </div>
 
                 {/* Title */}
-                <h3 className="text-xl font-bold text-white mb-2">
+                <h3 className="text-lg sm:text-xl font-bold text-white mb-1.5 sm:mb-2">
                   Instagram Creator
                 </h3>
 
                 {/* Description */}
-                <p className="text-white/60 text-sm mb-4">
+                <p className="text-white/60 text-xs sm:text-sm mb-3 sm:mb-4 pr-8 sm:pr-0">
                   Apply to become a TheHoopGang creator. Tell us about yourself and your content.
                 </p>
 
                 {/* Features */}
-                <div className="flex flex-wrap gap-2">
-                  <span className="px-3 py-1 bg-white/10 rounded-full text-xs text-white/70">
-                    📝 Full application
+                <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                  <span className="px-2 sm:px-3 py-0.5 sm:py-1 bg-white/10 rounded-full text-[10px] sm:text-xs text-white/70">
+                    📝 Full app
                   </span>
-                  <span className="px-3 py-1 bg-white/10 rounded-full text-xs text-white/70">
-                    ⏱️ ~5 minutes
+                  <span className="px-2 sm:px-3 py-0.5 sm:py-1 bg-white/10 rounded-full text-[10px] sm:text-xs text-white/70">
+                    ⏱️ ~5 min
                   </span>
-                  <span className="px-3 py-1 bg-white/10 rounded-full text-xs text-white/70">
+                  <span className="px-2 sm:px-3 py-0.5 sm:py-1 bg-white/10 rounded-full text-[10px] sm:text-xs text-white/70">
                     ✓ 5 steps
                   </span>
                 </div>
 
                 {/* Arrow indicator */}
-                <div className="absolute top-6 right-6 w-8 h-8 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors">
-                  <svg className="w-4 h-4 text-white/60 group-hover:text-white group-hover:translate-x-0.5 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="absolute top-4 sm:top-6 right-4 sm:right-6 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors">
+                  <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white/60 group-hover:text-white group-hover:translate-x-0.5 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </div>
@@ -249,17 +250,18 @@ function PlatformSelectionContent() {
         </div>
 
         {/* Help Text */}
-        <div className="text-center space-y-4">
-          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4 inline-block">
-            <p className="text-white/50 text-sm">
+        <div className="text-center space-y-3 sm:space-y-4">
+          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-3 sm:p-4 inline-block">
+            <p className="text-white/50 text-xs sm:text-sm">
               <span className="text-white/70 font-medium">Not sure which to choose?</span>
               <br />
-              If you ordered from our TikTok Shop, use TikTok. Otherwise, use Instagram.
+              <span className="hidden sm:inline">If you ordered from our TikTok Shop, use TikTok. Otherwise, use Instagram.</span>
+              <span className="sm:hidden">TikTok Shop order? Use TikTok. Otherwise, Instagram.</span>
             </p>
           </div>
 
           {/* Already have account link */}
-          <p className="text-white/50 text-sm">
+          <p className="text-white/50 text-xs sm:text-sm">
             Already have an account?{' '}
             <Link href="/login" className="text-orange-400 hover:text-orange-300 transition-colors">
               Sign in here

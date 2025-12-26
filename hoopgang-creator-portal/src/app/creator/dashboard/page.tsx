@@ -1,4 +1,5 @@
 // src/app/creator/dashboard/page.tsx
+// Mobile-Responsive Version
 
 'use client';
 
@@ -473,10 +474,10 @@ export default function CreatorDashboardPage() {
         {/* Background Orbs */}
         <BackgroundOrbs colors={['orange', 'purple', 'orange']} />
 
-        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-8">
+        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
           {/* Error Display */}
           {error && (
-            <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl mb-6 animate-fade-in">
+            <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl mb-6 animate-fade-in text-sm sm:text-base">
               {error}
             </div>
           )}
@@ -489,28 +490,28 @@ export default function CreatorDashboardPage() {
             accentColor="orange"
           />
 
-          {/* Rewards Notification Card */}
+          {/* Rewards Notification Card - Mobile Optimized */}
           {rewardStats && rewardStats.readyToClaim > 0 && (
             <div 
               onClick={() => router.push('/creator/redemptions')}
-              className="mb-6 p-4 bg-gradient-to-r from-orange-500/20 via-amber-500/10 to-orange-500/20 border border-orange-500/30 rounded-2xl cursor-pointer hover:border-orange-500/50 transition-all group"
+              className="mb-6 p-3 sm:p-4 bg-gradient-to-r from-orange-500/20 via-amber-500/10 to-orange-500/20 border border-orange-500/30 rounded-2xl cursor-pointer hover:border-orange-500/50 transition-all group active:scale-[0.98]"
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-orange-500/20 rounded-xl flex items-center justify-center text-2xl animate-bounce">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-500/20 rounded-xl flex items-center justify-center text-xl sm:text-2xl animate-bounce flex-shrink-0">
                     🎁
                   </div>
-                  <div>
-                    <div className="text-white font-bold text-lg">
-                      You have {rewardStats.readyToClaim} reward{rewardStats.readyToClaim !== 1 ? 's' : ''} to claim!
+                  <div className="min-w-0">
+                    <div className="text-white font-bold text-sm sm:text-lg truncate">
+                      {rewardStats.readyToClaim} reward{rewardStats.readyToClaim !== 1 ? 's' : ''} to claim!
                     </div>
-                    <div className="text-orange-400/70 text-sm">
-                      Click here to claim your rewards
+                    <div className="text-orange-400/70 text-xs sm:text-sm">
+                      Tap to claim your rewards
                     </div>
                   </div>
                 </div>
-                <div className="text-orange-400 group-hover:translate-x-1 transition-transform">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="text-orange-400 group-hover:translate-x-1 transition-transform flex-shrink-0">
+                  <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </div>
@@ -521,11 +522,11 @@ export default function CreatorDashboardPage() {
           {/* Status Banners */}
           {creator.collaboration?.status === 'pending' && (
             <GlowCard glowColor="yellow" className="mb-6 bg-gradient-to-r from-yellow-500/10 to-amber-500/10 border-yellow-500/20">
-              <div className="flex items-center gap-4">
-                <div className="text-4xl animate-pulse">⏳</div>
+              <div className="flex items-start sm:items-center gap-3 sm:gap-4">
+                <div className="text-3xl sm:text-4xl animate-pulse flex-shrink-0">⏳</div>
                 <div>
-                  <h2 className="text-lg font-bold text-yellow-400">Application Under Review</h2>
-                  <p className="text-white/60 text-sm">
+                  <h2 className="text-base sm:text-lg font-bold text-yellow-400">Application Under Review</h2>
+                  <p className="text-white/60 text-xs sm:text-sm">
                     We&apos;ll notify you once your application has been approved. Usually takes 1-3 business days.
                   </p>
                 </div>
@@ -535,18 +536,18 @@ export default function CreatorDashboardPage() {
 
           {creator.collaboration?.status === 'denied' && (
             <GlowCard glowColor="red" className="mb-6 bg-gradient-to-r from-red-500/10 to-rose-500/10 border-red-500/20">
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <div className="text-4xl">😔</div>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-start sm:items-center gap-3 sm:gap-4">
+                  <div className="text-3xl sm:text-4xl flex-shrink-0">😔</div>
                   <div>
-                    <h2 className="text-lg font-bold text-red-400">Application Not Approved</h2>
-                    <p className="text-white/60 text-sm">
+                    <h2 className="text-base sm:text-lg font-bold text-red-400">Application Not Approved</h2>
+                    <p className="text-white/60 text-xs sm:text-sm">
                       Unfortunately, your application wasn&apos;t approved this time. Feel free to apply again!
                     </p>
                   </div>
                 </div>
-                <Link href="/apply">
-                  <Button variant="primary">Apply Again</Button>
+                <Link href="/apply" className="w-full sm:w-auto">
+                  <Button variant="primary" className="w-full sm:w-auto">Apply Again</Button>
                 </Link>
               </div>
             </GlowCard>
@@ -554,11 +555,11 @@ export default function CreatorDashboardPage() {
 
           {creator.isBlocked && (
             <GlowCard glowColor="red" className="mb-6 bg-gradient-to-r from-red-500/10 to-rose-500/10 border-red-500/20">
-              <div className="flex items-center gap-4">
-                <div className="text-4xl">🚫</div>
+              <div className="flex items-start sm:items-center gap-3 sm:gap-4">
+                <div className="text-3xl sm:text-4xl flex-shrink-0">🚫</div>
                 <div>
-                  <h2 className="text-lg font-bold text-red-400">Account Blocked</h2>
-                  <p className="text-white/60 text-sm">
+                  <h2 className="text-base sm:text-lg font-bold text-red-400">Account Blocked</h2>
+                  <p className="text-white/60 text-xs sm:text-sm">
                     Your account has been blocked from future collaborations due to unfulfilled content requirements.
                   </p>
                 </div>
@@ -568,22 +569,22 @@ export default function CreatorDashboardPage() {
 
           {/* Primary Action Card - FULL WIDTH - Only for active collaborations */}
           {isActiveCollab && nextStep.title && (
-            <div className="mb-8 p-6 bg-gradient-to-r from-orange-500/20 via-amber-500/10 to-orange-500/20 border border-orange-500/30 rounded-2xl relative overflow-hidden group transition-all duration-300 animate-fade-in-up hover:shadow-glow-orange hover:border-orange-500/60 hover:scale-[1.005]">
+            <div className="mb-6 sm:mb-8 p-4 sm:p-6 bg-gradient-to-r from-orange-500/20 via-amber-500/10 to-orange-500/20 border border-orange-500/30 rounded-2xl relative overflow-hidden group transition-all duration-300 animate-fade-in-up hover:shadow-glow-orange hover:border-orange-500/60 hover:scale-[1.005] active:scale-[0.98]">
               {/* Animated gradient shine */}
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
               
               <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-2xl">🎯</span>
-                    <h2 className="text-xl font-bold text-white">Your Next Step</h2>
+                    <span className="text-xl sm:text-2xl">🎯</span>
+                    <h2 className="text-lg sm:text-xl font-bold text-white">Your Next Step</h2>
                   </div>
-                  <p className="text-zinc-300">{nextStep.title}</p>
-                  <p className="text-zinc-500 text-sm">{nextStep.message}</p>
+                  <p className="text-zinc-300 text-sm sm:text-base">{nextStep.title}</p>
+                  <p className="text-zinc-500 text-xs sm:text-sm">{nextStep.message}</p>
                 </div>
                 {nextStep.showCta && (
-                  <Link href="/creator/submit">
-                    <Button variant="primary" className="whitespace-nowrap">
+                  <Link href="/creator/submit" className="w-full sm:w-auto">
+                    <Button variant="primary" className="w-full sm:w-auto whitespace-nowrap">
                       Submit Content →
                     </Button>
                   </Link>
@@ -594,16 +595,16 @@ export default function CreatorDashboardPage() {
 
           {/* Main Two-Column Grid - Only for active collaborations */}
           {isActiveCollab && (
-            <div className="grid lg:grid-cols-3 gap-6 mb-8">
+            <div className="grid lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
               {/* Left Column - Collaboration Details (2/3 on desktop) */}
-              <div className="lg:col-span-2 space-y-6">
+              <div className="lg:col-span-2 space-y-4 sm:space-y-6">
                 {/* Your Collaboration Card */}
                 <GlowCard glowColor="orange" delay="0.1s" className="hover:border-orange-500/30 hover:shadow-[0_0_30px_-5px_rgba(249,115,22,0.2)]">
-                  <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                  <div className="flex items-center justify-between mb-4 sm:mb-6">
+                    <h3 className="text-base sm:text-lg font-semibold text-white flex items-center gap-2">
                       <span>📦</span> Your Collaboration
                     </h3>
-                    <span className={`text-xs font-medium px-3 py-1 rounded-full ${
+                    <span className={`text-xs font-medium px-2 sm:px-3 py-1 rounded-full ${
                       creator.collaboration?.status === 'completed' 
                         ? 'bg-green-500/20 text-green-400 border border-green-500/30'
                         : 'bg-green-500/20 text-green-400 border border-green-500/30'
@@ -612,22 +613,76 @@ export default function CreatorDashboardPage() {
                     </span>
                   </div>
 
-                  {/* Product Info - with 3D cube icon */}
-                  <div className="flex items-center gap-4 mb-6 p-4 bg-zinc-800/30 rounded-xl hover:bg-zinc-800/50 transition-colors">
-                    <div className="w-16 h-16 bg-gradient-to-br from-zinc-700 to-zinc-800 rounded-xl flex items-center justify-center border border-zinc-700">
-                      <svg className="w-8 h-8 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  {/* Product Info - Responsive */}
+                  <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6 p-3 sm:p-4 bg-zinc-800/30 rounded-xl hover:bg-zinc-800/50 transition-colors">
+                    <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-zinc-700 to-zinc-800 rounded-xl flex items-center justify-center border border-zinc-700 flex-shrink-0">
+                      <svg className="w-6 h-6 sm:w-8 sm:h-8 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                       </svg>
                     </div>
-                    <div>
-                      <div className="text-white font-semibold text-lg">{creator.collaboration?.product}</div>
-                      <div className="text-zinc-400">Size {creator.collaboration?.size}</div>
+                    <div className="min-w-0">
+                      <div className="text-white font-semibold text-base sm:text-lg truncate">{creator.collaboration?.product}</div>
+                      <div className="text-zinc-400 text-sm">Size {creator.collaboration?.size}</div>
                     </div>
                   </div>
 
-                  {/* Horizontal Timeline - Matching Mockup Exactly */}
+                  {/* Responsive Timeline - Vertical on mobile, Horizontal on tablet+ */}
                   <div className="relative">
-                    <div className="flex justify-between items-start">
+                    {/* Mobile: Vertical Timeline */}
+                    <div className="md:hidden">
+                      <div className="relative pl-8">
+                        <div className="absolute left-[9px] top-2 bottom-2 w-0.5 bg-zinc-700" />
+                        {timelineSteps.map((step, index) => (
+                          <div key={index} className="relative mb-5 last:mb-0">
+                            {/* Connector override for completed steps */}
+                            {step.status === 'completed' && index < timelineSteps.length - 1 && (
+                              <div className="absolute left-[9px] top-5 h-full w-0.5 bg-green-500" style={{ height: 'calc(100% + 20px)' }} />
+                            )}
+                            
+                            {/* Step circle */}
+                            <div className={`absolute left-0 w-5 h-5 rounded-full flex items-center justify-center text-xs z-10 ${
+                              step.status === 'completed'
+                                ? 'bg-green-500 text-white'
+                                : step.status === 'active'
+                                  ? 'bg-orange-500 text-white ring-4 ring-orange-500/30'
+                                  : step.status === 'failed'
+                                    ? 'bg-red-500 text-white'
+                                    : 'bg-zinc-700 text-zinc-400 border border-zinc-600'
+                            }`}>
+                              {step.status === 'completed' ? (
+                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                              ) : step.status === 'failed' ? (
+                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                </svg>
+                              ) : ''}
+                            </div>
+                            
+                            {/* Content */}
+                            <div className="ml-4">
+                              <div className="flex items-center gap-2">
+                                <span className={`text-sm font-medium ${
+                                  step.status === 'completed' ? 'text-green-400' :
+                                  step.status === 'active' ? 'text-orange-400' :
+                                  step.status === 'failed' ? 'text-red-400' :
+                                  'text-zinc-500'
+                                }`}>
+                                  {step.label}
+                                </span>
+                                {step.date && (
+                                  <span className="text-zinc-600 text-xs">• {step.date}</span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Tablet+: Horizontal Timeline */}
+                    <div className="hidden md:flex justify-between items-start">
                       {timelineSteps.map((step, index) => (
                         <div key={index} className="flex-1 relative">
                           {/* Connector line */}
@@ -698,14 +753,14 @@ export default function CreatorDashboardPage() {
                 {/* Content Progress Card */}
                 <GlowCard glowColor="amber" delay="0.2s">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                    <h3 className="text-base sm:text-lg font-semibold text-white flex items-center gap-2">
                       <span>🎥</span> Collab Content
                     </h3>
-                    <span className="text-zinc-400 text-sm">{videosSubmitted}/1 video</span>
+                    <span className="text-zinc-400 text-xs sm:text-sm">{videosSubmitted}/1 video</span>
                   </div>
 
                   {/* Progress bar with shimmer */}
-                  <div className="h-3 bg-zinc-800 rounded-full overflow-hidden mb-4 relative">
+                  <div className="h-2 sm:h-3 bg-zinc-800 rounded-full overflow-hidden mb-4 relative">
                     <div 
                       className="h-full bg-gradient-to-r from-orange-500 to-amber-500 rounded-full transition-all duration-1000 relative"
                       style={{ width: `${Math.max((videosSubmitted / 1) * 100, 2)}%` }}
@@ -714,8 +769,8 @@ export default function CreatorDashboardPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <p className="text-zinc-400 text-sm">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
+                    <p className="text-zinc-400 text-xs sm:text-sm">
                       {videosSubmitted === 0 
                         ? "Post your first TikTok featuring your TheHoopGang gear!"
                         : videosSubmitted >= 1
@@ -725,7 +780,7 @@ export default function CreatorDashboardPage() {
                     </p>
                     <Link 
                       href="/creator/submit"
-                      className="text-orange-400 hover:text-orange-300 text-sm font-medium transition-colors"
+                      className="text-orange-400 hover:text-orange-300 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap"
                     >
                       View Requirements →
                     </Link>
@@ -734,14 +789,14 @@ export default function CreatorDashboardPage() {
               </div>
 
               {/* Right Column - Stats (1/3 on desktop) */}
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 {/* This Week Stats - With Orange Gradient Background */}
                 <div 
-                  className="bg-gradient-to-br from-orange-500/10 to-amber-500/5 border border-orange-500/20 rounded-2xl p-6 transition-all duration-300 ease-out hover:shadow-glow-orange hover:border-orange-500/40 hover:scale-[1.01] hover:-translate-y-1 hover:border-orange-500/20 hover:shadow-[0_0_20px_-5px_rgba(249,115,22,0.15)] animate-fade-in-up"
+                  className="bg-gradient-to-br from-orange-500/10 to-amber-500/5 border border-orange-500/20 rounded-2xl p-4 sm:p-6 transition-all duration-300 ease-out hover:shadow-glow-orange hover:border-orange-500/40 hover:scale-[1.01] hover:-translate-y-1 active:scale-[0.98] animate-fade-in-up"
                   style={{ animationDelay: '0.3s' }}
                 >
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                    <h3 className="text-base sm:text-lg font-semibold text-white flex items-center gap-2">
                       <span>🚀</span> This Week
                     </h3>
                     <div className="bg-orange-500/20 px-2 py-1 rounded-full">
@@ -749,10 +804,10 @@ export default function CreatorDashboardPage() {
                     </div>
                   </div>
 
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
                     <div className="flex justify-between items-center">
-                      <span className="text-zinc-400">Submissions</span>
-                      <span className="text-white font-bold text-xl">
+                      <span className="text-zinc-400 text-sm">Submissions</span>
+                      <span className="text-white font-bold text-lg sm:text-xl">
                         {v3StatsLoading ? (
                           <Skeleton className="w-8 h-6" />
                         ) : (
@@ -762,19 +817,19 @@ export default function CreatorDashboardPage() {
                     </div>
 
                     <div className="flex justify-between items-center">
-                      <span className="text-zinc-400">Your Rank</span>
-                      <div className="flex items-center gap-2">
+                      <span className="text-zinc-400 text-sm">Your Rank</span>
+                      <div className="flex items-center gap-1 sm:gap-2">
                         {v3StatsLoading ? (
                           <Skeleton className="w-16 h-6" />
                         ) : v3Stats?.currentRank ? (
                           <>
-                            <span className="text-orange-400 font-bold text-xl">
+                            <span className="text-orange-400 font-bold text-lg sm:text-xl">
                               #<AnimatedCounter value={v3Stats.currentRank} />
                             </span>
-                            <span className="text-zinc-500 text-sm">/ {v3Stats.totalCreators}</span>
+                            <span className="text-zinc-500 text-xs sm:text-sm">/ {v3Stats.totalCreators}</span>
                           </>
                         ) : (
-                          <span className="text-zinc-500">Not ranked</span>
+                          <span className="text-zinc-500 text-sm">Not ranked</span>
                         )}
                       </div>
                     </div>
@@ -802,13 +857,13 @@ export default function CreatorDashboardPage() {
 
                 {/* Rewards Summary */}
                 <GlowCard glowColor="green" delay="0.4s" className="hover:border-green-500/20 hover:shadow-[0_0_20px_-5px_rgba(34,197,94,0.15)]">
-                  <h3 className="text-lg font-semibold text-white flex items-center gap-2 mb-4">
+                  <h3 className="text-base sm:text-lg font-semibold text-white flex items-center gap-2 mb-4">
                     <span>💰</span> Rewards
                   </h3>
 
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
-                      <span className="text-zinc-400">Pending</span>
+                      <span className="text-zinc-400 text-sm">Pending</span>
                       <span className={`font-semibold ${
                         redemptionStats.pending > 0 ? 'text-yellow-400' : 'text-zinc-500'
                       }`}>
@@ -820,7 +875,7 @@ export default function CreatorDashboardPage() {
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-zinc-400">Total Earned</span>
+                      <span className="text-zinc-400 text-sm">Total Earned</span>
                       <span className="text-green-400 font-semibold">
                         {redemptionsLoading ? (
                           <Skeleton className="w-12 h-5" />
@@ -840,17 +895,17 @@ export default function CreatorDashboardPage() {
 
                 {/* Pro Tips */}
                 <GlowCard glowColor="purple" delay="0.5s" className="hover:border-purple-500/20 hover:shadow-[0_0_20px_-5px_rgba(168,85,247,0.15)]">
-                  <h3 className="text-lg font-semibold text-white flex items-center gap-2 mb-4">
+                  <h3 className="text-base sm:text-lg font-semibold text-white flex items-center gap-2 mb-4">
                     <span className="animate-pulse">💡</span> Pro Tips
                   </h3>
-                  <ul className="space-y-3 text-sm">
+                  <ul className="space-y-2 sm:space-y-3 text-xs sm:text-sm">
                     {[
                       'Tag @thehoopgang in every post',
                       'Use trending basketball sounds',
                       'Show the product in action',
                     ].map((tip, i) => (
                       <li key={i} className="flex gap-2 text-zinc-400">
-                        <span className="text-orange-400">•</span>
+                        <span className="text-orange-400 flex-shrink-0">•</span>
                         <span>{tip}</span>
                       </li>
                     ))}
@@ -863,14 +918,14 @@ export default function CreatorDashboardPage() {
           {/* Timeline for Pending/Denied - Simplified view */}
           {creator.collaboration && ['pending', 'denied'].includes(creator.collaboration.status) && (
             <GlowCard glowColor="orange" className="mb-6">
-              <h3 className="text-lg font-semibold text-white flex items-center gap-2 mb-6">
+              <h3 className="text-base sm:text-lg font-semibold text-white flex items-center gap-2 mb-6">
                 <span>📋</span> Your Journey
               </h3>
               <div className="relative">
                 <div className="absolute left-2 top-0 bottom-0 w-0.5 bg-zinc-800" />
                 {timelineSteps.map((step, index) => (
-                  <div key={index} className="relative mb-6 last:mb-0 pl-10">
-                    <div className={`absolute left-0 w-5 h-5 rounded-full flex items-center justify-center text-xs ${
+                  <div key={index} className="relative mb-5 sm:mb-6 last:mb-0 pl-8 sm:pl-10">
+                    <div className={`absolute left-0 w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center text-xs ${
                       step.status === 'completed'
                         ? 'bg-green-500 text-white'
                         : step.status === 'active'
@@ -881,7 +936,7 @@ export default function CreatorDashboardPage() {
                     }`}>
                       {step.status === 'completed' ? '✓' : step.status === 'failed' ? '✗' : ''}
                     </div>
-                    <div className={`font-medium ${
+                    <div className={`font-medium text-sm sm:text-base ${
                       step.status === 'completed' ? 'text-white' :
                       step.status === 'active' ? 'text-orange-400' :
                       step.status === 'failed' ? 'text-red-400' :
@@ -899,18 +954,18 @@ export default function CreatorDashboardPage() {
           {/* No Active Collaboration - Can Request New */}
           {!creator.collaboration && !creator.isBlocked && creator.totalCollaborations > 0 && creator.source !== 'tiktok' && (
             <GlowCard glowColor="purple" className="mb-6 bg-gradient-to-r from-purple-500/10 to-indigo-500/10 border-purple-500/20">
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <div className="text-4xl">🎯</div>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-start sm:items-center gap-3 sm:gap-4">
+                  <div className="text-3xl sm:text-4xl flex-shrink-0">🎯</div>
                   <div>
-                    <h2 className="text-lg font-bold text-purple-400">Ready for Another Collab?</h2>
-                    <p className="text-white/60 text-sm">
+                    <h2 className="text-base sm:text-lg font-bold text-purple-400">Ready for Another Collab?</h2>
+                    <p className="text-white/60 text-xs sm:text-sm">
                       You&apos;ve completed {creator.totalCollaborations} collaboration{creator.totalCollaborations > 1 ? 's' : ''}. Request your next product!
                     </p>
                   </div>
                 </div>
-                <Link href="/creator/request-product">
-                  <Button variant="primary">Request New Product</Button>
+                <Link href="/creator/request-product" className="w-full sm:w-auto">
+                  <Button variant="primary" className="w-full sm:w-auto">Request New Product</Button>
                 </Link>
               </div>
             </GlowCard>
@@ -918,52 +973,52 @@ export default function CreatorDashboardPage() {
 
           {/* TikTok Creator - No Collaboration Needed */}
           {!creator.collaboration && creator.source === 'tiktok' && !creator.isBlocked && (
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {/* Welcome Card for TikTok Creators */}
               <GlowCard glowColor="purple" className="bg-gradient-to-r from-[#25F4EE]/10 to-[#FE2C55]/10 border-[#FE2C55]/20">
-                <div className="flex items-center gap-4">
-                  <div className="text-4xl">🎬</div>
+                <div className="flex items-start sm:items-center gap-3 sm:gap-4">
+                  <div className="text-3xl sm:text-4xl flex-shrink-0">🎬</div>
                   <div>
-                    <h2 className="text-lg font-bold text-white">Ready to Create Content!</h2>
-                    <p className="text-white/60 text-sm">
+                    <h2 className="text-base sm:text-lg font-bold text-white">Ready to Create Content!</h2>
+                    <p className="text-white/60 text-xs sm:text-sm">
                       Your TikTok Shop order is on its way. Start submitting content once you receive it!
                     </p>
                   </div>
                 </div>
               </GlowCard>
 
-              {/* V3 Stats Grid for TikTok Creators */}
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* V3 Stats Grid for TikTok Creators - Responsive */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {/* This Week Stats */}
-                <div className="bg-gradient-to-br from-orange-500/10 to-amber-500/5 border border-orange-500/20 rounded-2xl p-6">
+                <div className="bg-gradient-to-br from-orange-500/10 to-amber-500/5 border border-orange-500/20 rounded-2xl p-4 sm:p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                    <h3 className="text-base sm:text-lg font-semibold text-white flex items-center gap-2">
                       <span>🚀</span> This Week
                     </h3>
                     <div className="bg-orange-500/20 px-2 py-1 rounded-full">
                       <LiveCountdown targetDate={weekResetDate} size="sm" />
                     </div>
                   </div>
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
                     <div className="flex justify-between items-center">
-                      <span className="text-zinc-400">Submissions</span>
-                      <span className="text-white font-bold text-xl">
+                      <span className="text-zinc-400 text-sm">Submissions</span>
+                      <span className="text-white font-bold text-lg sm:text-xl">
                         {v3StatsLoading ? <Skeleton className="w-8 h-6" /> : <AnimatedCounter value={v3Stats?.weeklySubmissions || 0} />}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-zinc-400">Your Rank</span>
+                      <span className="text-zinc-400 text-sm">Your Rank</span>
                       {v3StatsLoading ? (
                         <Skeleton className="w-16 h-6" />
                       ) : v3Stats?.currentRank ? (
-                        <span className="text-orange-400 font-bold text-xl">#{v3Stats.currentRank}</span>
+                        <span className="text-orange-400 font-bold text-lg sm:text-xl">#{v3Stats.currentRank}</span>
                       ) : (
-                        <span className="text-zinc-500">Not ranked</span>
+                        <span className="text-zinc-500 text-sm">Not ranked</span>
                       )}
                     </div>
                   </div>
                   <Link href="/creator/leaderboard">
-                    <button className="w-full mt-4 py-2.5 bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 font-medium rounded-xl transition-all text-sm">
+                    <button className="w-full mt-4 py-2.5 bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 font-medium rounded-xl transition-all text-sm active:scale-[0.98]">
                       View Leaderboard →
                     </button>
                   </Link>
@@ -971,36 +1026,36 @@ export default function CreatorDashboardPage() {
 
                 {/* Rewards Card */}
                 <GlowCard glowColor="green">
-                  <h3 className="text-lg font-semibold text-white flex items-center gap-2 mb-4">
+                  <h3 className="text-base sm:text-lg font-semibold text-white flex items-center gap-2 mb-4">
                     <span>💰</span> Rewards
                   </h3>
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
-                      <span className="text-zinc-400">Pending</span>
+                      <span className="text-zinc-400 text-sm">Pending</span>
                       <span className={`font-semibold ${redemptionStats.pending > 0 ? 'text-yellow-400' : 'text-zinc-500'}`}>
                         {redemptionsLoading ? <Skeleton className="w-6 h-5" /> : redemptionStats.pending}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-zinc-400">Total Earned</span>
+                      <span className="text-zinc-400 text-sm">Total Earned</span>
                       <span className="text-green-400 font-semibold">
                         {redemptionsLoading ? <Skeleton className="w-12 h-5" /> : <>$<AnimatedCounter value={redemptionStats.totalEarned} /></>}
                       </span>
                     </div>
                   </div>
                   <Link href="/creator/rewards">
-                    <button className="w-full mt-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-medium rounded-xl transition-all text-sm">
+                    <button className="w-full mt-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-medium rounded-xl transition-all text-sm active:scale-[0.98]">
                       Browse Rewards →
                     </button>
                   </Link>
                 </GlowCard>
 
                 {/* Quick Submit Card */}
-                <GlowCard glowColor="purple">
-                  <h3 className="text-lg font-semibold text-white flex items-center gap-2 mb-4">
+                <GlowCard glowColor="purple" className="sm:col-span-2 lg:col-span-1">
+                  <h3 className="text-base sm:text-lg font-semibold text-white flex items-center gap-2 mb-4">
                     <span>📤</span> Submit Content
                   </h3>
-                  <p className="text-zinc-400 text-sm mb-4">
+                  <p className="text-zinc-400 text-xs sm:text-sm mb-4">
                     Post TikToks featuring your TheHoopGang gear and submit them to earn rewards!
                   </p>
                   <Link href="/creator/submit">
@@ -1016,14 +1071,14 @@ export default function CreatorDashboardPage() {
           {/* Past Collaborations */}
           {pastCollaborations.length > 0 && (
             <GlowCard glowColor="orange" delay="0.6s" className="mt-6">
-              <h3 className="text-lg font-semibold text-white flex items-center gap-2 mb-4">
+              <h3 className="text-base sm:text-lg font-semibold text-white flex items-center gap-2 mb-4">
                 <span>📜</span> Past Collaborations
               </h3>
               <div className="space-y-3">
                 {pastCollaborations.map((collab) => (
                   <div 
                     key={collab.id}
-                    className={`flex items-center justify-between p-4 rounded-xl border ${
+                    className={`flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 rounded-xl border gap-3 ${
                       collab.status === 'completed' 
                         ? 'bg-green-500/5 border-green-500/20' 
                         : collab.status === 'denied'
@@ -1031,8 +1086,8 @@ export default function CreatorDashboardPage() {
                           : 'bg-red-500/5 border-red-500/20'
                     }`}
                   >
-                    <div className="flex items-center gap-4">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg ${
+                    <div className="flex items-center gap-3 sm:gap-4">
+                      <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center text-base sm:text-lg flex-shrink-0 ${
                         collab.status === 'completed' 
                           ? 'bg-green-500/20' 
                           : collab.status === 'denied'
@@ -1041,16 +1096,16 @@ export default function CreatorDashboardPage() {
                       }`}>
                         {collab.status === 'completed' ? '✓' : collab.status === 'denied' ? '—' : '✗'}
                       </div>
-                      <div>
-                        <div className="text-white font-medium">
-                          {collab.product} <span className="text-zinc-500 text-sm">({collab.size})</span>
+                      <div className="min-w-0">
+                        <div className="text-white font-medium text-sm sm:text-base truncate">
+                          {collab.product} <span className="text-zinc-500 text-xs sm:text-sm">({collab.size})</span>
                         </div>
                         <div className="text-zinc-500 text-xs">
                           Collab #{collab.collabNumber} • {formatDate(collab.createdAt)}
                         </div>
                       </div>
                     </div>
-                    <span className={`text-xs font-medium px-3 py-1 rounded-full ${
+                    <span className={`self-start sm:self-auto text-xs font-medium px-3 py-1 rounded-full whitespace-nowrap ${
                       collab.status === 'completed' 
                         ? 'bg-green-500/20 text-green-400' 
                         : collab.status === 'denied'
@@ -1065,17 +1120,20 @@ export default function CreatorDashboardPage() {
             </GlowCard>
           )}
 
-          {/* Update Stats Modal */}
+          {/* Update Stats Modal - Bottom Sheet on Mobile */}
           {showStatsModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
               <div 
                 className="absolute inset-0 bg-black/70 backdrop-blur-sm"
                 onClick={() => setShowStatsModal(false)}
               />
               
-              <div className="relative bg-zinc-900 border border-zinc-800 rounded-2xl p-6 w-full max-w-md animate-fade-in-up">
-                <h3 className="text-xl font-bold text-white mb-2">Update Your Stats</h3>
-                <p className="text-zinc-500 text-sm mb-6">
+              <div className="relative bg-zinc-900 border border-zinc-800 rounded-t-2xl sm:rounded-2xl p-6 w-full sm:max-w-md animate-fade-in-up safe-bottom">
+                {/* Drag indicator for mobile */}
+                <div className="sm:hidden w-12 h-1 bg-zinc-700 rounded-full mx-auto mb-4" />
+                
+                <h3 className="text-lg sm:text-xl font-bold text-white mb-2">Update Your Stats</h3>
+                <p className="text-zinc-500 text-xs sm:text-sm mb-6">
                   Keep your follower counts up to date to unlock better opportunities.
                 </p>
 
@@ -1088,8 +1146,9 @@ export default function CreatorDashboardPage() {
                       type="number"
                       value={newInstagramFollowers}
                       onChange={(e) => setNewInstagramFollowers(parseInt(e.target.value) || 0)}
-                      className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-white text-base focus:outline-none focus:ring-2 focus:ring-orange-500"
                       min="0"
+                      inputMode="numeric"
                     />
                   </div>
 
@@ -1101,8 +1160,9 @@ export default function CreatorDashboardPage() {
                       type="number"
                       value={newTiktokFollowers}
                       onChange={(e) => setNewTiktokFollowers(parseInt(e.target.value) || 0)}
-                      className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-white text-base focus:outline-none focus:ring-2 focus:ring-orange-500"
                       min="0"
+                      inputMode="numeric"
                     />
                   </div>
                 </div>
@@ -1110,7 +1170,7 @@ export default function CreatorDashboardPage() {
                 <div className="flex gap-3 mt-6">
                   <button
                     onClick={() => setShowStatsModal(false)}
-                    className="flex-1 py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-medium rounded-xl transition-colors"
+                    className="flex-1 py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-medium rounded-xl transition-colors active:scale-[0.98]"
                   >
                     Cancel
                   </button>

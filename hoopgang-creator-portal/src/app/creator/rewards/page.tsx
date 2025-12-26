@@ -1,4 +1,6 @@
 // src/app/creator/rewards/page.tsx
+// Mobile-Responsive Version
+
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
@@ -144,7 +146,7 @@ function getRewardSubtitle(reward: any): string {
   return '';
 }
 
-// Reward Card Component
+// Reward Card Component - Mobile Optimized
 function RewardCard({ 
   reward, 
   onClick 
@@ -157,7 +159,7 @@ function RewardCard({
 
   return (
     <div 
-      className={`aspect-square bg-zinc-900/70 border border-zinc-800 rounded-2xl p-5 flex flex-col transition-all duration-300 cursor-pointer relative overflow-hidden group hover:scale-[1.02] hover:-translate-y-1`}
+      className={`aspect-square bg-zinc-900/70 border border-zinc-800 rounded-xl sm:rounded-2xl p-3 sm:p-5 flex flex-col transition-all duration-300 cursor-pointer relative overflow-hidden group hover:scale-[1.02] active:scale-[0.98] hover:-translate-y-1`}
       onClick={onClick}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -167,14 +169,14 @@ function RewardCard({
       }}
     >
       {/* Category Tag */}
-      <div className={`absolute top-4 right-4 text-xs font-medium px-2 py-1 rounded-full ${colors.bg} ${colors.text}`}>
+      <div className={`absolute top-2 right-2 sm:top-4 sm:right-4 text-[10px] sm:text-xs font-medium px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full ${colors.bg} ${colors.text}`}>
         {reward.category}
       </div>
 
       {/* Icon - Large & Centered */}
       <div className="flex-1 flex items-center justify-center">
         <div 
-          className={`text-6xl transition-all duration-300 ${isHovered ? 'scale-110' : ''}`}
+          className={`text-4xl sm:text-6xl transition-all duration-300 ${isHovered ? 'scale-110' : ''}`}
           style={{ 
             filter: isHovered ? `drop-shadow(0 0 20px ${colors.glow})` : 'none',
           }}
@@ -185,12 +187,12 @@ function RewardCard({
 
       {/* Bottom Info */}
       <div className="text-center">
-        <h3 className="text-white font-bold text-lg mb-0.5">{reward.title}</h3>
-        <p className="text-zinc-500 text-sm mb-3 line-clamp-2">{reward.subtitle}</p>
+        <h3 className="text-white font-bold text-sm sm:text-lg mb-0.5 truncate">{reward.title}</h3>
+        <p className="text-zinc-500 text-xs sm:text-sm mb-2 sm:mb-3 line-clamp-2">{reward.subtitle}</p>
         
         {/* Price Tag */}
         <div 
-          className={`inline-block px-4 py-2 rounded-xl font-bold text-sm ${colors.bg} ${colors.text} ${colors.border} border transition-all duration-300`}
+          className={`inline-block px-2 sm:px-4 py-1 sm:py-2 rounded-lg sm:rounded-xl font-bold text-xs sm:text-sm ${colors.bg} ${colors.text} ${colors.border} border transition-all duration-300`}
           style={{
             boxShadow: isHovered ? `0 0 15px -3px ${colors.glow}` : 'none',
           }}
@@ -202,7 +204,7 @@ function RewardCard({
   );
 }
 
-// Leaderboard Redirect Modal Component
+// Leaderboard Redirect Modal Component - Mobile Optimized
 function LeaderboardRedirectModal({
   isOpen,
   onClose,
@@ -219,7 +221,7 @@ function LeaderboardRedirectModal({
   const colors = categoryColors[reward.categoryColor];
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center">
       {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-black/70 backdrop-blur-sm"
@@ -227,7 +229,10 @@ function LeaderboardRedirectModal({
       />
 
       {/* Modal */}
-      <div className="relative w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-3xl shadow-2xl shadow-black/50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div className="relative w-full sm:max-w-md bg-zinc-900 border border-zinc-800 rounded-t-2xl sm:rounded-3xl shadow-2xl shadow-black/50 overflow-hidden animate-fade-in-up safe-bottom">
+        {/* Drag indicator for mobile */}
+        <div className="sm:hidden w-12 h-1 bg-zinc-700 rounded-full mx-auto mt-3" />
+        
         {/* Glow Effect */}
         <div 
           className="absolute -top-20 -right-20 w-40 h-40 rounded-full blur-3xl pointer-events-none"
@@ -235,47 +240,47 @@ function LeaderboardRedirectModal({
         />
 
         {/* Content */}
-        <div className="relative p-6 text-center">
+        <div className="relative p-5 sm:p-6 text-center">
           {/* Icon */}
           <div 
-            className="text-7xl mb-4 inline-block"
+            className="text-5xl sm:text-7xl mb-3 sm:mb-4 inline-block"
             style={{ filter: `drop-shadow(0 0 20px ${colors.glow})` }}
           >
             {reward.icon}
           </div>
 
           {/* Title */}
-          <h2 className="text-2xl font-bold text-white mb-2">{reward.title}</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">{reward.title}</h2>
           
           {/* Value Badge */}
           <div 
-            className={`inline-block px-4 py-2 rounded-xl font-bold text-sm mb-4 ${colors.bg} ${colors.text} ${colors.border} border`}
+            className={`inline-block px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl font-bold text-sm mb-3 sm:mb-4 ${colors.bg} ${colors.text} ${colors.border} border`}
           >
             {reward.value}
           </div>
 
           {/* Description */}
-          <p className="text-zinc-400 mb-6">
+          <p className="text-zinc-400 text-sm mb-4 sm:mb-6">
             This reward is awarded to top performers on our weekly leaderboard. 
             Check the leaderboard to see your current ranking!
           </p>
 
           {/* Trophy Icon */}
-          <div className="w-16 h-16 bg-yellow-500/20 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-6">
+          <div className="w-12 h-12 sm:w-16 sm:h-16 bg-yellow-500/20 rounded-xl sm:rounded-2xl flex items-center justify-center text-2xl sm:text-3xl mx-auto mb-4 sm:mb-6">
             🏆
           </div>
 
           {/* Actions */}
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2 sm:gap-3">
             <button
               onClick={onGoToLeaderboard}
-              className="w-full py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold rounded-xl transition-all hover:shadow-lg hover:shadow-orange-500/25"
+              className="w-full py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold rounded-xl transition-all hover:shadow-lg hover:shadow-orange-500/25 active:scale-[0.98]"
             >
               View Leaderboard →
             </button>
             <button
               onClick={onClose}
-              className="w-full py-3 text-zinc-400 hover:text-white font-medium transition-colors"
+              className="w-full py-3 text-zinc-400 hover:text-white font-medium transition-colors active:scale-[0.98]"
             >
               Close
             </button>
@@ -582,7 +587,7 @@ function CreatorRewardsPageContent() {
       case 'awaiting_claim':
         return { label: 'Awaiting Claim', class: 'bg-yellow-500/20 text-yellow-400' };
       case 'ready_to_fulfill':
-        return { label: 'Ready to Fulfill', class: 'bg-blue-500/20 text-blue-400' };
+        return { label: 'Ready', class: 'bg-blue-500/20 text-blue-400' };
       case 'fulfilled':
         return { label: 'Fulfilled', class: 'bg-green-500/20 text-green-400' };
       case 'rejected':
@@ -619,311 +624,318 @@ function CreatorRewardsPageContent() {
         {/* Background Orbs */}
         <BackgroundOrbs colors={['purple', 'orange', 'amber']} />
 
-      <main className="relative z-10 max-w-6xl mx-auto px-4 py-8">
-        {/* Header */}
-        <PageHeader 
-          title="Rewards Shop"
-          subtitle="Earn rewards for your content and claim your prizes"
-          icon="🎁"
-          accentColor="purple"
-        />
+        <main className="relative z-10 max-w-6xl mx-auto px-4 py-6 sm:py-8">
+          {/* Header */}
+          <PageHeader 
+            title="Rewards Shop"
+            subtitle="Earn rewards for your content and claim your prizes"
+            icon="🎁"
+            accentColor="purple"
+          />
 
-        {/* Stats Bar */}
-        <div className="mb-8 p-5 bg-gradient-to-r from-orange-500/10 via-amber-500/5 to-orange-500/10 border border-orange-500/20 rounded-2xl animate-fade-in-up">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-6 sm:gap-8">
-              {/* Total Earned */}
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
-                  <span className="text-2xl">💰</span>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-green-400">
-                    $<AnimatedCounter value={stats.totalEarned} />
+          {/* Stats Bar - Mobile Optimized */}
+          <div className="mb-6 sm:mb-8 p-4 sm:p-5 bg-gradient-to-r from-orange-500/10 via-amber-500/5 to-orange-500/10 border border-orange-500/20 rounded-2xl animate-fade-in-up">
+            {/* Mobile: Stacked layout */}
+            <div className="flex flex-col gap-4">
+              {/* Stats Row - Scrollable on mobile */}
+              <div className="flex items-center gap-4 sm:gap-6 overflow-x-auto pb-2 sm:pb-0 scrollbar-hide">
+                {/* Total Earned */}
+                <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
+                    <span className="text-xl sm:text-2xl">💰</span>
                   </div>
-                  <div className="text-zinc-500 text-sm">Total Earned</div>
-                </div>
-              </div>
-              
-              <div className="w-px h-12 bg-zinc-700 hidden sm:block" />
-              
-              {/* Processing */}
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
-                  <span className="text-2xl">⏳</span>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-blue-400">
-                    <AnimatedCounter value={stats.pending} />
-                  </div>
-                  <div className="text-zinc-500 text-sm">Processing</div>
-                </div>
-              </div>
-              
-              <div className="w-px h-12 bg-zinc-700 hidden sm:block" />
-              
-              {/* Ready to Claim */}
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-orange-500/20 rounded-xl flex items-center justify-center">
-                  <span className="text-2xl">🎉</span>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-orange-400">
-                    <AnimatedCounter value={stats.readyToClaim} />
-                  </div>
-                  <div className="text-zinc-500 text-sm">Ready to Claim</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Claim Rewards Button - Links to Redemptions Page */}
-            {stats.readyToClaim > 0 && (
-              <button 
-                onClick={() => router.push('/creator/redemptions')}
-                className="px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold rounded-xl transition-all hover:scale-105 active:scale-95 shadow-lg shadow-orange-500/25 flex items-center gap-2"
-              >
-                <span>🎁</span> Claim Rewards →
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex gap-2 mb-6 p-1 bg-zinc-900/50 rounded-xl border border-zinc-800 w-fit">
-          <button
-            onClick={() => setActiveTab('shop')}
-            className={`px-6 py-2.5 rounded-lg font-medium transition-all duration-300 flex items-center gap-2 ${
-              activeTab === 'shop'
-                ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/25'
-                : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
-            }`}
-          >
-            <span>🛒</span> Rewards Shop
-          </button>
-          <button
-            onClick={() => setActiveTab('history')}
-            className={`px-6 py-2.5 rounded-lg font-medium transition-all duration-300 flex items-center gap-2 ${
-              activeTab === 'history'
-                ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/25'
-                : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
-            }`}
-          >
-            <span>📜</span> History
-          </button>
-        </div>
-
-        {activeTab === 'shop' ? (
-          <>
-            {/* Filter Pills */}
-            <div className="flex flex-wrap gap-2 mb-8">
-              <FilterPill 
-                label="All Rewards" 
-                active={activeFilter === 'all'} 
-                onClick={() => setActiveFilter('all')}
-                count={filterCounts.all}
-              />
-              <FilterPill 
-                label="Available" 
-                active={activeFilter === 'available'} 
-                onClick={() => setActiveFilter('available')}
-                count={filterCounts.available}
-              />
-              <FilterPill 
-                label="Leaderboard" 
-                active={activeFilter === 'leaderboard'} 
-                onClick={() => setActiveFilter('leaderboard')}
-                count={filterCounts.leaderboard}
-              />
-              <FilterPill 
-                label="Milestone" 
-                active={activeFilter === 'milestone'} 
-                onClick={() => setActiveFilter('milestone')}
-                count={filterCounts.milestone}
-              />
-              {filterCounts.volume > 0 && (
-                <FilterPill 
-                  label="Volume" 
-                  active={activeFilter === 'volume'} 
-                  onClick={() => setActiveFilter('volume')}
-                  count={filterCounts.volume}
-                />
-              )}
-              {filterCounts.bonus > 0 && (
-                <FilterPill 
-                  label="Bonus" 
-                  active={activeFilter === 'bonus'} 
-                  onClick={() => setActiveFilter('bonus')}
-                  count={filterCounts.bonus}
-                />
-              )}
-            </div>
-
-            {/* Rewards Grid - 4 columns on large screens */}
-            {rewardsLoading ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-                {[...Array(8)].map((_, i) => (
-                  <div key={i} className="aspect-square bg-zinc-900/70 border border-zinc-800 rounded-2xl animate-pulse">
-                    <div className="p-5 h-full flex flex-col">
-                      <div className="flex-1 flex items-center justify-center">
-                        <div className="w-16 h-16 bg-zinc-800 rounded-full" />
-                      </div>
-                      <div className="space-y-2">
-                        <div className="h-5 bg-zinc-800 rounded w-3/4 mx-auto" />
-                        <div className="h-4 bg-zinc-800 rounded w-1/2 mx-auto" />
-                        <div className="h-8 bg-zinc-800 rounded w-2/3 mx-auto" />
-                      </div>
+                  <div>
+                    <div className="text-xl sm:text-2xl font-bold text-green-400">
+                      $<AnimatedCounter value={stats.totalEarned} />
                     </div>
+                    <div className="text-zinc-500 text-xs sm:text-sm whitespace-nowrap">Total Earned</div>
                   </div>
-                ))}
-              </div>
-            ) : filteredRewards.length === 0 ? (
-              <div className="text-center py-16">
-                <div className="text-5xl mb-4">🔍</div>
-                <div className="text-zinc-400 text-lg">
-                  {rewards.length === 0 
-                    ? 'No rewards available yet' 
-                    : 'No rewards match this filter'}
                 </div>
-                {rewards.length === 0 ? (
-                  <p className="text-zinc-500 mt-2">Check back soon for new rewards!</p>
-                ) : (
-                  <button 
-                    onClick={() => setActiveFilter('all')}
-                    className="mt-4 text-orange-400 hover:text-orange-300 font-medium"
-                  >
-                    View all rewards →
-                  </button>
+                
+                <div className="w-px h-10 sm:h-12 bg-zinc-700 flex-shrink-0" />
+                
+                {/* Processing */}
+                <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
+                    <span className="text-xl sm:text-2xl">⏳</span>
+                  </div>
+                  <div>
+                    <div className="text-xl sm:text-2xl font-bold text-blue-400">
+                      <AnimatedCounter value={stats.pending} />
+                    </div>
+                    <div className="text-zinc-500 text-xs sm:text-sm whitespace-nowrap">Processing</div>
+                  </div>
+                </div>
+                
+                <div className="w-px h-10 sm:h-12 bg-zinc-700 flex-shrink-0" />
+                
+                {/* Ready to Claim */}
+                <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-500/20 rounded-xl flex items-center justify-center">
+                    <span className="text-xl sm:text-2xl">🎉</span>
+                  </div>
+                  <div>
+                    <div className="text-xl sm:text-2xl font-bold text-orange-400">
+                      <AnimatedCounter value={stats.readyToClaim} />
+                    </div>
+                    <div className="text-zinc-500 text-xs sm:text-sm whitespace-nowrap">Ready to Claim</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Claim Rewards Button - Full width on mobile */}
+              {stats.readyToClaim > 0 && (
+                <button 
+                  onClick={() => router.push('/creator/redemptions')}
+                  className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold rounded-xl transition-all hover:scale-105 active:scale-[0.98] shadow-lg shadow-orange-500/25 flex items-center justify-center gap-2"
+                >
+                  <span>🎁</span> Claim Rewards →
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Tabs - Full width on mobile */}
+          <div className="flex gap-1 sm:gap-2 mb-6 p-1 bg-zinc-900/50 rounded-xl border border-zinc-800 w-full sm:w-fit">
+            <button
+              onClick={() => setActiveTab('shop')}
+              className={`flex-1 sm:flex-none px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-1.5 sm:gap-2 text-sm sm:text-base ${
+                activeTab === 'shop'
+                  ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/25'
+                  : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
+              }`}
+            >
+              <span>🛒</span> <span className="hidden xs:inline">Rewards</span> Shop
+            </button>
+            <button
+              onClick={() => setActiveTab('history')}
+              className={`flex-1 sm:flex-none px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-1.5 sm:gap-2 text-sm sm:text-base ${
+                activeTab === 'history'
+                  ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/25'
+                  : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
+              }`}
+            >
+              <span>📜</span> History
+            </button>
+          </div>
+
+          {activeTab === 'shop' ? (
+            <>
+              {/* Filter Pills - Horizontal scroll on mobile */}
+              <div className="flex gap-2 mb-6 sm:mb-8 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1">
+                <FilterPill 
+                  label="All" 
+                  active={activeFilter === 'all'} 
+                  onClick={() => setActiveFilter('all')}
+                  count={filterCounts.all}
+                />
+                <FilterPill 
+                  label="Available" 
+                  active={activeFilter === 'available'} 
+                  onClick={() => setActiveFilter('available')}
+                  count={filterCounts.available}
+                />
+                <FilterPill 
+                  label="Leaderboard" 
+                  active={activeFilter === 'leaderboard'} 
+                  onClick={() => setActiveFilter('leaderboard')}
+                  count={filterCounts.leaderboard}
+                />
+                <FilterPill 
+                  label="Milestone" 
+                  active={activeFilter === 'milestone'} 
+                  onClick={() => setActiveFilter('milestone')}
+                  count={filterCounts.milestone}
+                />
+                {filterCounts.volume > 0 && (
+                  <FilterPill 
+                    label="Volume" 
+                    active={activeFilter === 'volume'} 
+                    onClick={() => setActiveFilter('volume')}
+                    count={filterCounts.volume}
+                  />
+                )}
+                {filterCounts.bonus > 0 && (
+                  <FilterPill 
+                    label="Bonus" 
+                    active={activeFilter === 'bonus'} 
+                    onClick={() => setActiveFilter('bonus')}
+                    count={filterCounts.bonus}
+                  />
                 )}
               </div>
-            ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-                {filteredRewards.map((reward) => (
-                  <RewardCard 
-                    key={reward.id} 
-                    reward={reward}
-                    onClick={() => handleCardClick(reward)}
-                  />
-                ))}
-              </div>
-            )}
 
-            {/* How to Earn Section */}
-            <div className="mt-12 p-6 bg-zinc-900/30 border border-zinc-800/50 rounded-2xl">
-              <h3 className="text-white font-bold text-xl mb-6 text-center">How to Earn Rewards</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                <div className="text-center">
-                  <div className="w-14 h-14 bg-yellow-500/20 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-3">🏆</div>
-                  <div className="text-white font-medium mb-1">Win Competitions</div>
-                  <div className="text-zinc-500 text-sm">Place top 3 in weekly leaderboard</div>
-                </div>
-                <div className="text-center">
-                  <div className="w-14 h-14 bg-purple-500/20 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-3">⚡</div>
-                  <div className="text-white font-medium mb-1">Hit Milestones</div>
-                  <div className="text-zinc-500 text-sm">Get 100K+ views on a video</div>
-                </div>
-                <div className="text-center">
-                  <div className="w-14 h-14 bg-blue-500/20 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-3">📊</div>
-                  <div className="text-white font-medium mb-1">Post Consistently</div>
-                  <div className="text-zinc-500 text-sm">Submit 10, 25, or 50 TikToks</div>
-                </div>
-                <div className="text-center">
-                  <div className="w-14 h-14 bg-green-500/20 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-3">🎁</div>
-                  <div className="text-white font-medium mb-1">Unlock Bonuses</div>
-                  <div className="text-zinc-500 text-sm">Complete special challenges</div>
-                </div>
-              </div>
-            </div>
-          </>
-        ) : (
-          /* History Tab */
-          <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl overflow-hidden">
-            {/* Table Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-zinc-900/50">
-              <div className="text-zinc-500 text-sm font-medium">REWARD</div>
-              <div className="flex items-center gap-16">
-                <span className="text-zinc-500 text-sm font-medium">AMOUNT</span>
-                <span className="text-zinc-500 text-sm font-medium w-20 text-center">STATUS</span>
-              </div>
-            </div>
-
-            {redemptionsLoading ? (
-              <div className="flex items-center justify-center py-16">
-                <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
-              </div>
-            ) : redemptions.length === 0 ? (
-              <div className="p-12 text-center">
-                <div className="text-4xl mb-4">🎁</div>
-                <div className="text-zinc-400">No redemptions yet</div>
-                <div className="text-zinc-500 text-sm mt-1">Claim your first reward to see it here!</div>
-              </div>
-            ) : (
-              <>
-                <div className="divide-y divide-zinc-800/50">
-                  {redemptions.map((redemption) => {
-                    const statusBadge = getStatusBadge(redemption.status);
-                    return (
-                      <div 
-                        key={redemption.id}
-                        className="flex items-center justify-between px-6 py-4 hover:bg-zinc-800/30 transition-colors"
-                      >
-                        <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 bg-zinc-800 rounded-xl flex items-center justify-center text-xl">
-                            🎁
-                          </div>
-                          <div>
-                            <div className="text-white font-medium">{redemption.rewardName}</div>
-                            <div className="text-zinc-500 text-sm">{formatDate(redemption.createdAt)}</div>
-                          </div>
+              {/* Rewards Grid - 2 columns on mobile, 3 on tablet, 4 on desktop */}
+              {rewardsLoading ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
+                  {[...Array(8)].map((_, i) => (
+                    <div key={i} className="aspect-square bg-zinc-900/70 border border-zinc-800 rounded-xl sm:rounded-2xl animate-pulse">
+                      <div className="p-3 sm:p-5 h-full flex flex-col">
+                        <div className="flex-1 flex items-center justify-center">
+                          <div className="w-12 h-12 sm:w-16 sm:h-16 bg-zinc-800 rounded-full" />
                         </div>
-                        <div className="flex items-center gap-4">
-                          {redemption.cashAmount && (
-                            <div className="text-green-400 font-semibold">${redemption.cashAmount}</div>
-                          )}
-                          <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${statusBadge.class}`}>
-                            {statusBadge.label}
-                          </span>
+                        <div className="space-y-2">
+                          <div className="h-4 sm:h-5 bg-zinc-800 rounded w-3/4 mx-auto" />
+                          <div className="h-3 sm:h-4 bg-zinc-800 rounded w-1/2 mx-auto" />
+                          <div className="h-6 sm:h-8 bg-zinc-800 rounded w-2/3 mx-auto" />
                         </div>
                       </div>
-                    );
-                  })}
+                    </div>
+                  ))}
                 </div>
-
-                {/* Footer */}
-                <div className="px-6 py-4 border-t border-zinc-800 bg-zinc-900/30 flex items-center justify-between">
-                  <span className="text-zinc-500 text-sm">
-                    Showing {redemptions.length} redemptions
-                  </span>
-                  <span className="text-green-400 font-semibold">
-                    Total: ${redemptions.reduce((sum, r) => sum + (r.cashAmount || 0), 0)}
-                  </span>
+              ) : filteredRewards.length === 0 ? (
+                <div className="text-center py-12 sm:py-16">
+                  <div className="text-4xl sm:text-5xl mb-3 sm:mb-4">🔍</div>
+                  <div className="text-zinc-400 text-base sm:text-lg">
+                    {rewards.length === 0 
+                      ? 'No rewards available yet' 
+                      : 'No rewards match this filter'}
+                  </div>
+                  {rewards.length === 0 ? (
+                    <p className="text-zinc-500 mt-2 text-sm">Check back soon for new rewards!</p>
+                  ) : (
+                    <button 
+                      onClick={() => setActiveFilter('all')}
+                      className="mt-4 text-orange-400 hover:text-orange-300 font-medium text-sm"
+                    >
+                      View all rewards →
+                    </button>
+                  )}
                 </div>
-              </>
-            )}
-          </div>
-        )}
-      </main>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
+                  {filteredRewards.map((reward) => (
+                    <RewardCard 
+                      key={reward.id} 
+                      reward={reward}
+                      onClick={() => handleCardClick(reward)}
+                    />
+                  ))}
+                </div>
+              )}
 
-      {/* Claim Modal - Only for Milestone rewards */}
-      <ClaimModal
-        isOpen={isClaimModalOpen}
-        onClose={() => {
-          setIsClaimModalOpen(false);
-          setSelectedReward(null);
-        }}
-        reward={selectedReward}
-        onSubmit={handleClaimSubmit}
-      />
+              {/* How to Earn Section - Mobile Optimized */}
+              <div className="mt-8 sm:mt-12 p-4 sm:p-6 bg-zinc-900/30 border border-zinc-800/50 rounded-2xl">
+                <h3 className="text-white font-bold text-lg sm:text-xl mb-4 sm:mb-6 text-center">How to Earn Rewards</h3>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
+                  <div className="text-center">
+                    <div className="w-10 h-10 sm:w-14 sm:h-14 bg-yellow-500/20 rounded-xl sm:rounded-2xl flex items-center justify-center text-xl sm:text-2xl mx-auto mb-2 sm:mb-3">🏆</div>
+                    <div className="text-white font-medium text-sm sm:text-base mb-0.5 sm:mb-1">Win Competitions</div>
+                    <div className="text-zinc-500 text-xs sm:text-sm">Place top 3 weekly</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="w-10 h-10 sm:w-14 sm:h-14 bg-purple-500/20 rounded-xl sm:rounded-2xl flex items-center justify-center text-xl sm:text-2xl mx-auto mb-2 sm:mb-3">⚡</div>
+                    <div className="text-white font-medium text-sm sm:text-base mb-0.5 sm:mb-1">Hit Milestones</div>
+                    <div className="text-zinc-500 text-xs sm:text-sm">Get 100K+ views</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="w-10 h-10 sm:w-14 sm:h-14 bg-blue-500/20 rounded-xl sm:rounded-2xl flex items-center justify-center text-xl sm:text-2xl mx-auto mb-2 sm:mb-3">📊</div>
+                    <div className="text-white font-medium text-sm sm:text-base mb-0.5 sm:mb-1">Post Consistently</div>
+                    <div className="text-zinc-500 text-xs sm:text-sm">Submit regularly</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="w-10 h-10 sm:w-14 sm:h-14 bg-green-500/20 rounded-xl sm:rounded-2xl flex items-center justify-center text-xl sm:text-2xl mx-auto mb-2 sm:mb-3">🎁</div>
+                    <div className="text-white font-medium text-sm sm:text-base mb-0.5 sm:mb-1">Unlock Bonuses</div>
+                    <div className="text-zinc-500 text-xs sm:text-sm">Special challenges</div>
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : (
+            /* History Tab - Mobile Optimized */
+            <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl overflow-hidden">
+              {/* Table Header - Hidden on mobile */}
+              <div className="hidden sm:flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-zinc-900/50">
+                <div className="text-zinc-500 text-sm font-medium">REWARD</div>
+                <div className="flex items-center gap-16">
+                  <span className="text-zinc-500 text-sm font-medium">AMOUNT</span>
+                  <span className="text-zinc-500 text-sm font-medium w-20 text-center">STATUS</span>
+                </div>
+              </div>
 
-      {/* Leaderboard Redirect Modal */}
-      <LeaderboardRedirectModal
-        isOpen={isLeaderboardModalOpen}
-        onClose={() => {
-          setIsLeaderboardModalOpen(false);
-          setSelectedReward(null);
-        }}
-        reward={selectedReward}
-        onGoToLeaderboard={handleGoToLeaderboard}
-      />
+              {/* Mobile Header */}
+              <div className="sm:hidden px-4 py-3 border-b border-zinc-800 bg-zinc-900/50">
+                <span className="text-zinc-500 text-xs font-medium uppercase tracking-wider">Redemption History</span>
+              </div>
+
+              {redemptionsLoading ? (
+                <div className="flex items-center justify-center py-12 sm:py-16">
+                  <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : redemptions.length === 0 ? (
+                <div className="p-8 sm:p-12 text-center">
+                  <div className="text-3xl sm:text-4xl mb-3 sm:mb-4">🎁</div>
+                  <div className="text-zinc-400 text-sm sm:text-base">No redemptions yet</div>
+                  <div className="text-zinc-500 text-xs sm:text-sm mt-1">Claim your first reward to see it here!</div>
+                </div>
+              ) : (
+                <>
+                  <div className="divide-y divide-zinc-800/50">
+                    {redemptions.map((redemption) => {
+                      const statusBadge = getStatusBadge(redemption.status);
+                      return (
+                        <div 
+                          key={redemption.id}
+                          className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 hover:bg-zinc-800/30 transition-colors gap-3"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-zinc-800 rounded-lg sm:rounded-xl flex items-center justify-center text-lg sm:text-xl flex-shrink-0">
+                              🎁
+                            </div>
+                            <div className="min-w-0">
+                              <div className="text-white font-medium text-sm sm:text-base truncate">{redemption.rewardName}</div>
+                              <div className="text-zinc-500 text-xs sm:text-sm">{formatDate(redemption.createdAt)}</div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
+                            {redemption.cashAmount && (
+                              <div className="text-green-400 font-semibold text-sm sm:text-base">${redemption.cashAmount}</div>
+                            )}
+                            <span className={`text-[10px] sm:text-xs font-medium px-2 py-0.5 sm:py-1 rounded-full whitespace-nowrap ${statusBadge.class}`}>
+                              {statusBadge.label}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Footer */}
+                  <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-zinc-800 bg-zinc-900/30 flex items-center justify-between">
+                    <span className="text-zinc-500 text-xs sm:text-sm">
+                      {redemptions.length} redemptions
+                    </span>
+                    <span className="text-green-400 font-semibold text-sm sm:text-base">
+                      Total: ${redemptions.reduce((sum, r) => sum + (r.cashAmount || 0), 0)}
+                    </span>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </main>
+
+        {/* Claim Modal - Only for Milestone rewards */}
+        <ClaimModal
+          isOpen={isClaimModalOpen}
+          onClose={() => {
+            setIsClaimModalOpen(false);
+            setSelectedReward(null);
+          }}
+          reward={selectedReward}
+          onSubmit={handleClaimSubmit}
+        />
+
+        {/* Leaderboard Redirect Modal */}
+        <LeaderboardRedirectModal
+          isOpen={isLeaderboardModalOpen}
+          onClose={() => {
+            setIsLeaderboardModalOpen(false);
+            setSelectedReward(null);
+          }}
+          reward={selectedReward}
+          onGoToLeaderboard={handleGoToLeaderboard}
+        />
       </div>
     </ProtectedRoute>
   );

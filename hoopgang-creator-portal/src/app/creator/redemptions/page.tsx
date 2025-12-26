@@ -1,4 +1,6 @@
 // src/app/creator/redemptions/page.tsx
+// Mobile-Responsive Version
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -40,6 +42,13 @@ function formatDate(date: Date | string): string {
   });
 }
 
+function formatDateShort(date: Date | string): string {
+  return new Date(date).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
 function getRedemptionIcon(fulfillmentType: FulfillmentType): string {
   switch (fulfillmentType) {
     case 'cash': return '💵';
@@ -74,8 +83,8 @@ function getRedemptionValue(redemption: Redemption): string {
 function getSourceLabel(source: string): string {
   switch (source) {
     case 'milestone_submission': return 'Milestone';
-    case 'volume_win': return 'Volume Competition';
-    case 'gmv_win': return 'GMV Competition';
+    case 'volume_win': return 'Volume';
+    case 'gmv_win': return 'GMV';
     case 'competition_win': return 'Competition';
     default: return 'Reward';
   }
@@ -85,25 +94,26 @@ function getSourceLabel(source: string): string {
 // Status Badge Component
 // ============================================
 
-function StatusBadge({ status }: { status: RedemptionStatus }) {
-  const config: Record<RedemptionStatus, { bg: string; text: string; label: string }> = {
-    awaiting_claim: { bg: 'bg-yellow-500/20', text: 'text-yellow-400', label: 'Ready to Claim' },
-    ready_to_fulfill: { bg: 'bg-blue-500/20', text: 'text-blue-400', label: 'Processing' },
-    fulfilled: { bg: 'bg-green-500/20', text: 'text-green-400', label: 'Completed' },
-    rejected: { bg: 'bg-red-500/20', text: 'text-red-400', label: 'Rejected' },
+function StatusBadge({ status, compact = false }: { status: RedemptionStatus; compact?: boolean }) {
+  const config: Record<RedemptionStatus, { bg: string; text: string; label: string; shortLabel: string }> = {
+    awaiting_claim: { bg: 'bg-yellow-500/20', text: 'text-yellow-400', label: 'Ready to Claim', shortLabel: 'Claim' },
+    ready_to_fulfill: { bg: 'bg-blue-500/20', text: 'text-blue-400', label: 'Processing', shortLabel: 'Processing' },
+    fulfilled: { bg: 'bg-green-500/20', text: 'text-green-400', label: 'Completed', shortLabel: 'Done' },
+    rejected: { bg: 'bg-red-500/20', text: 'text-red-400', label: 'Rejected', shortLabel: 'Rejected' },
   };
 
-  const { bg, text, label } = config[status] || config.awaiting_claim;
+  const { bg, text, label, shortLabel } = config[status] || config.awaiting_claim;
 
   return (
-    <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${bg} ${text}`}>
-      {label}
+    <span className={`text-[10px] sm:text-xs font-medium px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full ${bg} ${text}`}>
+      <span className="sm:hidden">{shortLabel}</span>
+      <span className="hidden sm:inline">{label}</span>
     </span>
   );
 }
 
 // ============================================
-// Redemption Card Component
+// Redemption Card Component - Mobile Optimized
 // ============================================
 
 interface RedemptionCardProps {
@@ -119,17 +129,18 @@ function RedemptionCard({ redemption, onClaim }: RedemptionCardProps) {
 
   return (
     <div 
-      className={`bg-zinc-900/70 border rounded-2xl p-5 transition-all duration-300 ${
+      className={`bg-zinc-900/70 border rounded-xl sm:rounded-2xl p-4 sm:p-5 transition-all duration-300 ${
         isClaimable 
           ? 'border-yellow-500/30 hover:border-yellow-500/50 hover:shadow-lg hover:shadow-yellow-500/10' 
           : 'border-zinc-800 hover:border-zinc-700'
       }`}
     >
-      <div className="flex items-start justify-between gap-4">
+      {/* Mobile: Stacked layout, Desktop: Horizontal */}
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4">
         {/* Left: Icon + Info */}
-        <div className="flex items-start gap-4 flex-1 min-w-0">
+        <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0">
           {/* Icon */}
-          <div className={`w-14 h-14 rounded-xl flex items-center justify-center text-2xl flex-shrink-0 ${
+          <div className={`w-11 h-11 sm:w-14 sm:h-14 rounded-lg sm:rounded-xl flex items-center justify-center text-xl sm:text-2xl flex-shrink-0 ${
             isClaimable ? 'bg-yellow-500/20' :
             isProcessing ? 'bg-blue-500/20' :
             isCompleted ? 'bg-green-500/20' :
@@ -141,16 +152,16 @@ function RedemptionCard({ redemption, onClaim }: RedemptionCardProps) {
           {/* Info */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="text-white font-semibold truncate">{redemption.rewardName}</h3>
+              <h3 className="text-white font-semibold text-sm sm:text-base truncate">{redemption.rewardName}</h3>
               <StatusBadge status={redemption.status} />
             </div>
             
-            <div className="text-zinc-500 text-sm mt-1">
-              {getSourceLabel(redemption.source)} • {formatDate(redemption.createdAt)}
+            <div className="text-zinc-500 text-xs sm:text-sm mt-0.5 sm:mt-1">
+              {getSourceLabel(redemption.source)} • <span className="sm:hidden">{formatDateShort(redemption.createdAt)}</span><span className="hidden sm:inline">{formatDate(redemption.createdAt)}</span>
             </div>
 
             {/* Value */}
-            <div className={`text-lg font-bold mt-2 ${
+            <div className={`text-base sm:text-lg font-bold mt-1.5 sm:mt-2 ${
               isClaimable ? 'text-yellow-400' :
               isProcessing ? 'text-blue-400' :
               isCompleted ? 'text-green-400' :
@@ -161,38 +172,38 @@ function RedemptionCard({ redemption, onClaim }: RedemptionCardProps) {
 
             {/* Payment Info (if claimed) */}
             {isProcessing && redemption.cashMethod && (
-              <div className="mt-2 text-sm text-zinc-400">
-                Payment via <span className="text-white capitalize">{redemption.cashMethod}</span>
+              <div className="mt-1.5 sm:mt-2 text-xs sm:text-sm text-zinc-400">
+                Via <span className="text-white capitalize">{redemption.cashMethod}</span>
                 {redemption.cashHandle && (
-                  <span className="text-zinc-500"> • {redemption.cashHandle}</span>
+                  <span className="text-zinc-500 hidden sm:inline"> • {redemption.cashHandle}</span>
                 )}
               </div>
             )}
 
             {/* Fulfillment Info (if completed) */}
             {isCompleted && (
-              <div className="mt-2 text-sm text-green-400">
-                ✓ Fulfilled on {redemption.fulfilledAt ? formatDate(redemption.fulfilledAt) : 'N/A'}
+              <div className="mt-1.5 sm:mt-2 text-xs sm:text-sm text-green-400">
+                ✓ Fulfilled {redemption.fulfilledAt ? formatDateShort(redemption.fulfilledAt) : ''}
                 {redemption.trackingNumber && (
-                  <span className="text-zinc-400"> • Tracking: {redemption.trackingNumber}</span>
+                  <span className="text-zinc-400 hidden sm:inline"> • Tracking: {redemption.trackingNumber}</span>
                 )}
               </div>
             )}
 
             {/* Rejection Reason */}
             {isRejected && redemption.rejectionReason && (
-              <div className="mt-2 text-sm text-red-400">
-                Reason: {redemption.rejectionReason}
+              <div className="mt-1.5 sm:mt-2 text-xs sm:text-sm text-red-400 line-clamp-2">
+                {redemption.rejectionReason}
               </div>
             )}
           </div>
         </div>
 
-        {/* Right: Action Button */}
+        {/* Right: Action Button - Full width on mobile when claimable */}
         {isClaimable && (
           <button
             onClick={() => onClaim(redemption)}
-            className="px-5 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold rounded-xl transition-all hover:scale-105 active:scale-95 shadow-lg shadow-orange-500/25 flex-shrink-0"
+            className="w-full sm:w-auto px-4 sm:px-5 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold rounded-xl transition-all hover:scale-105 active:scale-[0.98] shadow-lg shadow-orange-500/25 flex-shrink-0 text-sm sm:text-base"
           >
             Claim →
           </button>
@@ -203,7 +214,7 @@ function RedemptionCard({ redemption, onClaim }: RedemptionCardProps) {
 }
 
 // ============================================
-// Empty State Component
+// Empty State Component - Mobile Optimized
 // ============================================
 
 function EmptyState({ tab }: { tab: TabType }) {
@@ -228,16 +239,16 @@ function EmptyState({ tab }: { tab: TabType }) {
   const { icon, title, subtitle } = config[tab];
 
   return (
-    <div className="text-center py-16">
-      <div className="text-6xl mb-4">{icon}</div>
-      <div className="text-white text-xl font-semibold mb-2">{title}</div>
-      <div className="text-zinc-500">{subtitle}</div>
+    <div className="text-center py-12 sm:py-16">
+      <div className="text-5xl sm:text-6xl mb-3 sm:mb-4">{icon}</div>
+      <div className="text-white text-lg sm:text-xl font-semibold mb-1 sm:mb-2">{title}</div>
+      <div className="text-zinc-500 text-sm sm:text-base px-4">{subtitle}</div>
     </div>
   );
 }
 
 // ============================================
-// Cash Claim Modal Component
+// Cash Claim Modal Component - Mobile Bottom Sheet
 // ============================================
 
 interface CashClaimModalProps {
@@ -265,7 +276,7 @@ function CashClaimModal({ isOpen, onClose, redemption, onSubmit }: CashClaimModa
   if (!isOpen || !redemption) return null;
 
   const paymentMethods: { id: CashMethod; name: string; icon: string; placeholder: string }[] = [
-    { id: 'paypal', name: 'PayPal', icon: '💳', placeholder: 'PayPal email address' },
+    { id: 'paypal', name: 'PayPal', icon: '💳', placeholder: 'PayPal email' },
     { id: 'venmo', name: 'Venmo', icon: '📱', placeholder: '@username' },
     { id: 'cashapp', name: 'Cash App', icon: '💸', placeholder: '$cashtag' },
     { id: 'zelle', name: 'Zelle', icon: '🏦', placeholder: 'Phone or email' },
@@ -296,21 +307,24 @@ function CashClaimModal({ isOpen, onClose, redemption, onSubmit }: CashClaimModa
 
   return (
     <div 
-      className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in"
+      className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 animate-fade-in"
       onClick={(e) => {
         if (e.target === e.currentTarget && !isSubmitting) onClose();
       }}
     >
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-md overflow-hidden animate-fade-in-up">
+      <div className="bg-zinc-900 border border-zinc-800 rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md overflow-hidden animate-fade-in-up safe-bottom">
+        {/* Drag indicator for mobile */}
+        <div className="sm:hidden w-12 h-1 bg-zinc-700 rounded-full mx-auto mt-3" />
+        
         {/* Header */}
-        <div className="p-5 border-b border-zinc-800">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 bg-yellow-500/20 rounded-xl flex items-center justify-center text-2xl">
+        <div className="p-4 sm:p-5 border-b border-zinc-800">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="w-11 h-11 sm:w-14 sm:h-14 bg-yellow-500/20 rounded-lg sm:rounded-xl flex items-center justify-center text-xl sm:text-2xl">
               💵
             </div>
             <div>
-              <h2 className="text-xl font-bold text-white">Claim Your Reward</h2>
-              <div className="text-yellow-400 font-semibold">
+              <h2 className="text-lg sm:text-xl font-bold text-white">Claim Your Reward</h2>
+              <div className="text-yellow-400 font-semibold text-sm sm:text-base">
                 {getRedemptionValue(redemption)}
               </div>
             </div>
@@ -318,13 +332,13 @@ function CashClaimModal({ isOpen, onClose, redemption, onSubmit }: CashClaimModa
         </div>
 
         {/* Content */}
-        <div className="p-5 space-y-5">
+        <div className="p-4 sm:p-5 space-y-4 sm:space-y-5 max-h-[60vh] overflow-y-auto">
           {/* Payment Method Selection */}
           <div>
-            <label className="block text-zinc-300 text-sm font-medium mb-3">
+            <label className="block text-zinc-300 text-xs sm:text-sm font-medium mb-2 sm:mb-3">
               Select Payment Method
             </label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2 sm:gap-3">
               {paymentMethods.map((method) => (
                 <button
                   key={method.id}
@@ -333,14 +347,14 @@ function CashClaimModal({ isOpen, onClose, redemption, onSubmit }: CashClaimModa
                     setError(null);
                   }}
                   disabled={isSubmitting}
-                  className={`p-4 rounded-xl border-2 transition-all ${
+                  className={`p-3 sm:p-4 rounded-lg sm:rounded-xl border-2 transition-all active:scale-[0.98] ${
                     cashMethod === method.id
                       ? 'border-orange-500 bg-orange-500/10'
                       : 'border-zinc-700 hover:border-zinc-600 bg-zinc-800/50'
                   } disabled:opacity-50`}
                 >
-                  <div className="text-2xl mb-1">{method.icon}</div>
-                  <div className="text-white font-medium text-sm">{method.name}</div>
+                  <div className="text-xl sm:text-2xl mb-0.5 sm:mb-1">{method.icon}</div>
+                  <div className="text-white font-medium text-xs sm:text-sm">{method.name}</div>
                 </button>
               ))}
             </div>
@@ -349,7 +363,7 @@ function CashClaimModal({ isOpen, onClose, redemption, onSubmit }: CashClaimModa
           {/* Handle Input */}
           {cashMethod && (
             <div className="animate-fade-in">
-              <label className="block text-zinc-300 text-sm font-medium mb-2">
+              <label className="block text-zinc-300 text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
                 {paymentMethods.find(m => m.id === cashMethod)?.name} Handle
               </label>
               <input
@@ -360,49 +374,50 @@ function CashClaimModal({ isOpen, onClose, redemption, onSubmit }: CashClaimModa
                   setError(null);
                 }}
                 placeholder={paymentMethods.find(m => m.id === cashMethod)?.placeholder}
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all"
+                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg sm:rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-white text-sm sm:text-base placeholder-zinc-500 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all"
                 disabled={isSubmitting}
+                inputMode="email"
               />
             </div>
           )}
 
           {/* Error Message */}
           {error && (
-            <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm">
+            <div className="p-2.5 sm:p-3 bg-red-500/10 border border-red-500/20 rounded-lg sm:rounded-xl text-red-400 text-xs sm:text-sm">
               {error}
             </div>
           )}
 
           {/* Info Note */}
-          <div className="p-3 bg-zinc-800/50 rounded-xl text-zinc-400 text-sm">
-            💡 Payment will be sent within 3-5 business days after claiming.
+          <div className="p-2.5 sm:p-3 bg-zinc-800/50 rounded-lg sm:rounded-xl text-zinc-400 text-xs sm:text-sm">
+            💡 Payment sent within 3-5 business days.
           </div>
         </div>
 
         {/* Footer */}
-        <div className="p-5 border-t border-zinc-800 flex gap-3">
+        <div className="p-4 sm:p-5 border-t border-zinc-800 flex gap-2 sm:gap-3">
           <button
             onClick={onClose}
             disabled={isSubmitting}
-            className="flex-1 py-3 bg-zinc-800 text-zinc-300 rounded-xl font-medium hover:bg-zinc-700 transition-colors disabled:opacity-50"
+            className="flex-1 py-2.5 sm:py-3 bg-zinc-800 text-zinc-300 rounded-lg sm:rounded-xl font-medium hover:bg-zinc-700 transition-colors disabled:opacity-50 text-sm sm:text-base active:scale-[0.98]"
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
             disabled={isSubmitting || !cashMethod || !cashHandle.trim()}
-            className="flex-1 py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="flex-1 py-2.5 sm:py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold rounded-lg sm:rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base active:scale-[0.98]"
           >
             {isSubmitting ? (
               <>
-                <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                 </svg>
-                Claiming...
+                <span className="hidden sm:inline">Claiming...</span>
               </>
             ) : (
-              'Claim Reward →'
+              'Claim →'
             )}
           </button>
         </div>
@@ -412,7 +427,7 @@ function CashClaimModal({ isOpen, onClose, redemption, onSubmit }: CashClaimModa
 }
 
 // ============================================
-// Simple Claim Modal (for non-cash rewards)
+// Simple Claim Modal (for non-cash rewards) - Mobile Bottom Sheet
 // ============================================
 
 interface SimpleClaimModalProps {
@@ -454,74 +469,76 @@ function SimpleClaimModal({ isOpen, onClose, redemption, onSubmit }: SimpleClaim
 
   return (
     <div 
-      className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in"
+      className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 animate-fade-in"
       onClick={(e) => {
         if (e.target === e.currentTarget && !isSubmitting) onClose();
       }}
     >
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-md overflow-hidden animate-fade-in-up">
+      <div className="bg-zinc-900 border border-zinc-800 rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md overflow-hidden animate-fade-in-up safe-bottom">
+        {/* Drag indicator for mobile */}
+        <div className="sm:hidden w-12 h-1 bg-zinc-700 rounded-full mx-auto mt-3" />
+        
         {/* Header */}
-        <div className="p-6 text-center border-b border-zinc-800">
-          <div className="text-5xl mb-4">{icon}</div>
-          <h2 className="text-xl font-bold text-white mb-2">{redemption.rewardName}</h2>
-          <div className="text-orange-400 font-semibold text-lg">
+        <div className="p-5 sm:p-6 text-center border-b border-zinc-800">
+          <div className="text-4xl sm:text-5xl mb-3 sm:mb-4">{icon}</div>
+          <h2 className="text-lg sm:text-xl font-bold text-white mb-1 sm:mb-2">{redemption.rewardName}</h2>
+          <div className="text-orange-400 font-semibold text-base sm:text-lg">
             {getRedemptionValue(redemption)}
           </div>
         </div>
 
         {/* Content */}
-        <div className="p-5 space-y-4">
+        <div className="p-4 sm:p-5 space-y-3 sm:space-y-4">
           {isStoreCredit && (
-            <div className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-xl">
-              <div className="text-purple-400 font-medium mb-1">🎁 Store Credit</div>
-              <div className="text-zinc-400 text-sm">
-                A discount code will be sent to your email after claiming.
+            <div className="p-3 sm:p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg sm:rounded-xl">
+              <div className="text-purple-400 font-medium text-sm mb-0.5 sm:mb-1">🎁 Store Credit</div>
+              <div className="text-zinc-400 text-xs sm:text-sm">
+                A discount code will be sent to your email.
               </div>
             </div>
           )}
 
           {isProduct && (
-            <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl">
-              <div className="text-blue-400 font-medium mb-1">📦 Product Reward</div>
-              <div className="text-zinc-400 text-sm">
-                Your reward will be shipped to your address on file. 
-                You can update your shipping address in your profile.
+            <div className="p-3 sm:p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg sm:rounded-xl">
+              <div className="text-blue-400 font-medium text-sm mb-0.5 sm:mb-1">📦 Product Reward</div>
+              <div className="text-zinc-400 text-xs sm:text-sm">
+                Shipped to your address on file.
               </div>
             </div>
           )}
 
           {/* Error Message */}
           {error && (
-            <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm">
+            <div className="p-2.5 sm:p-3 bg-red-500/10 border border-red-500/20 rounded-lg sm:rounded-xl text-red-400 text-xs sm:text-sm">
               {error}
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="p-5 border-t border-zinc-800 flex gap-3">
+        <div className="p-4 sm:p-5 border-t border-zinc-800 flex gap-2 sm:gap-3">
           <button
             onClick={onClose}
             disabled={isSubmitting}
-            className="flex-1 py-3 bg-zinc-800 text-zinc-300 rounded-xl font-medium hover:bg-zinc-700 transition-colors disabled:opacity-50"
+            className="flex-1 py-2.5 sm:py-3 bg-zinc-800 text-zinc-300 rounded-lg sm:rounded-xl font-medium hover:bg-zinc-700 transition-colors disabled:opacity-50 text-sm sm:text-base active:scale-[0.98]"
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="flex-1 py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+            className="flex-1 py-2.5 sm:py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold rounded-lg sm:rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2 text-sm sm:text-base active:scale-[0.98]"
           >
             {isSubmitting ? (
               <>
-                <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                 </svg>
-                Claiming...
+                <span className="hidden sm:inline">Claiming...</span>
               </>
             ) : (
-              'Confirm Claim →'
+              'Confirm →'
             )}
           </button>
         </div>
@@ -740,7 +757,7 @@ export default function CreatorRedemptionsPage() {
         {/* Background Orbs */}
         <BackgroundOrbs colors={['green', 'orange', 'amber']} />
 
-        <main className="relative z-10 max-w-4xl mx-auto px-4 py-8">
+        <main className="relative z-10 max-w-4xl mx-auto px-4 py-6 sm:py-8">
           {/* Header */}
           <PageHeader 
             title="My Rewards"
@@ -749,82 +766,82 @@ export default function CreatorRedemptionsPage() {
             accentColor="green"
           />
 
-          {/* Stats Bar */}
-          <div className="mb-8 p-5 bg-gradient-to-r from-green-500/10 via-emerald-500/5 to-green-500/10 border border-green-500/20 rounded-2xl">
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-12">
+          {/* Stats Bar - Mobile Optimized */}
+          <div className="mb-6 sm:mb-8 p-4 sm:p-5 bg-gradient-to-r from-green-500/10 via-emerald-500/5 to-green-500/10 border border-green-500/20 rounded-2xl">
+            <div className="flex items-center justify-center gap-4 sm:gap-8 md:gap-12">
               {/* Total Earned */}
-              <div className="text-center">
-                <div className="text-3xl font-bold text-green-400">
+              <div className="text-center flex-1 sm:flex-none">
+                <div className="text-xl sm:text-3xl font-bold text-green-400">
                   $<AnimatedCounter value={stats.totalEarned} />
                 </div>
-                <div className="text-zinc-500 text-sm">Total Earned</div>
+                <div className="text-zinc-500 text-xs sm:text-sm">Earned</div>
               </div>
               
-              <div className="w-px h-12 bg-zinc-700 hidden sm:block" />
+              <div className="w-px h-10 sm:h-12 bg-zinc-700" />
               
               {/* Ready to Claim */}
-              <div className="text-center">
-                <div className="text-3xl font-bold text-yellow-400">
+              <div className="text-center flex-1 sm:flex-none">
+                <div className="text-xl sm:text-3xl font-bold text-yellow-400">
                   $<AnimatedCounter value={stats.readyToClaim} />
                 </div>
-                <div className="text-zinc-500 text-sm">Ready to Claim</div>
+                <div className="text-zinc-500 text-xs sm:text-sm">To Claim</div>
               </div>
               
-              <div className="w-px h-12 bg-zinc-700 hidden sm:block" />
+              <div className="w-px h-10 sm:h-12 bg-zinc-700" />
               
               {/* Processing */}
-              <div className="text-center">
-                <div className="text-3xl font-bold text-blue-400">
+              <div className="text-center flex-1 sm:flex-none">
+                <div className="text-xl sm:text-3xl font-bold text-blue-400">
                   <AnimatedCounter value={stats.processing} />
                 </div>
-                <div className="text-zinc-500 text-sm">Processing</div>
+                <div className="text-zinc-500 text-xs sm:text-sm">Processing</div>
               </div>
             </div>
           </div>
 
-          {/* Tabs */}
-          <div className="flex gap-2 mb-6">
+          {/* Tabs - Scrollable on mobile */}
+          <div className="flex gap-2 mb-4 sm:mb-6 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1">
             <button
               onClick={() => setActiveTab('available')}
-              className={`px-5 py-2.5 rounded-xl font-medium transition-all flex items-center gap-2 ${
+              className={`flex-shrink-0 px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg sm:rounded-xl font-medium transition-all flex items-center gap-1.5 sm:gap-2 text-sm sm:text-base active:scale-[0.98] ${
                 activeTab === 'available'
                   ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
                   : 'bg-zinc-800/50 text-zinc-400 hover:text-white hover:bg-zinc-800 border border-zinc-800'
               }`}
             >
-              <span>🎁</span> Available
+              <span>🎁</span> <span className="hidden xs:inline">Available</span>
               {tabCounts.available > 0 && (
-                <span className="px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400 text-xs font-bold">
+                <span className="px-1.5 sm:px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400 text-[10px] sm:text-xs font-bold">
                   {tabCounts.available}
                 </span>
               )}
             </button>
             <button
               onClick={() => setActiveTab('processing')}
-              className={`px-5 py-2.5 rounded-xl font-medium transition-all flex items-center gap-2 ${
+              className={`flex-shrink-0 px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg sm:rounded-xl font-medium transition-all flex items-center gap-1.5 sm:gap-2 text-sm sm:text-base active:scale-[0.98] ${
                 activeTab === 'processing'
                   ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
                   : 'bg-zinc-800/50 text-zinc-400 hover:text-white hover:bg-zinc-800 border border-zinc-800'
               }`}
             >
-              <span>⏳</span> Processing
+              <span>⏳</span> <span className="hidden xs:inline">Processing</span>
               {tabCounts.processing > 0 && (
-                <span className="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 text-xs font-bold">
+                <span className="px-1.5 sm:px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 text-[10px] sm:text-xs font-bold">
                   {tabCounts.processing}
                 </span>
               )}
             </button>
             <button
               onClick={() => setActiveTab('completed')}
-              className={`px-5 py-2.5 rounded-xl font-medium transition-all flex items-center gap-2 ${
+              className={`flex-shrink-0 px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg sm:rounded-xl font-medium transition-all flex items-center gap-1.5 sm:gap-2 text-sm sm:text-base active:scale-[0.98] ${
                 activeTab === 'completed'
                   ? 'bg-green-500/20 text-green-400 border border-green-500/30'
                   : 'bg-zinc-800/50 text-zinc-400 hover:text-white hover:bg-zinc-800 border border-zinc-800'
               }`}
             >
-              <span>✓</span> Completed
+              <span>✓</span> <span className="hidden xs:inline">Completed</span>
               {tabCounts.completed > 0 && (
-                <span className="px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 text-xs font-bold">
+                <span className="px-1.5 sm:px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 text-[10px] sm:text-xs font-bold">
                   {tabCounts.completed}
                 </span>
               )}
@@ -832,17 +849,17 @@ export default function CreatorRedemptionsPage() {
           </div>
 
           {/* Redemptions List */}
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {redemptionsLoading ? (
               // Loading skeletons
               [...Array(3)].map((_, i) => (
-                <div key={i} className="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-5 animate-pulse">
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 bg-zinc-800 rounded-xl" />
+                <div key={i} className="bg-zinc-900/70 border border-zinc-800 rounded-xl sm:rounded-2xl p-4 sm:p-5 animate-pulse">
+                  <div className="flex items-center gap-3 sm:gap-4">
+                    <div className="w-11 h-11 sm:w-14 sm:h-14 bg-zinc-800 rounded-lg sm:rounded-xl" />
                     <div className="flex-1 space-y-2">
-                      <div className="h-5 bg-zinc-800 rounded w-1/3" />
-                      <div className="h-4 bg-zinc-800 rounded w-1/4" />
-                      <div className="h-6 bg-zinc-800 rounded w-1/5" />
+                      <div className="h-4 sm:h-5 bg-zinc-800 rounded w-1/3" />
+                      <div className="h-3 sm:h-4 bg-zinc-800 rounded w-1/4" />
+                      <div className="h-5 sm:h-6 bg-zinc-800 rounded w-1/5" />
                     </div>
                   </div>
                 </div>
@@ -861,10 +878,10 @@ export default function CreatorRedemptionsPage() {
           </div>
 
           {/* Link to Rewards Shop */}
-          <div className="mt-8 text-center">
+          <div className="mt-6 sm:mt-8 text-center">
             <button
               onClick={() => router.push('/creator/rewards')}
-              className="text-orange-400 hover:text-orange-300 font-medium transition-colors"
+              className="text-orange-400 hover:text-orange-300 font-medium transition-colors text-sm sm:text-base"
             >
               Browse Rewards Shop →
             </button>

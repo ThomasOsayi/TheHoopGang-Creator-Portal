@@ -321,3 +321,12 @@ html, body {
   animation: float-slow 4s ease-in-out infinite;
   animation-delay: 0.5s;
 }
+
+/* ============================================
+   MOBILE SAFE AREA UTILITIES
+   For bottom sheet modals on notch devices (iPhone X+)
+   ============================================ */
+
+.safe-bottom {
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+}

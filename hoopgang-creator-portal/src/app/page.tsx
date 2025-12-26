@@ -111,7 +111,7 @@ export default function HomePage() {
                 {/* Main Product Image */}
                 <div className="relative bg-zinc-900/80 backdrop-blur-sm rounded-3xl border border-white/10 overflow-hidden shadow-2xl">
                   <Image
-                    src="/images/products/hero_product.jpg"
+                    src="/images/products/hero_product.png"
                     alt="TheHoopGang Creator"
                     width={450}
                     height={563}

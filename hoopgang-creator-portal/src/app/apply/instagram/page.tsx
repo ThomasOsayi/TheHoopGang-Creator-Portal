@@ -1,4 +1,5 @@
 // src/app/apply/instagram/page.tsx
+// Mobile-Responsive Version
 
 'use client';
 
@@ -23,6 +24,7 @@ const InstagramLogo = ({ className = "w-6 h-6" }: { className?: string }) => (
 type Step = 1 | 2 | 3 | 4;
 
 const stepLabels = ['Account', 'Verify', 'Social', 'Details'];
+const stepLabelsShort = ['1', '2', '3', '4'];
 
 function InstagramApplyContent() {
   const router = useRouter();
@@ -478,13 +480,13 @@ function InstagramApplyContent() {
   };
 
   const inputClasses =
-    'w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent hover:bg-white/[0.08] transition-all';
-  const labelClasses = 'block text-white/50 text-xs uppercase tracking-wider mb-2';
+    'w-full bg-white/5 border border-white/10 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-white text-sm sm:text-base placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent hover:bg-white/[0.08] transition-all';
+  const labelClasses = 'block text-white/50 text-[10px] sm:text-xs uppercase tracking-wider mb-1.5 sm:mb-2';
   const selectClasses =
-    'w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent hover:bg-white/[0.08] transition-all appearance-none cursor-pointer';
+    'w-full bg-white/5 border border-white/10 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-white text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent hover:bg-white/[0.08] transition-all appearance-none cursor-pointer';
 
   return (
-    <div className="min-h-screen bg-zinc-950 py-12 px-4 relative overflow-hidden">
+    <div className="min-h-screen bg-zinc-950 py-8 sm:py-12 px-4 relative overflow-hidden">
       {/* Background Gradient Orbs */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute -top-40 -right-40 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl" />
@@ -494,51 +496,52 @@ function InstagramApplyContent() {
 
       <div className="max-w-lg mx-auto relative z-10">
         {/* Header */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-6 sm:mb-8">
           {/* Back Link */}
           <Link 
             href="/apply" 
-            className="inline-flex items-center gap-2 text-white/50 hover:text-white/80 transition-colors mb-6"
+            className="inline-flex items-center gap-1.5 sm:gap-2 text-white/50 hover:text-white/80 transition-colors mb-4 sm:mb-6 text-sm"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Back to platform selection
+            <span className="hidden sm:inline">Back to platform selection</span>
+            <span className="sm:hidden">Back</span>
           </Link>
 
           {/* Instagram Badge */}
-          <div className="flex items-center justify-center gap-3 mb-6">
+          <div className="flex items-center justify-center gap-2 sm:gap-3 mb-4 sm:mb-6">
             <div 
-              className="w-12 h-12 rounded-xl flex items-center justify-center"
+              className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl flex items-center justify-center"
               style={{
                 background: 'linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)',
               }}
             >
-              <InstagramLogo className="w-7 h-7" />
+              <InstagramLogo className="w-5 h-5 sm:w-7 sm:h-7" />
             </div>
             <div className="text-left">
-              <p className="text-white/50 text-xs uppercase tracking-wider">Applying via</p>
-              <p className="text-white font-semibold">Instagram</p>
+              <p className="text-white/50 text-[10px] sm:text-xs uppercase tracking-wider">Applying via</p>
+              <p className="text-white font-semibold text-sm sm:text-base">Instagram</p>
             </div>
           </div>
 
-          <h1 className="text-3xl font-black text-white mb-2">
+          <h1 className="text-2xl sm:text-3xl font-black text-white mb-1 sm:mb-2">
             Creator Application
           </h1>
-          <p className="text-white/60">
+          <p className="text-white/60 text-sm sm:text-base">
             Tell us about yourself and your content
           </p>
         </div>
 
         {/* Progress Bar */}
-        <div className="mb-8">
+        <div className="mb-6 sm:mb-8">
           <div className="flex items-center justify-between relative">
             {/* Background line */}
-            <div className="absolute top-4 left-0 right-0 h-1 bg-zinc-800 mx-8" />
+            <div className="absolute top-3 sm:top-4 left-0 right-0 h-0.5 sm:h-1 bg-zinc-800 mx-6 sm:mx-8" />
             
             {/* Progress line */}
             <div 
-              className="absolute top-4 left-0 h-1 bg-gradient-to-r from-orange-500 to-pink-500 mx-8 transition-all duration-500"
+              className="absolute top-3 sm:top-4 left-0 h-0.5 sm:h-1 bg-gradient-to-r from-orange-500 to-pink-500 mx-6 sm:mx-8 transition-all duration-500"
               style={{ 
                 width: `calc(${((currentStep - 1) / 3) * 100}% - ${currentStep === 1 ? 0 : (4 - currentStep) * 16}px)`,
               }}
@@ -549,7 +552,7 @@ function InstagramApplyContent() {
               <div key={step} className="relative z-10 flex flex-col items-center">
                 <div
                   className={`
-                    w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all
+                    w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold transition-all
                     ${currentStep >= step 
                       ? 'bg-gradient-to-r from-orange-500 to-pink-500 text-white' 
                       : 'bg-zinc-800 text-zinc-500'
@@ -557,14 +560,14 @@ function InstagramApplyContent() {
                   `}
                 >
                   {currentStep > step ? (
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                     </svg>
                   ) : (
                     step
                   )}
                 </div>
-                <span className="text-xs text-white/40 mt-2 whitespace-nowrap">
+                <span className="text-[10px] sm:text-xs text-white/40 mt-1.5 sm:mt-2 whitespace-nowrap hidden xs:block">
                   {stepLabels[step - 1]}
                 </span>
               </div>
@@ -573,11 +576,11 @@ function InstagramApplyContent() {
         </div>
 
         {/* Form Card */}
-        <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl p-8 hover:border-white/20 transition-all duration-300">
+        <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl sm:rounded-3xl p-5 sm:p-8 hover:border-white/20 transition-all duration-300">
           {/* Error Message */}
           {error && (
-            <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl text-sm flex items-start gap-3 mb-6">
-              <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm flex items-start gap-2 sm:gap-3 mb-4 sm:mb-6">
+              <svg className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <div>
@@ -596,29 +599,29 @@ function InstagramApplyContent() {
 
           {/* Auto-verifying State */}
           {autoVerifying ? (
-            <div className="text-center py-16">
-              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-orange-500/20 border border-orange-500/30 mb-6">
-                <div className="w-10 h-10 border-3 border-orange-500 border-t-transparent rounded-full animate-spin" />
+            <div className="text-center py-12 sm:py-16">
+              <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-orange-500/20 border border-orange-500/30 mb-4 sm:mb-6">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 border-3 border-orange-500 border-t-transparent rounded-full animate-spin" />
               </div>
-              <h2 className="text-2xl font-bold text-white mb-2">Verifying Your Email...</h2>
-              <p className="text-white/60">Please wait a moment</p>
+              <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">Verifying Your Email...</h2>
+              <p className="text-white/60 text-sm sm:text-base">Please wait a moment</p>
             </div>
           ) : success ? (
             /* Success State */
-            <div className="text-center py-8">
-              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-500/20 border border-green-500/30 mb-6">
-                <svg className="w-10 h-10 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="text-center py-6 sm:py-8">
+              <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-green-500/20 border border-green-500/30 mb-4 sm:mb-6">
+                <svg className="w-8 h-8 sm:w-10 sm:h-10 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h2 className="text-2xl font-bold text-white mb-2">Application Submitted!</h2>
-              <p className="text-white/60 mb-4">
+              <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">Application Submitted!</h2>
+              <p className="text-white/60 text-sm sm:text-base mb-3 sm:mb-4">
                 Welcome to the TheHoopGang Creator Program!
               </p>
-              <p className="text-white/40 text-sm">
+              <p className="text-white/40 text-xs sm:text-sm">
                 Redirecting to your dashboard...
               </p>
-              <div className="mt-6">
+              <div className="mt-4 sm:mt-6">
                 <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto" />
               </div>
             </div>
@@ -628,15 +631,15 @@ function InstagramApplyContent() {
               {/* STEP 1: Create Account */}
               {/* ============================================ */}
               {currentStep === 1 && (
-                <div className="space-y-6">
+                <div className="space-y-4 sm:space-y-6">
                   <div className="text-center mb-2">
-                    <h2 className="text-xl font-bold text-white mb-2">Create Your Account</h2>
-                    <p className="text-white/50 text-sm">
+                    <h2 className="text-lg sm:text-xl font-bold text-white mb-1 sm:mb-2">Create Your Account</h2>
+                    <p className="text-white/50 text-xs sm:text-sm">
                       We'll send you a verification email
                     </p>
                   </div>
 
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
                     <div>
                       <label htmlFor="fullName" className={labelClasses}>
                         Full Name <span className="text-orange-500">*</span>
@@ -709,24 +712,24 @@ function InstagramApplyContent() {
                     type="button"
                     onClick={handleCreateAccount}
                     disabled={verifyingEmail}
-                    className="w-full py-4 bg-gradient-to-r from-orange-500 to-pink-500 hover:opacity-90 text-white font-bold text-lg rounded-xl transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:shadow-orange-500/25 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
+                    className="w-full py-3 sm:py-4 bg-gradient-to-r from-orange-500 to-pink-500 hover:opacity-90 text-white font-bold text-base sm:text-lg rounded-xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-orange-500/25 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
                   >
                     {verifyingEmail ? (
                       <>
-                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        Creating Account...
+                        <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span className="text-sm sm:text-base">Creating Account...</span>
                       </>
                     ) : (
                       <>
-                        Create Account
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <span className="text-sm sm:text-base">Create Account</span>
+                        <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                         </svg>
                       </>
                     )}
                   </button>
 
-                  <p className="text-center text-white/40 text-sm">
+                  <p className="text-center text-white/40 text-xs sm:text-sm">
                     Already have an account?{' '}
                     <Link href="/login" className="text-orange-400 hover:text-orange-300 transition-colors">
                       Sign in here
@@ -739,28 +742,28 @@ function InstagramApplyContent() {
               {/* STEP 2: Verify Email */}
               {/* ============================================ */}
               {currentStep === 2 && (
-                <div className="space-y-6">
+                <div className="space-y-4 sm:space-y-6">
                   <div className="text-center mb-2">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-orange-500/20 border border-orange-500/30 mb-4">
-                      <svg className="w-8 h-8 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-orange-500/20 border border-orange-500/30 mb-3 sm:mb-4">
+                      <svg className="w-6 h-6 sm:w-8 sm:h-8 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                       </svg>
                     </div>
-                    <h2 className="text-xl font-bold text-white mb-2">Verify Your Email</h2>
-                    <p className="text-white/50 text-sm">
+                    <h2 className="text-lg sm:text-xl font-bold text-white mb-1 sm:mb-2">Verify Your Email</h2>
+                    <p className="text-white/50 text-xs sm:text-sm">
                       We sent a verification link to:
                     </p>
-                    <p className="text-orange-400 font-medium mt-1">
+                    <p className="text-orange-400 font-medium text-sm sm:text-base mt-1 truncate px-2">
                       {formData.email || auth.currentUser?.email}
                     </p>
                   </div>
 
-                  <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4">
-                    <p className="text-white/70 text-sm font-medium mb-2">Next steps:</p>
-                    <ol className="text-white/50 text-sm space-y-1 list-decimal list-inside">
+                  <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-3 sm:p-4">
+                    <p className="text-white/70 text-xs sm:text-sm font-medium mb-2">Next steps:</p>
+                    <ol className="text-white/50 text-xs sm:text-sm space-y-1 list-decimal list-inside">
                       <li>Check your inbox (and spam folder)</li>
-                      <li>Click the verification link in the email</li>
-                      <li>Come back here and click the button below</li>
+                      <li>Click the verification link</li>
+                      <li>Come back and click the button below</li>
                     </ol>
                   </div>
 
@@ -768,19 +771,19 @@ function InstagramApplyContent() {
                     type="button"
                     onClick={handleCheckVerification}
                     disabled={verifyingEmail}
-                    className="w-full py-4 bg-gradient-to-r from-orange-500 to-pink-500 hover:opacity-90 text-white font-bold text-lg rounded-xl transition-all duration-200 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="w-full py-3 sm:py-4 bg-gradient-to-r from-orange-500 to-pink-500 hover:opacity-90 text-white font-bold text-base sm:text-lg rounded-xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {verifyingEmail ? (
                       <>
-                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        Checking...
+                        <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span className="text-sm sm:text-base">Checking...</span>
                       </>
                     ) : (
                       <>
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
-                        I've Verified My Email
+                        <span className="text-sm sm:text-base">I've Verified My Email</span>
                       </>
                     )}
                   </button>
@@ -788,9 +791,9 @@ function InstagramApplyContent() {
                   <button
                     type="button"
                     onClick={handleResendVerification}
-                    className="w-full text-white/50 hover:text-orange-400 text-sm transition-colors"
+                    className="w-full text-white/50 hover:text-orange-400 text-xs sm:text-sm transition-colors"
                   >
-                    Didn't receive the email? <span className="underline">Resend verification</span>
+                    Didn't receive the email? <span className="underline">Resend</span>
                   </button>
                 </div>
               )}
@@ -799,40 +802,40 @@ function InstagramApplyContent() {
               {/* STEP 3: Social Media */}
               {/* ============================================ */}
               {currentStep === 3 && (
-                <div className="space-y-6">
+                <div className="space-y-4 sm:space-y-6">
                   <div className="text-center mb-2">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-500/20 border border-green-500/30 mb-4">
-                      <svg className="w-8 h-8 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-green-500/20 border border-green-500/30 mb-3 sm:mb-4">
+                      <svg className="w-6 h-6 sm:w-8 sm:h-8 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
                     </div>
-                    <h2 className="text-xl font-bold text-white mb-2">Tell Us About Your Audience</h2>
-                    <p className="text-white/50 text-sm">
+                    <h2 className="text-lg sm:text-xl font-bold text-white mb-1 sm:mb-2">Tell Us About Your Audience</h2>
+                    <p className="text-white/50 text-xs sm:text-sm">
                       Share your social media stats
                     </p>
                   </div>
 
                   {/* Instagram Stats */}
-                  <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4">
-                    <div className="flex items-center gap-2 mb-4">
+                  <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-3 sm:p-4">
+                    <div className="flex items-center gap-2 mb-3 sm:mb-4">
                       <div 
-                        className="w-8 h-8 rounded-lg flex items-center justify-center"
+                        className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center"
                         style={{
                           background: 'linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)',
                         }}
                       >
-                        <InstagramLogo className="w-5 h-5" />
+                        <InstagramLogo className="w-4 h-4 sm:w-5 sm:h-5" />
                       </div>
-                      <span className="text-white font-medium">Instagram</span>
+                      <span className="text-white font-medium text-sm sm:text-base">Instagram</span>
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-3 sm:gap-4">
                       <div>
                         <label htmlFor="instagramHandle" className={labelClasses}>
                           Handle <span className="text-orange-500">*</span>
                         </label>
                         <div className="relative">
-                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30">@</span>
+                          <span className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-white/30 text-sm">@</span>
                           <input
                             type="text"
                             id="instagramHandle"
@@ -841,7 +844,7 @@ function InstagramApplyContent() {
                             onChange={handleInputChange}
                             placeholder="yourhandle"
                             required
-                            className={`${inputClasses} pl-8`}
+                            className={`${inputClasses} pl-7 sm:pl-8`}
                           />
                         </div>
                       </div>
@@ -865,26 +868,26 @@ function InstagramApplyContent() {
                   </div>
 
                   {/* TikTok Stats */}
-                  <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4">
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className="w-8 h-8 rounded-lg bg-black flex items-center justify-center">
-                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
+                  <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-3 sm:p-4">
+                    <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-black flex items-center justify-center">
+                        <svg className="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none">
                           <path
                             d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005 20.1a6.34 6.34 0 0010.86-4.43v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1-.1z"
                             fill="white"
                           />
                         </svg>
                       </div>
-                      <span className="text-white font-medium">TikTok</span>
+                      <span className="text-white font-medium text-sm sm:text-base">TikTok</span>
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-3 sm:gap-4">
                       <div>
                         <label htmlFor="tiktokHandle" className={labelClasses}>
                           Handle <span className="text-orange-500">*</span>
                         </label>
                         <div className="relative">
-                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30">@</span>
+                          <span className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-white/30 text-sm">@</span>
                           <input
                             type="text"
                             id="tiktokHandle"
@@ -893,7 +896,7 @@ function InstagramApplyContent() {
                             onChange={handleInputChange}
                             placeholder="yourhandle"
                             required
-                            className={`${inputClasses} pl-8`}
+                            className={`${inputClasses} pl-7 sm:pl-8`}
                           />
                         </div>
                       </div>
@@ -922,7 +925,7 @@ function InstagramApplyContent() {
                       Link to Your Best Content <span className="text-orange-500">*</span>
                     </label>
                     <div className="relative">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30">
+                      <span className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-white/30">
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                         </svg>
@@ -933,9 +936,9 @@ function InstagramApplyContent() {
                         name="bestContentUrl"
                         value={formData.bestContentUrl}
                         onChange={handleInputChange}
-                        placeholder="https://tiktok.com/@you/video/123456"
+                        placeholder="https://tiktok.com/@you/video/..."
                         required
-                        className={`${inputClasses} pl-10`}
+                        className={`${inputClasses} pl-9 sm:pl-10`}
                       />
                     </div>
                   </div>
@@ -943,10 +946,10 @@ function InstagramApplyContent() {
                   <button
                     type="button"
                     onClick={handleStep3Continue}
-                    className="w-full py-4 bg-gradient-to-r from-orange-500 to-pink-500 hover:opacity-90 text-white font-bold text-lg rounded-xl transition-all duration-200 hover:scale-[1.02] flex items-center justify-center gap-2"
+                    className="w-full py-3 sm:py-4 bg-gradient-to-r from-orange-500 to-pink-500 hover:opacity-90 text-white font-bold text-base sm:text-lg rounded-xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
                   >
-                    Continue
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <span className="text-sm sm:text-base">Continue</span>
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </button>
@@ -957,23 +960,23 @@ function InstagramApplyContent() {
               {/* STEP 4: Product, Shipping & About */}
               {/* ============================================ */}
               {currentStep === 4 && (
-                <form onSubmit={handleSubmit} className="space-y-6">
+                <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
                   <div className="text-center mb-2">
-                    <h2 className="text-xl font-bold text-white mb-2">Final Details</h2>
-                    <p className="text-white/50 text-sm">
+                    <h2 className="text-lg sm:text-xl font-bold text-white mb-1 sm:mb-2">Final Details</h2>
+                    <p className="text-white/50 text-xs sm:text-sm">
                       Product selection and shipping info
                     </p>
                   </div>
 
                   {/* Product Selection */}
-                  <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4">
-                    <div className="flex items-center gap-2 mb-4">
-                      <span className="text-xl">🛍️</span>
-                      <span className="text-white font-medium">Product Selection</span>
+                  <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-3 sm:p-4">
+                    <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                      <span className="text-lg sm:text-xl">🛍️</span>
+                      <span className="text-white font-medium text-sm sm:text-base">Product Selection</span>
                     </div>
                     
-                    <div className="bg-white/[0.03] border border-white/10 rounded-lg p-3 mb-4">
-                      <p className="text-white/60 text-sm mb-2">
+                    <div className="bg-white/[0.03] border border-white/10 rounded-lg p-2.5 sm:p-3 mb-3 sm:mb-4">
+                      <p className="text-white/60 text-xs sm:text-sm mb-1.5 sm:mb-2">
                         Browse our store to find the product you want:
                       </p>
                       
@@ -981,16 +984,16 @@ function InstagramApplyContent() {
                         href="https://thehoopgang.com"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 text-orange-400 hover:text-orange-300 transition-colors font-medium text-sm"
+                        className="inline-flex items-center gap-1.5 sm:gap-2 text-orange-400 hover:text-orange-300 transition-colors font-medium text-xs sm:text-sm"
                       >
                         <span>Visit TheHoopGang Store</span>
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                         </svg>
                       </a>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-3 sm:gap-4">
                       <div>
                         <label htmlFor="product" className={labelClasses}>
                           Product <span className="text-orange-500">*</span>
@@ -1001,7 +1004,7 @@ function InstagramApplyContent() {
                           name="product"
                           value={formData.product}
                           onChange={handleInputChange}
-                          placeholder="Reversible Mesh Shorts"
+                          placeholder="Mesh Shorts"
                           required
                           className={inputClasses}
                         />
@@ -1025,7 +1028,7 @@ function InstagramApplyContent() {
                               </option>
                             ))}
                           </select>
-                          <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-white/40">
+                          <div className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 pointer-events-none text-white/40">
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                             </svg>
@@ -1034,10 +1037,10 @@ function InstagramApplyContent() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 mt-4">
+                    <div className="grid grid-cols-2 gap-3 sm:gap-4 mt-3 sm:mt-4">
                       <div>
                         <label htmlFor="height" className={labelClasses}>
-                          Height <span className="text-white/30">(optional)</span>
+                          Height <span className="text-white/30 text-[8px] sm:text-[10px]">(opt)</span>
                         </label>
                         <input
                           type="text"
@@ -1045,13 +1048,13 @@ function InstagramApplyContent() {
                           name="height"
                           value={formData.height || ''}
                           onChange={handleInputChange}
-                          placeholder={`5'10" or 178cm`}
+                          placeholder={`5'10"`}
                           className={inputClasses}
                         />
                       </div>
                       <div>
                         <label htmlFor="weight" className={labelClasses}>
-                          Weight <span className="text-white/30">(optional)</span>
+                          Weight <span className="text-white/30 text-[8px] sm:text-[10px]">(opt)</span>
                         </label>
                         <input
                           type="text"
@@ -1059,7 +1062,7 @@ function InstagramApplyContent() {
                           name="weight"
                           value={formData.weight || ''}
                           onChange={handleInputChange}
-                          placeholder="165lbs or 75kg"
+                          placeholder="165lbs"
                           className={inputClasses}
                         />
                       </div>
@@ -1067,13 +1070,13 @@ function InstagramApplyContent() {
                   </div>
 
                   {/* Shipping Address */}
-                  <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4">
-                    <div className="flex items-center gap-2 mb-4">
-                      <span className="text-xl">📦</span>
-                      <span className="text-white font-medium">Shipping Address</span>
+                  <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-3 sm:p-4">
+                    <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                      <span className="text-lg sm:text-xl">📦</span>
+                      <span className="text-white font-medium text-sm sm:text-base">Shipping Address</span>
                     </div>
 
-                    <div className="space-y-4">
+                    <div className="space-y-3 sm:space-y-4">
                       <div>
                         <label htmlFor="shippingAddress.street" className={labelClasses}>
                           Street Address <span className="text-orange-500">*</span>
@@ -1092,7 +1095,7 @@ function InstagramApplyContent() {
 
                       <div>
                         <label htmlFor="shippingAddress.unit" className={labelClasses}>
-                          Apt/Unit <span className="text-white/30">(optional)</span>
+                          Apt/Unit <span className="text-white/30 text-[8px] sm:text-[10px]">(opt)</span>
                         </label>
                         <input
                           type="text"
@@ -1105,7 +1108,8 @@ function InstagramApplyContent() {
                         />
                       </div>
 
-                      <div className="grid grid-cols-4 gap-3">
+                      {/* City/State/ZIP - Stack on mobile */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
                         <div className="col-span-2">
                           <label htmlFor="shippingAddress.city" className={labelClasses}>
                             City <span className="text-orange-500">*</span>
@@ -1156,23 +1160,23 @@ function InstagramApplyContent() {
                   </div>
 
                   {/* About You */}
-                  <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4">
-                    <div className="flex items-center gap-2 mb-4">
-                      <span className="text-xl">✨</span>
-                      <span className="text-white font-medium">About You</span>
+                  <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-3 sm:p-4">
+                    <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                      <span className="text-lg sm:text-xl">✨</span>
+                      <span className="text-white font-medium text-sm sm:text-base">About You</span>
                     </div>
 
-                    <div className="space-y-4">
+                    <div className="space-y-3 sm:space-y-4">
                       <div>
                         <label htmlFor="whyCollab" className={labelClasses}>
-                          Why collab with TheHoopGang? <span className="text-orange-500">*</span>
+                          Why collab with us? <span className="text-orange-500">*</span>
                         </label>
                         <textarea
                           id="whyCollab"
                           name="whyCollab"
                           value={formData.whyCollab}
                           onChange={handleInputChange}
-                          placeholder="Tell us why you're excited to work with us..."
+                          placeholder="Tell us why you're excited..."
                           required
                           rows={3}
                           className={`${inputClasses} resize-none`}
@@ -1191,10 +1195,10 @@ function InstagramApplyContent() {
                               onChange={handleInputChange}
                               className="sr-only peer"
                             />
-                            <div className="w-5 h-5 rounded-full border-2 border-white/20 peer-checked:border-orange-500 peer-checked:bg-orange-500 transition-all flex items-center justify-center">
-                              <div className="w-2 h-2 rounded-full bg-white opacity-0 peer-checked:opacity-100" />
+                            <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 border-white/20 peer-checked:border-orange-500 peer-checked:bg-orange-500 transition-all flex items-center justify-center">
+                              <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-white opacity-0 peer-checked:opacity-100" />
                             </div>
-                            <span className="text-white/80 group-hover:text-white transition-colors">Yes</span>
+                            <span className="text-white/80 group-hover:text-white transition-colors text-sm">Yes</span>
                           </label>
                           <label className="flex items-center gap-2 cursor-pointer group">
                             <input
@@ -1205,10 +1209,10 @@ function InstagramApplyContent() {
                               onChange={handleInputChange}
                               className="sr-only peer"
                             />
-                            <div className="w-5 h-5 rounded-full border-2 border-white/20 peer-checked:border-orange-500 peer-checked:bg-orange-500 transition-all flex items-center justify-center">
-                              <div className="w-2 h-2 rounded-full bg-white opacity-0 peer-checked:opacity-100" />
+                            <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 border-white/20 peer-checked:border-orange-500 peer-checked:bg-orange-500 transition-all flex items-center justify-center">
+                              <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-white opacity-0 peer-checked:opacity-100" />
                             </div>
-                            <span className="text-white/80 group-hover:text-white transition-colors">No</span>
+                            <span className="text-white/80 group-hover:text-white transition-colors text-sm">No</span>
                           </label>
                         </div>
                       </div>
@@ -1216,8 +1220,8 @@ function InstagramApplyContent() {
                   </div>
 
                   {/* Agreement */}
-                  <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-4">
-                    <label className="flex items-start gap-3 cursor-pointer group">
+                  <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-3 sm:p-4">
+                    <label className="flex items-start gap-2.5 sm:gap-3 cursor-pointer group">
                       <div className="relative mt-0.5">
                         <input
                           type="checkbox"
@@ -1227,9 +1231,9 @@ function InstagramApplyContent() {
                           required
                           className="sr-only peer"
                         />
-                        <div className="w-5 h-5 rounded border-2 border-white/20 peer-checked:border-orange-500 peer-checked:bg-orange-500 transition-all flex items-center justify-center">
+                        <div className="w-4 h-4 sm:w-5 sm:h-5 rounded border-2 border-white/20 peer-checked:border-orange-500 peer-checked:bg-orange-500 transition-all flex items-center justify-center">
                           <svg
-                            className="w-3 h-3 text-white opacity-0 peer-checked:opacity-100"
+                            className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white opacity-0 peer-checked:opacity-100"
                             fill="none"
                             viewBox="0 0 24 24"
                             stroke="currentColor"
@@ -1240,39 +1244,39 @@ function InstagramApplyContent() {
                         </div>
                       </div>
                       <div>
-                        <span className="text-sm font-semibold text-white group-hover:text-orange-100 transition-colors">
+                        <span className="text-xs sm:text-sm font-semibold text-white group-hover:text-orange-100 transition-colors">
                           I agree to post 1 TikTok within 14 days
                         </span>
-                        <p className="text-xs text-white/50 mt-1">
+                        <p className="text-[10px] sm:text-xs text-white/50 mt-0.5 sm:mt-1">
                           Failure to post may disqualify me from future collaborations.
                         </p>
                       </div>
                     </label>
                   </div>
 
-                  <div className="flex gap-3">
+                  <div className="flex gap-2 sm:gap-3">
                     <button
                       type="button"
                       onClick={handleBack}
-                      className="px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-medium rounded-xl transition-all"
+                      className="px-4 sm:px-6 py-2.5 sm:py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-medium rounded-xl transition-all active:scale-[0.98]"
                     >
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                       </svg>
                     </button>
                     <button
                       type="submit"
                       disabled={loading}
-                      className="flex-1 py-3 bg-gradient-to-r from-orange-500 to-pink-500 hover:opacity-90 text-white font-bold rounded-xl transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
+                      className="flex-1 py-2.5 sm:py-3 bg-gradient-to-r from-orange-500 to-pink-500 hover:opacity-90 text-white font-bold rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
                     >
                       {loading ? (
                         <>
-                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                          Submitting...
+                          <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          <span className="text-sm sm:text-base">Submitting...</span>
                         </>
                       ) : (
                         <>
-                          Submit Application
+                          <span className="text-sm sm:text-base">Submit</span>
                           <span>🔥</span>
                         </>
                       )}
@@ -1286,7 +1290,7 @@ function InstagramApplyContent() {
 
         {/* Already have account - only show on step 1 */}
         {currentStep === 1 && !success && (
-          <p className="text-center text-white/50 text-sm mt-6">
+          <p className="text-center text-white/50 text-xs sm:text-sm mt-4 sm:mt-6">
             Already have an account?{' '}
             <Link href="/login" className="text-orange-400 hover:text-orange-300 transition-colors">
               Sign in here

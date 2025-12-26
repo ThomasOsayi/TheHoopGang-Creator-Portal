@@ -1,214 +1,230 @@
+// src/app/login/page.tsx
+// Mobile-Responsive Version
+
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useAuth } from '@/lib/auth-context';
-import { sendEmailVerification } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
-import { useToast } from '@/components/ui';
-import { BackgroundOrbs } from '@/components/ui';
+import { Button, useToast } from '@/components/ui';
 
-export default function VerifyEmailPage() {
-  const router = useRouter();
-  const { user, userData, loading } = useAuth();
-  const { showToast } = useToast();
-  
-  const [checking, setChecking] = useState(false);
-  const [resending, setResending] = useState(false);
+export default function LoginPage() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [loginAttempted, setLoginAttempted] = useState(false);
+  const { signIn, userData, loading: authLoading } = useAuth();
+  const router = useRouter();
+  const { showToast } = useToast();
 
-  // Redirect if not logged in or already verified
+  // Handle redirect after successful login
   useEffect(() => {
-    if (!loading) {
-      if (!user) {
-        router.push('/login');
-        return;
-      }
-      if (user.emailVerified) {
-        // Already verified - redirect to dashboard
-        router.push('/creator/dashboard');
-      }
-    }
-  }, [user, loading, router]);
-
-  const handleCheckVerification = async () => {
-    if (!user) return;
-    
-    setChecking(true);
-    setError(null);
-
-    try {
-      // Reload the user to get fresh emailVerified status
-      await user.reload();
-      
-      // Get the updated user
-      const currentUser = auth.currentUser;
-      
-      if (currentUser?.emailVerified) {
-        showToast('Email verified! Redirecting...', 'success');
-        setTimeout(() => {
+    if (loginAttempted && userData && !authLoading) {
+      if (userData.role === 'admin') {
+        router.push('/admin/creators');
+      } else if (userData.role === 'creator') {
+        // Check if creator has submitted application
+        if (userData.creatorId) {
           router.push('/creator/dashboard');
-        }, 1000);
+        } else {
+          // Email verified but no application submitted yet
+          router.push('/apply');
+        }
       } else {
-        setError('Email not verified yet. Please check your inbox and click the verification link.');
+        router.push('/');
       }
-    } catch (err) {
-      console.error('Error checking verification:', err);
-      setError('Failed to check verification status. Please try again.');
-    } finally {
-      setChecking(false);
     }
-  };
+  }, [loginAttempted, userData, authLoading, router]);
 
-  const handleResendVerification = async () => {
-    if (!user) return;
-    
-    setResending(true);
+  // Redirect if user is already logged in
+  useEffect(() => {
+    if (!authLoading && userData) {
+      if (userData.role === 'admin') {
+        router.push('/admin/creators');
+      } else if (userData.role === 'creator') {
+        // Check if creator has submitted application
+        if (userData.creatorId) {
+          router.push('/creator/dashboard');
+        } else {
+          router.push('/apply');
+        }
+      }
+    }
+  }, [authLoading, userData, router]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     setError(null);
+    setLoading(true);
 
     try {
-      await sendEmailVerification(user);
-      showToast('Verification email sent! Check your inbox.', 'success');
-    } catch (err: any) {
-      console.error('Error resending verification:', err);
-      if (err.code === 'auth/too-many-requests') {
-        setError('Too many requests. Please wait a few minutes before trying again.');
-      } else {
-        setError('Failed to send verification email. Please try again.');
-      }
-    } finally {
-      setResending(false);
+      await signIn(email, password);
+      setLoginAttempted(true);
+      showToast('Welcome back! Signing you in...', 'success');
+      setLoading(false);
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('Invalid email or password');
+      setLoading(false);
     }
   };
 
-  // Loading state
-  if (loading) {
+  // Auth loading state
+  if (authLoading) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-white/60">Loading...</p>
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center relative overflow-hidden">
+        {/* Background Orbs */}
+        <div className="fixed inset-0 pointer-events-none overflow-hidden">
+          <div className="absolute -top-40 -right-40 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl" />
+          <div className="absolute top-1/3 -left-40 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl" />
+        </div>
+
+        <div className="relative z-10 flex items-center gap-3">
+          <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+          <span className="text-white/60">Loading...</span>
         </div>
       </div>
     );
   }
 
-  // Not logged in
-  if (!user) {
-    return null;
-  }
-
   return (
-    <div className="min-h-screen bg-zinc-950 py-12 px-4 relative overflow-hidden">
-      {/* Background */}
-      <BackgroundOrbs colors={['orange', 'purple', 'orange']} />
+    <div className="min-h-screen bg-zinc-950 flex items-center justify-center px-4 py-8 sm:py-0 relative overflow-hidden">
+      {/* Background Gradient Orbs */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl" />
+        <div className="absolute top-1/3 -left-40 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl" />
+        <div className="absolute -bottom-40 right-1/4 w-72 h-72 bg-orange-500/5 rounded-full blur-3xl" />
+      </div>
 
-      <div className="max-w-lg mx-auto relative z-10">
-        {/* Back Link */}
-        <div className="text-center mb-8">
-          <Link 
-            href="/apply" 
-            className="inline-flex items-center gap-2 text-white/50 hover:text-white/80 transition-colors"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            Back to platform selection
+      <div className="w-full max-w-md relative z-10">
+        {/* Header */}
+        <div className="text-center mb-6 sm:mb-8">
+          <Link href="/" className="inline-block">
+            <div className="relative w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-4 sm:mb-6">
+              <div className="w-full h-full bg-zinc-800/50 rounded-xl sm:rounded-2xl border border-white/10 flex items-center justify-center p-2.5 sm:p-3">
+                <Image
+                  src="/images/THG_logo_orange.png"
+                  alt="TheHoopGang"
+                  width={48}
+                  height={48}
+                  className="w-full h-full object-contain"
+                />
+              </div>
+            </div>
           </Link>
+          <h1 className="text-xl sm:text-2xl font-bold text-white">Welcome Back</h1>
+          <p className="text-white/60 mt-1 sm:mt-2 text-sm sm:text-base">Sign in to your TheHoopGang account</p>
         </div>
 
-        {/* Form Card */}
-        <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl p-8">
-          {/* Email Icon */}
-          <div className="flex justify-center mb-6">
-            <div className="w-20 h-20 bg-gradient-to-br from-orange-500 to-amber-600 rounded-full flex items-center justify-center">
-              <svg className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-            </div>
-          </div>
-
-          {/* Title */}
-          <h1 className="text-2xl font-bold text-white text-center mb-2">
-            Verify Your Email
-          </h1>
-          <p className="text-white/60 text-center mb-2">
-            We sent a verification link to:
-          </p>
-          <p className="text-orange-400 text-center font-medium mb-8">
-            {user.email}
-          </p>
-
-          {/* Instructions Card */}
-          <div className="bg-zinc-800/50 border border-zinc-700 rounded-xl p-5 mb-6">
-            <p className="text-white font-semibold mb-3">Next steps:</p>
-            <ol className="space-y-2 text-white/70 text-sm">
-              <li className="flex gap-2">
-                <span className="text-white/50">1.</span>
-                Check your inbox (and spam folder)
-              </li>
-              <li className="flex gap-2">
-                <span className="text-white/50">2.</span>
-                Click the verification link in the email
-              </li>
-              <li className="flex gap-2">
-                <span className="text-white/50">3.</span>
-                Come back here and click the button below
-              </li>
-            </ol>
-          </div>
-
+        {/* Login Card */}
+        <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-xl sm:rounded-2xl p-5 sm:p-8 hover:border-white/20 transition-all duration-300">
           {/* Error Message */}
           {error && (
-            <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl text-sm mb-6">
+            <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl mb-4 sm:mb-6 text-xs sm:text-sm flex items-center gap-2 sm:gap-3">
+              <svg className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
               {error}
             </div>
           )}
 
-          {/* Verify Button */}
-          <button
-            onClick={handleCheckVerification}
-            disabled={checking}
-            className="w-full py-4 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-lg rounded-xl transition-all duration-200 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
-          >
-            {checking ? (
-              <>
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Checking...
-              </>
-            ) : (
-              <>
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                I&apos;ve Verified My Email
-              </>
-            )}
-          </button>
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
+            <div>
+              <label className="block text-white/50 text-[10px] sm:text-xs uppercase tracking-wider mb-1.5 sm:mb-2">
+                Email
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-white/30">
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+                  </svg>
+                </span>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 sm:pl-12 pr-3 sm:pr-4 py-2.5 sm:py-3 text-white text-sm sm:text-base placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent hover:bg-white/[0.08] transition-all"
+                  placeholder="you@example.com"
+                />
+              </div>
+            </div>
 
-          {/* Resend Link */}
-          <div className="text-center mt-6">
-            <p className="text-white/50 text-sm">
-              Didn&apos;t receive the email?{' '}
-              <button
-                onClick={handleResendVerification}
-                disabled={resending}
-                className="text-orange-400 hover:text-orange-300 transition-colors underline disabled:opacity-50"
+            <div>
+              <label className="block text-white/50 text-[10px] sm:text-xs uppercase tracking-wider mb-1.5 sm:mb-2">
+                Password
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-white/30">
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                </span>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 sm:pl-12 pr-3 sm:pr-4 py-2.5 sm:py-3 text-white text-sm sm:text-base placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent hover:bg-white/[0.08] transition-all"
+                  placeholder="••••••••"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end">
+              <Link
+                href="/forgot-password"
+                className="text-xs sm:text-sm text-white/40 hover:text-orange-400 transition-colors"
               >
-                {resending ? 'Sending...' : 'Resend verification'}
-              </button>
-            </p>
+                Forgot password?
+              </Link>
+            </div>
+
+            <Button
+              type="submit"
+              variant="primary"
+              className="w-full py-2.5 sm:py-3 text-sm sm:text-base active:scale-[0.98]"
+              disabled={loading}
+              loading={loading}
+            >
+              {loading ? 'Signing in...' : 'Sign In'}
+            </Button>
+          </form>
+
+          {/* Divider */}
+          <div className="relative my-5 sm:my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-white/10" />
+            </div>
+            <div className="relative flex justify-center text-[10px] sm:text-xs">
+              <span className="px-3 bg-zinc-900/50 text-white/40 uppercase tracking-wider">or</span>
+            </div>
           </div>
+
+          {/* Sign Up Link */}
+          <p className="text-center text-white/50 text-xs sm:text-sm">
+            Want to become a creator?{' '}
+            <Link href="/apply" className="text-orange-400 hover:text-orange-300 transition-colors font-medium">
+              Apply here
+            </Link>
+          </p>
         </div>
 
-        {/* Sign out option */}
-        <p className="text-center text-white/40 text-sm mt-6">
-          Wrong account?{' '}
-          <Link href="/login" className="text-orange-400 hover:text-orange-300 transition-colors">
-            Sign in with a different email
+        {/* Back to Home */}
+        <div className="text-center mt-4 sm:mt-6">
+          <Link
+            href="/"
+            className="text-white/40 hover:text-white/60 text-xs sm:text-sm transition-colors inline-flex items-center gap-1.5 sm:gap-2"
+          >
+            <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Back to Home
           </Link>
-        </p>
+        </div>
       </div>
     </div>
   );

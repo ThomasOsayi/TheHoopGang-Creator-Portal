@@ -1,4 +1,6 @@
 // src/app/creator/leaderboard/page.tsx
+// Mobile-Responsive Version
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -222,210 +224,267 @@ export default function LeaderboardPage() {
         {/* Background Orbs */}
         <BackgroundOrbs colors={['orange', 'purple', 'orange']} />
 
-      <main className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 py-8">
-        {/* Header */}
-        <PageHeader 
-          title="Leaderboard"
-          subtitle="Compete with other creators for weekly prizes"
-          icon="🏆"
-          accentColor="gold"
-        />
+        <main className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+          {/* Header */}
+          <PageHeader 
+            title="Leaderboard"
+            subtitle="Compete with other creators for weekly prizes"
+            icon="🏆"
+            accentColor="gold"
+          />
 
-        {/* Your Current Rank Card */}
-        {userStats.currentRank && (
-          <div className="mb-6 p-6 bg-gradient-to-r from-orange-500/20 via-amber-500/15 to-orange-500/20 border border-orange-500/30 rounded-2xl animate-fade-in-up">
-            <div className="flex flex-col sm:flex-row items-center gap-6">
-              {/* Rank Badge */}
-              <div className="w-20 h-20 bg-orange-500 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-500/30">
-                <span className="text-3xl font-bold text-white">#{userStats.currentRank}</span>
-              </div>
-              
-              {/* Info */}
-              <div className="flex-1 text-center sm:text-left">
-                <div className="text-zinc-400 text-sm">Your Current Rank</div>
-                <div className="text-2xl font-bold text-white">{userStats.creatorName || 'Creator'}</div>
-                <div className="text-green-400">
-                  <AnimatedCounter value={userStats.weeklySubmissions} /> submissions this week
+          {/* Your Current Rank Card - Mobile Optimized */}
+          {userStats.currentRank && (
+            <div className="mb-6 p-4 sm:p-6 bg-gradient-to-r from-orange-500/20 via-amber-500/15 to-orange-500/20 border border-orange-500/30 rounded-2xl animate-fade-in-up">
+              <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
+                {/* Rank Badge */}
+                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-orange-500 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-500/30 flex-shrink-0">
+                  <span className="text-2xl sm:text-3xl font-bold text-white">#{userStats.currentRank}</span>
+                </div>
+                
+                {/* Info */}
+                <div className="flex-1 text-center sm:text-left">
+                  <div className="text-zinc-400 text-xs sm:text-sm">Your Current Rank</div>
+                  <div className="text-xl sm:text-2xl font-bold text-white">{userStats.creatorName || 'Creator'}</div>
+                  <div className="text-green-400 text-sm sm:text-base">
+                    <AnimatedCounter value={userStats.weeklySubmissions} /> submissions this week
+                  </div>
+                </div>
+                
+                {/* Stats - Hidden on mobile, shown in a row on tablet+ */}
+                <div className="hidden sm:flex gap-8">
+                  <div className="text-center">
+                    <div className="text-xl sm:text-2xl font-bold text-white">
+                      {userStats.bestFinish ? `#${userStats.bestFinish}` : '—'}
+                    </div>
+                    <div className="text-zinc-500 text-xs sm:text-sm">Best Finish</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xl sm:text-2xl font-bold text-white">
+                      <AnimatedCounter value={userStats.competitionsEntered} />
+                    </div>
+                    <div className="text-zinc-500 text-xs sm:text-sm">Competitions</div>
+                  </div>
                 </div>
               </div>
               
-              {/* Stats */}
-              <div className="flex gap-8">
+              {/* Stats row on mobile only */}
+              <div className="flex sm:hidden justify-center gap-8 mt-4 pt-4 border-t border-orange-500/20">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-white">
+                  <div className="text-lg font-bold text-white">
                     {userStats.bestFinish ? `#${userStats.bestFinish}` : '—'}
                   </div>
-                  <div className="text-zinc-500 text-sm">Best Finish</div>
+                  <div className="text-zinc-500 text-xs">Best Finish</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-white">
+                  <div className="text-lg font-bold text-white">
                     <AnimatedCounter value={userStats.competitionsEntered} />
                   </div>
-                  <div className="text-zinc-500 text-sm">Competitions</div>
+                  <div className="text-zinc-500 text-xs">Competitions</div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Competition Status Banner */}
-        {!competitionLoading && activeCompetition?.status === 'active' && (
-          <GlowCard glowColor="green" className="mb-6 bg-zinc-900/50 border-green-500/20">
-            <div className="flex flex-col items-center text-center">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
-                <span className="text-2xl">🏆</span>
-                <span className="text-green-400 font-bold">{activeCompetition.name} is LIVE!</span>
-                <span className="text-zinc-400">•</span>
-                <span className="text-zinc-400">{totalCreators} creators competing</span>
+          {/* Competition Status Banner - Mobile Optimized */}
+          {!competitionLoading && activeCompetition?.status === 'active' && (
+            <GlowCard glowColor="green" className="mb-6 bg-zinc-900/50 border-green-500/20">
+              <div className="flex flex-col items-center text-center">
+                <div className="flex flex-wrap items-center justify-center gap-2 mb-3">
+                  <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-green-500 rounded-full animate-pulse" />
+                  <span className="text-xl sm:text-2xl">🏆</span>
+                  <span className="text-green-400 font-bold text-sm sm:text-base">{activeCompetition.name} is LIVE!</span>
+                </div>
+                <span className="text-zinc-400 text-xs sm:text-sm mb-3">{totalCreators} creators competing</span>
+                
+                <div className="text-zinc-500 text-xs sm:text-sm mb-2">Competition ends in</div>
+                <LiveCountdown targetDate={new Date(activeCompetition.endsAt)} size="lg" />
               </div>
-              
-              <div className="text-zinc-500 text-sm mb-3">Competition ends in</div>
-              <LiveCountdown targetDate={new Date(activeCompetition.endsAt)} size="lg" />
-            </div>
-          </GlowCard>
-        )}
+            </GlowCard>
+          )}
 
-        {!competitionLoading && activeCompetition?.status === 'ended' && (
-          <GlowCard glowColor="yellow" className="mb-6 bg-yellow-500/5 border-yellow-500/20">
-            <div className="flex items-center justify-center gap-3">
-              <span className="text-2xl">⏳</span>
-              <div className="text-center">
-                <span className="text-yellow-400 font-semibold">{activeCompetition.name} - Results Pending</span>
-                <p className="text-zinc-400 text-sm">Competition has ended! Winners announced soon.</p>
+          {!competitionLoading && activeCompetition?.status === 'ended' && (
+            <GlowCard glowColor="yellow" className="mb-6 bg-yellow-500/5 border-yellow-500/20">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 text-center">
+                <span className="text-xl sm:text-2xl">⏳</span>
+                <div>
+                  <span className="text-yellow-400 font-semibold text-sm sm:text-base block sm:inline">{activeCompetition.name} - Results Pending</span>
+                  <p className="text-zinc-400 text-xs sm:text-sm">Competition has ended! Winners announced soon.</p>
+                </div>
               </div>
-            </div>
-          </GlowCard>
-        )}
+            </GlowCard>
+          )}
 
-        {!competitionLoading && !activeCompetition && (
-          <GlowCard glowColor="orange" className="mb-6 text-center py-8">
-            <div className="text-4xl mb-3">🏁</div>
-            <h3 className="text-white font-semibold mb-2">No Active Competition</h3>
-            <p className="text-zinc-400 text-sm">Check back soon! A new competition will be announced shortly.</p>
-          </GlowCard>
-        )}
+          {!competitionLoading && !activeCompetition && (
+            <GlowCard glowColor="orange" className="mb-6 text-center py-6 sm:py-8">
+              <div className="text-3xl sm:text-4xl mb-2 sm:mb-3">🏁</div>
+              <h3 className="text-white font-semibold text-sm sm:text-base mb-1 sm:mb-2">No Active Competition</h3>
+              <p className="text-zinc-400 text-xs sm:text-sm">Check back soon! A new competition will be announced shortly.</p>
+            </GlowCard>
+          )}
 
-        {/* Prizes Section - Flashy Display */}
-        <div className="relative mb-8 p-6 bg-zinc-900/70 rounded-2xl border-2 border-transparent overflow-hidden animate-fade-in-up"
-          style={{
-            background: 'linear-gradient(#18181b, #18181b) padding-box, linear-gradient(90deg, #eab308, #f97316, #ef4444) border-box',
-          }}
-        >
-          {/* Animated Shimmer Effect */}
-          <div 
-            className="absolute inset-0 opacity-30 pointer-events-none"
+          {/* Prizes Section - Mobile Optimized */}
+          <div className="relative mb-6 sm:mb-8 p-4 sm:p-6 bg-zinc-900/70 rounded-2xl border-2 border-transparent overflow-hidden animate-fade-in-up"
             style={{
-              background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)',
-              animation: 'shimmer 3s ease-in-out infinite',
+              background: 'linear-gradient(#18181b, #18181b) padding-box, linear-gradient(90deg, #eab308, #f97316, #ef4444) border-box',
             }}
-          />
-          
-          {/* Header */}
-          <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold inline-flex items-center gap-3">
-              <span className="text-3xl animate-bounce-subtle">🏆</span>
-              <span 
-                className="bg-gradient-to-r from-yellow-400 via-orange-400 to-yellow-400 bg-clip-text text-transparent"
-                style={{ backgroundSize: '200% auto', animation: 'shimmer-text 3s linear infinite' }}
-              >
-                PRIZES UP FOR GRABS!
-              </span>
-              <span className="text-3xl animate-bounce-subtle" style={{ animationDelay: '0.2s' }}>💰</span>
-            </h2>
-          </div>
-
-          {/* Prize Cards Grid - 1st place in middle, bigger */}
-          <div className="grid grid-cols-[1fr_1.5fr_1fr] gap-4 mb-4">
-            {/* 2nd Place - Silver */}
+          >
+            {/* Animated Shimmer Effect */}
             <div 
-              className="bg-zinc-800/80 rounded-xl p-5 text-center transition-all duration-300 hover:scale-105 cursor-default group"
-              onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 0 30px rgba(148, 163, 184, 0.4)'}
-              onMouseLeave={(e) => e.currentTarget.style.boxShadow = 'none'}
-            >
-              <div className="text-4xl mb-2 group-hover:scale-110 transition-transform">🥈</div>
-              <div className="text-slate-300 font-bold text-lg mb-1">2nd Place</div>
-              <div className="text-white font-bold text-xl">
-                {activeCompetition?.prizes?.second || '$25 Credit'}
-              </div>
-            </div>
-
-            {/* 1st Place - Gold (Bigger, in middle) */}
-            <div 
-              className="bg-zinc-800/80 rounded-xl p-7 text-center transition-all duration-300 hover:scale-105 cursor-default group relative border-2"
+              className="absolute inset-0 opacity-30 pointer-events-none"
               style={{
-                borderColor: 'rgba(234, 179, 8, 0.5)',
-                boxShadow: '0 0 20px rgba(234, 179, 8, 0.3), inset 0 0 20px rgba(234, 179, 8, 0.1)',
+                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)',
+                animation: 'shimmer 3s ease-in-out infinite',
               }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.boxShadow = '0 0 40px rgba(234, 179, 8, 0.6), inset 0 0 20px rgba(234, 179, 8, 0.15)';
-                e.currentTarget.style.borderColor = 'rgba(234, 179, 8, 0.8)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.boxShadow = '0 0 20px rgba(234, 179, 8, 0.3), inset 0 0 20px rgba(234, 179, 8, 0.1)';
-                e.currentTarget.style.borderColor = 'rgba(234, 179, 8, 0.5)';
-              }}
-            >
-              <div className="text-6xl mb-3 group-hover:scale-110 transition-transform">🥇</div>
-              <div className="text-yellow-400 font-bold text-xl mb-1">1st Place</div>
-              <div className="text-white font-bold text-2xl">
-                {activeCompetition?.prizes?.first || '$50 Cash'}
+            />
+            
+            {/* Header */}
+            <div className="text-center mb-4 sm:mb-6">
+              <h2 className="text-lg sm:text-2xl font-bold inline-flex items-center gap-2 sm:gap-3">
+                <span className="text-2xl sm:text-3xl animate-bounce-subtle">🏆</span>
+                <span 
+                  className="bg-gradient-to-r from-yellow-400 via-orange-400 to-yellow-400 bg-clip-text text-transparent"
+                  style={{ backgroundSize: '200% auto', animation: 'shimmer-text 3s linear infinite' }}
+                >
+                  PRIZES UP FOR GRABS!
+                </span>
+                <span className="text-2xl sm:text-3xl animate-bounce-subtle" style={{ animationDelay: '0.2s' }}>💰</span>
+              </h2>
+            </div>
+
+            {/* Prize Cards - Stack on mobile, grid on tablet+ */}
+            {/* Mobile: Horizontal scroll with 1st place first */}
+            <div className="flex sm:hidden gap-3 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
+              {/* 1st Place - Gold (First in scroll on mobile) */}
+              <div 
+                className="flex-shrink-0 w-[140px] bg-zinc-800/80 rounded-xl p-4 text-center border-2"
+                style={{
+                  borderColor: 'rgba(234, 179, 8, 0.5)',
+                  boxShadow: '0 0 15px rgba(234, 179, 8, 0.3)',
+                }}
+              >
+                <div className="text-4xl mb-2">🥇</div>
+                <div className="text-yellow-400 font-bold text-sm mb-1">1st Place</div>
+                <div className="text-white font-bold text-base">
+                  {activeCompetition?.prizes?.first || '$50 Cash'}
+                </div>
+              </div>
+
+              {/* 2nd Place - Silver */}
+              <div className="flex-shrink-0 w-[130px] bg-zinc-800/80 rounded-xl p-4 text-center">
+                <div className="text-3xl mb-2">🥈</div>
+                <div className="text-slate-300 font-bold text-sm mb-1">2nd Place</div>
+                <div className="text-white font-bold text-base">
+                  {activeCompetition?.prizes?.second || '$25 Credit'}
+                </div>
+              </div>
+
+              {/* 3rd Place - Bronze */}
+              <div className="flex-shrink-0 w-[130px] bg-zinc-800/80 rounded-xl p-4 text-center">
+                <div className="text-3xl mb-2">🥉</div>
+                <div className="text-amber-600 font-bold text-sm mb-1">3rd Place</div>
+                <div className="text-white font-bold text-base">
+                  {activeCompetition?.prizes?.third || 'Free Product'}
+                </div>
               </div>
             </div>
 
-            {/* 3rd Place - Bronze */}
-            <div 
-              className="bg-zinc-800/80 rounded-xl p-5 text-center transition-all duration-300 hover:scale-105 cursor-default group"
-              onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 0 30px rgba(180, 83, 9, 0.4)'}
-              onMouseLeave={(e) => e.currentTarget.style.boxShadow = 'none'}
-            >
-              <div className="text-4xl mb-2 group-hover:scale-110 transition-transform">🥉</div>
-              <div className="text-amber-600 font-bold text-lg mb-1">3rd Place</div>
-              <div className="text-white font-bold text-xl">
-                {activeCompetition?.prizes?.third || 'Free Product'}
+            {/* Tablet+: Grid layout with 1st place bigger in middle */}
+            <div className="hidden sm:grid grid-cols-[1fr_1.5fr_1fr] gap-4 mb-4">
+              {/* 2nd Place - Silver */}
+              <div 
+                className="bg-zinc-800/80 rounded-xl p-5 text-center transition-all duration-300 hover:scale-105 cursor-default group"
+                onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 0 30px rgba(148, 163, 184, 0.4)'}
+                onMouseLeave={(e) => e.currentTarget.style.boxShadow = 'none'}
+              >
+                <div className="text-4xl mb-2 group-hover:scale-110 transition-transform">🥈</div>
+                <div className="text-slate-300 font-bold text-lg mb-1">2nd Place</div>
+                <div className="text-white font-bold text-xl">
+                  {activeCompetition?.prizes?.second || '$25 Credit'}
+                </div>
               </div>
+
+              {/* 1st Place - Gold (Bigger, in middle) */}
+              <div 
+                className="bg-zinc-800/80 rounded-xl p-7 text-center transition-all duration-300 hover:scale-105 cursor-default group relative border-2"
+                style={{
+                  borderColor: 'rgba(234, 179, 8, 0.5)',
+                  boxShadow: '0 0 20px rgba(234, 179, 8, 0.3), inset 0 0 20px rgba(234, 179, 8, 0.1)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.boxShadow = '0 0 40px rgba(234, 179, 8, 0.6), inset 0 0 20px rgba(234, 179, 8, 0.15)';
+                  e.currentTarget.style.borderColor = 'rgba(234, 179, 8, 0.8)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.boxShadow = '0 0 20px rgba(234, 179, 8, 0.3), inset 0 0 20px rgba(234, 179, 8, 0.1)';
+                  e.currentTarget.style.borderColor = 'rgba(234, 179, 8, 0.5)';
+                }}
+              >
+                <div className="text-6xl mb-3 group-hover:scale-110 transition-transform">🥇</div>
+                <div className="text-yellow-400 font-bold text-xl mb-1">1st Place</div>
+                <div className="text-white font-bold text-2xl">
+                  {activeCompetition?.prizes?.first || '$50 Cash'}
+                </div>
+              </div>
+
+              {/* 3rd Place - Bronze */}
+              <div 
+                className="bg-zinc-800/80 rounded-xl p-5 text-center transition-all duration-300 hover:scale-105 cursor-default group"
+                onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 0 30px rgba(180, 83, 9, 0.4)'}
+                onMouseLeave={(e) => e.currentTarget.style.boxShadow = 'none'}
+              >
+                <div className="text-4xl mb-2 group-hover:scale-110 transition-transform">🥉</div>
+                <div className="text-amber-600 font-bold text-lg mb-1">3rd Place</div>
+                <div className="text-white font-bold text-xl">
+                  {activeCompetition?.prizes?.third || 'Free Product'}
+                </div>
+              </div>
+            </div>
+
+            {/* Motivational Tagline */}
+            <div className="text-center mt-3 sm:mt-0">
+              <p className="text-zinc-400 text-xs sm:text-sm inline-flex items-center gap-1.5 sm:gap-2">
+                <span className="text-base sm:text-lg">🔥</span>
+                Post the most content to win!
+                <span className="text-base sm:text-lg">🔥</span>
+              </p>
             </div>
           </div>
 
-          {/* Motivational Tagline */}
-          <div className="text-center">
-            <p className="text-zinc-400 text-sm inline-flex items-center gap-2">
-              <span className="text-lg">🔥</span>
-              Post the most content to win!
-              <span className="text-lg">🔥</span>
-            </p>
-          </div>
-        </div>
-
-        {/* Current Week Leaderboard */}
-        <GlowCard glowColor="orange" delay="0.25s" noPadding>
-            {/* Table Header */}
-            <div className="grid grid-cols-12 gap-4 px-6 py-3 border-b border-zinc-800 text-xs font-medium text-zinc-500 uppercase tracking-wider">
+          {/* Current Week Leaderboard */}
+          <GlowCard glowColor="orange" delay="0.25s" noPadding>
+            {/* Table Header - Hidden on mobile */}
+            <div className="hidden sm:grid grid-cols-12 gap-4 px-6 py-3 border-b border-zinc-800 text-xs font-medium text-zinc-500 uppercase tracking-wider">
               <div className="col-span-2">Rank</div>
               <div className="col-span-7">Creator</div>
               <div className="col-span-3 text-right">Submissions</div>
             </div>
 
+            {/* Mobile Header */}
+            <div className="sm:hidden px-4 py-3 border-b border-zinc-800">
+              <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Rankings</span>
+            </div>
+
             {/* Table Body */}
             {loading ? (
-              <div className="flex items-center justify-center py-16">
+              <div className="flex items-center justify-center py-12 sm:py-16">
                 <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
               </div>
             ) : error ? (
-              <div className="text-center py-16">
-                <p className="text-red-400 mb-4">{error}</p>
+              <div className="text-center py-12 sm:py-16 px-4">
+                <p className="text-red-400 mb-4 text-sm sm:text-base">{error}</p>
                 <button
                   onClick={loadLeaderboard}
-                  className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors"
+                  className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors text-sm"
                 >
                   Retry
                 </button>
               </div>
             ) : entries.length === 0 ? (
-              <div className="text-center py-16">
-                <div className="text-5xl mb-4">📊</div>
-                <p className="text-zinc-400 mb-2">No submissions yet</p>
-                <p className="text-zinc-500 text-sm">Be the first to post and claim the top spot!</p>
+              <div className="text-center py-12 sm:py-16 px-4">
+                <div className="text-4xl sm:text-5xl mb-3 sm:mb-4">📊</div>
+                <p className="text-zinc-400 mb-1 sm:mb-2 text-sm sm:text-base">No submissions yet</p>
+                <p className="text-zinc-500 text-xs sm:text-sm">Be the first to post and claim the top spot!</p>
               </div>
             ) : (
               <div className="divide-y divide-zinc-800/50">
@@ -436,21 +495,21 @@ export default function LeaderboardPage() {
                   return (
                     <div 
                       key={entry.id}
-                      className={`grid grid-cols-12 gap-4 px-6 py-4 items-center transition-colors ${
+                      className={`flex sm:grid sm:grid-cols-12 gap-3 sm:gap-4 px-4 sm:px-6 py-3 sm:py-4 items-center transition-colors ${
                         isCurrent 
                           ? 'bg-orange-500/10 border-l-4 border-orange-500' 
                           : 'hover:bg-zinc-800/30'
                       }`}
                     >
                       {/* Rank */}
-                      <div className={`col-span-2 font-bold text-xl ${color}`}>
+                      <div className={`sm:col-span-2 font-bold text-lg sm:text-xl ${color} flex-shrink-0 w-10 sm:w-auto`}>
                         {icon}
                       </div>
                       
                       {/* Creator */}
-                      <div className="col-span-7 flex items-center gap-3">
+                      <div className="sm:col-span-7 flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
                         {/* Avatar */}
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${
+                        <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold flex-shrink-0 ${
                           isCurrent 
                             ? 'bg-orange-500 text-white' 
                             : 'bg-zinc-700 text-zinc-300'
@@ -459,12 +518,12 @@ export default function LeaderboardPage() {
                         </div>
                         
                         {/* Name */}
-                        <div className="flex items-center gap-2">
-                          <span className={`font-medium ${isCurrent ? 'text-orange-400' : 'text-white'}`}>
+                        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                          <span className={`font-medium text-sm sm:text-base truncate ${isCurrent ? 'text-orange-400' : 'text-white'}`}>
                             {entry.creatorName}
                           </span>
                           {isCurrent && (
-                            <span className="px-2 py-0.5 bg-zinc-700 text-zinc-300 text-xs rounded-full">
+                            <span className="px-1.5 sm:px-2 py-0.5 bg-zinc-700 text-zinc-300 text-[10px] sm:text-xs rounded-full flex-shrink-0">
                               YOU
                             </span>
                           )}
@@ -472,11 +531,11 @@ export default function LeaderboardPage() {
                       </div>
                       
                       {/* Submissions */}
-                      <div className="col-span-3 text-right">
-                        <div className="text-white font-bold text-xl">
+                      <div className="sm:col-span-3 text-right flex-shrink-0">
+                        <div className="text-white font-bold text-lg sm:text-xl">
                           <AnimatedCounter value={entry.value} />
                         </div>
-                        <div className="text-zinc-500 text-xs">submissions</div>
+                        <div className="text-zinc-500 text-[10px] sm:text-xs hidden sm:block">submissions</div>
                       </div>
                     </div>
                   );
@@ -486,89 +545,92 @@ export default function LeaderboardPage() {
 
             {/* Footer */}
             {entries.length > 0 && (
-              <div className="px-6 py-4 border-t border-zinc-800 text-center">
-                <span className="text-zinc-500 text-sm">
+              <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-zinc-800 text-center">
+                <span className="text-zinc-500 text-xs sm:text-sm">
                   Showing top {entries.length} of {totalCreators} creators
                 </span>
               </div>
             )}
           </GlowCard>
 
-        {/* CTA Card */}
-        {!isAdmin && (
-          <GlowCard glowColor="orange" delay="0.3s" className="mt-8 text-center">
-            <div className="text-4xl mb-3">🚀</div>
-            <h3 className="text-xl font-bold text-white mb-2">Want to climb the ranks?</h3>
-            <p className="text-zinc-400 mb-6">Submit more TikToks to increase your position!</p>
-            
-            {isPendingInstagramCreator ? (
-              <button 
-                onClick={handleSubmitContentClick}
-                className="px-8 py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-orange-500/25"
-              >
-                Submit Content →
-              </button>
-            ) : (
-              <Link href="/creator/submit">
-                <button className="px-8 py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-orange-500/25">
+          {/* CTA Card */}
+          {!isAdmin && (
+            <GlowCard glowColor="orange" delay="0.3s" className="mt-6 sm:mt-8 text-center">
+              <div className="text-3xl sm:text-4xl mb-2 sm:mb-3">🚀</div>
+              <h3 className="text-lg sm:text-xl font-bold text-white mb-1 sm:mb-2">Want to climb the ranks?</h3>
+              <p className="text-zinc-400 text-sm mb-4 sm:mb-6">Submit more TikToks to increase your position!</p>
+              
+              {isPendingInstagramCreator ? (
+                <button 
+                  onClick={handleSubmitContentClick}
+                  className="px-6 sm:px-8 py-2.5 sm:py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-orange-500/25 text-sm sm:text-base"
+                >
                   Submit Content →
                 </button>
-              </Link>
-            )}
-          </GlowCard>
-        )}
-      </main>
+              ) : (
+                <Link href="/creator/submit">
+                  <button className="px-6 sm:px-8 py-2.5 sm:py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-orange-500/25 text-sm sm:text-base">
+                    Submit Content →
+                  </button>
+                </Link>
+              )}
+            </GlowCard>
+          )}
+        </main>
 
-      {/* Pending Application Modal */}
-      {showPendingModal && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-          <div 
-            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
-            onClick={() => setShowPendingModal(false)}
-          />
-          
-          <div className="relative bg-zinc-900/95 backdrop-blur-md border border-white/10 rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-2xl shadow-black/50 animate-in fade-in zoom-in-95 duration-200">
-            <button
+        {/* Pending Application Modal - Bottom Sheet on Mobile */}
+        {showPendingModal && (
+          <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center">
+            <div 
+              className="absolute inset-0 bg-black/70 backdrop-blur-sm"
               onClick={() => setShowPendingModal(false)}
-              className="absolute top-4 right-4 text-white/40 hover:text-white transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+            />
             
-            <div className="text-5xl sm:text-6xl text-center mb-4">⏳</div>
-            
-            <h3 className="text-lg sm:text-xl font-bold text-white text-center mb-3">
-              Application Under Review
-            </h3>
-            
-            <p className="text-white/60 text-sm sm:text-base text-center mb-2">
-              Your application is still being reviewed by our team. Once approved, you'll be able to submit content and start earning rewards!
-            </p>
-            
-            <p className="text-white/40 text-xs sm:text-sm text-center mb-6">
-              We typically review applications within 24-48 hours.
-            </p>
-            
-            <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative bg-zinc-900/95 backdrop-blur-md border border-white/10 rounded-t-2xl sm:rounded-2xl p-6 sm:p-8 w-full sm:max-w-md shadow-2xl shadow-black/50 animate-fade-in-up safe-bottom">
+              {/* Drag indicator for mobile */}
+              <div className="sm:hidden w-12 h-1 bg-zinc-700 rounded-full mx-auto mb-4" />
+              
               <button
                 onClick={() => setShowPendingModal(false)}
-                className="flex-1 px-4 py-3 bg-white/10 text-white font-medium rounded-xl hover:bg-white/20 transition-all duration-200"
+                className="absolute top-4 right-4 text-white/40 hover:text-white transition-colors"
               >
-                Got It
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
-              <Link
-                href="/creator/dashboard"
-                onClick={() => setShowPendingModal(false)}
-                className="flex-1 px-4 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-medium rounded-xl hover:shadow-lg hover:shadow-orange-500/25 transition-all duration-200 text-center"
-              >
-                Go to Dashboard
-              </Link>
+              
+              <div className="text-4xl sm:text-5xl text-center mb-3 sm:mb-4">⏳</div>
+              
+              <h3 className="text-lg sm:text-xl font-bold text-white text-center mb-2 sm:mb-3">
+                Application Under Review
+              </h3>
+              
+              <p className="text-white/60 text-sm text-center mb-2">
+                Your application is still being reviewed by our team. Once approved, you'll be able to submit content and start earning rewards!
+              </p>
+              
+              <p className="text-white/40 text-xs text-center mb-5 sm:mb-6">
+                We typically review applications within 24-48 hours.
+              </p>
+              
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                  onClick={() => setShowPendingModal(false)}
+                  className="flex-1 px-4 py-3 bg-white/10 text-white font-medium rounded-xl hover:bg-white/20 transition-all duration-200 active:scale-[0.98]"
+                >
+                  Got It
+                </button>
+                <Link
+                  href="/creator/dashboard"
+                  onClick={() => setShowPendingModal(false)}
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-medium rounded-xl hover:shadow-lg hover:shadow-orange-500/25 transition-all duration-200 text-center active:scale-[0.98]"
+                >
+                  Go to Dashboard
+                </Link>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
       </div>
     </ProtectedRoute>
   );
