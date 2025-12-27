@@ -4,15 +4,20 @@ import crypto from 'crypto';
 import { 
   createFileVolumeSubmission, 
   getCreatorByUserId, 
-  recalculateVolumeLeaderboard, 
-  getActiveCompetition, 
-  recalculateCompetitionLeaderboard,
+  getActiveCompetition,
   checkDuplicateFileHash
 } from '@/lib/firestore';
 import { getCurrentWeek } from '@/lib/week-utils';
 import { adminAuth } from '@/lib/firebase-admin';
 import { getStorage } from 'firebase-admin/storage';
 import { adminApp } from '@/lib/firebase-admin';
+
+// ============================================
+// ROUTE SEGMENT CONFIG - CRITICAL FOR LARGE FILES
+// ============================================
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export const maxDuration = 60; // 60 second timeout for large uploads
 
 // Initialize admin storage
 const adminStorage = getStorage(adminApp);
@@ -38,7 +43,15 @@ export async function POST(request: NextRequest) {
     }
 
     const token = authHeader.split('Bearer ')[1];
-    const decodedToken = await adminAuth.verifyIdToken(token);
+    
+    let decodedToken;
+    try {
+      decodedToken = await adminAuth.verifyIdToken(token);
+    } catch (authError) {
+      console.error('Auth error:', authError);
+      return NextResponse.json({ error: 'Invalid or expired token' }, { status: 401 });
+    }
+    
     const userId = decodedToken.uid;
 
     // Get creator
@@ -48,7 +61,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Parse multipart form data
-    const formData = await request.formData();
+    let formData;
+    try {
+      formData = await request.formData();
+    } catch (parseError) {
+      console.error('FormData parse error:', parseError);
+      return NextResponse.json({ 
+        error: 'Failed to parse upload. File may be too large or upload was interrupted.' 
+      }, { status: 400 });
+    }
+    
     const file = formData.get('file') as File | null;
 
     if (!file) {
@@ -69,8 +91,19 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
+    // Convert file to buffer - wrapped in try/catch for memory issues
+    let fileBuffer: Buffer;
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      fileBuffer = Buffer.from(arrayBuffer);
+    } catch (bufferError) {
+      console.error('Buffer conversion error:', bufferError);
+      return NextResponse.json({ 
+        error: 'Failed to process file. Please try a smaller file or try again.' 
+      }, { status: 500 });
+    }
+
     // Calculate file hash to prevent duplicate uploads
-    const fileBuffer = Buffer.from(await file.arrayBuffer());
     const fileHash = crypto.createHash('sha256').update(fileBuffer).digest('hex');
 
     // Check if this exact file has already been uploaded by this creator
@@ -90,19 +123,27 @@ export async function POST(request: NextRequest) {
     const bucket = adminStorage.bucket();
     
     const fileRef = bucket.file(filePath);
-    await fileRef.save(fileBuffer, {
-      metadata: {
-        contentType: file.type,
+    
+    try {
+      await fileRef.save(fileBuffer, {
         metadata: {
-          creatorId: creator.id,
-          uploadedBy: userId,
-          originalName: file.name,
-          fileHash,
+          contentType: file.type,
+          metadata: {
+            creatorId: creator.id,
+            uploadedBy: userId,
+            originalName: file.name,
+            fileHash,
+          },
         },
-      },
-    });
+      });
+    } catch (uploadError) {
+      console.error('Firebase upload error:', uploadError);
+      return NextResponse.json({ 
+        error: 'Failed to upload to storage. Please try again.' 
+      }, { status: 500 });
+    }
 
-    // Make the file publicly accessible (or use signed URLs)
+    // Make the file publicly accessible
     await fileRef.makePublic();
     
     // Get the public URL
@@ -115,7 +156,7 @@ export async function POST(request: NextRequest) {
     const activeCompetition = await getActiveCompetition('volume');
     const competitionId = activeCompetition?.id || null;
 
-    // Create submission record (now includes fileHash)
+    // Create submission record
     const submission = await createFileVolumeSubmission(
       creator.id,
       {
@@ -130,14 +171,6 @@ export async function POST(request: NextRequest) {
       competitionId
     );
 
-    // DON'T recalculate leaderboard for pending file submissions
-    // Leaderboard should only update when admin approves
-    // await recalculateVolumeLeaderboard(weekOf);
-
-    // if (competitionId) {
-    //   await recalculateCompetitionLeaderboard(competitionId);
-    // }
-
     return NextResponse.json({
       success: true,
       submission,
@@ -147,13 +180,20 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('File upload error:', error);
     
-    // Handle duplicate file error
-    if (error instanceof Error && error.message.includes('already')) {
-      return NextResponse.json({ error: error.message }, { status: 409 });
+    // Handle specific errors
+    if (error instanceof Error) {
+      if (error.message.includes('already')) {
+        return NextResponse.json({ error: error.message }, { status: 409 });
+      }
+      if (error.message.includes('ECONNRESET') || error.message.includes('timeout')) {
+        return NextResponse.json({ 
+          error: 'Upload timed out. Please try again with a stable connection.' 
+        }, { status: 408 });
+      }
     }
 
     return NextResponse.json(
-      { error: 'Failed to upload file' },
+      { error: 'Failed to upload file. Please try again.' },
       { status: 500 }
     );
   }

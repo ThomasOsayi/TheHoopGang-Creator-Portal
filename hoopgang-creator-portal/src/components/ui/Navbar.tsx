@@ -136,10 +136,12 @@ export function Navbar() {
     { href: '/creator/dashboard', label: 'Dashboard', icon: '🎯', show: isVerifiedCreator },
     // V3: Only show Submit Content if approved OR TikTok creator
     { href: '/creator/submit', label: 'Submit Content', icon: '📤', show: isVerifiedCreator && canAccessFullFeatures },
-    // V3: Only show Rewards if approved OR TikTok creator
-    { href: '/creator/rewards', label: 'Rewards', icon: '🎁', show: isVerifiedCreator && canAccessFullFeatures },
-    // V3: My Rewards (redemptions) page
-    { href: '/creator/redemptions', label: 'My Rewards', icon: '🏆', show: isVerifiedCreator && canAccessFullFeatures },
+    // V3: Leaderboard - show if approved OR TikTok creator
+    { href: '/creator/leaderboard', label: 'Leaderboard', icon: '🏆', show: isVerifiedCreator && canAccessFullFeatures },
+    // V3: Rewards Shop - browse available rewards
+    { href: '/creator/rewards', label: 'Rewards Shop', icon: '🎁', show: isVerifiedCreator && canAccessFullFeatures },
+    // V3: My Rewards (redemptions) - claimed rewards history
+    { href: '/creator/redemptions', label: 'My Rewards', icon: '💰', show: isVerifiedCreator && canAccessFullFeatures },
   ].filter(link => link.show);
 
   return (

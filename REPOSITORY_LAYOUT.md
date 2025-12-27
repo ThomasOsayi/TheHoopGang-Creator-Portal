@@ -17,6 +17,7 @@
 - **`public/`** – Static assets
   - **`images/creators/`** – Creator photos
   - **`images/products/`** – Product hero image
+    - `hero_product.png` – Hero section product image
   - `THG_logo_gradient.png`, `THG_logo_orange.png`, `THG_logo_white.png`, and core SVG icons
 - **`scripts/`**
   - `migrate-to-collaborations.ts`
@@ -57,6 +58,7 @@
   - `auth/lookup-tiktok/route.ts` – Public TikTok username lookup (returns masked data)
   - `auth/claim-tiktok/route.ts` – TikTok creator account claim endpoint
   - `competitions/active/route.ts` – Public active competition endpoint
+  - `rewards/route.ts` – Public rewards endpoint (fetch active rewards, optionally filtered by category)
   - `creator/rewards/route.ts`, `creator/rewards/stats/route.ts`, `creator/redemptions/route.ts`, `creator/redemptions/[id]/claim/route.ts`, `creator/stats/route.ts`
   - `email/send/route.ts`, `leaderboard/route.ts`
   - `submissions/history/route.ts`, `submissions/volume/...`, `submissions/volume/milestone/...`, `submissions/volume/milestone/stats/...`
@@ -248,6 +250,9 @@ api/
 │   │   │                       # - GET: Fetch active competition, leaderboard, history
 │   │   │                       # - POST: Start new competition
 │   │   │                       # - PUT: End active competition
+│   │   ├── [id]/
+│   │   │   └── route.ts        # Individual competition API
+│   │   │                       # - PATCH: Update competition (name, prizes)
 │   │   └── finalize/
 │   │       └── route.ts        # Finalize competition API
 │   │                           # - POST: Finalize ended competition
@@ -529,6 +534,12 @@ creator/
 - `Toast.tsx` - Toast notification component
 - `TrackingStatus.tsx` - Tracking status display component with events and delete (refresh removed)
 - `TrackingProgress.tsx` - Horizontal visual stepper for shipping progress
+- `MilestoneReviewModal.tsx` - Modal component for reviewing milestone submissions
+  - View creator info and submission details
+  - Verify view counts with threshold validation
+  - Approve/reject milestone submissions
+  - Quick rejection reason selection
+  - Tier-based color coding (100k, 500k, 1m)
 - `index.ts` - Component exports
 
 ---
@@ -676,7 +687,7 @@ creator/
   - `THG_logo_orange.png` - HoopGang orange logo
   - `THG_logo_white.png` - HoopGang white logo
   - `products/` - Product images
-    - `hero_product.jpg` - Hero section product image
+    - `hero_product.png` - Hero section product image
   - `creators/` - Creator photos and content
     - `creator_stretch.jpg`
     - `striped_duo.jpg`
@@ -693,13 +704,13 @@ creator/
 - Admin: creators list, creator detail, submissions list, submission review, volume leaderboard, GMV leaderboard, TikTok imports
 - Creator: dashboard, submit, leaderboard, rewards, redemptions, submissions history, request-product
 
-### API Routes (37 files)
+### API Routes (38 files)
 - Auth: Email verification, TikTok lookup (public), TikTok claim endpoints
 - Email: Send email endpoint
 - Tracking API: POST, GET, DELETE handlers (simplified - no external API)
 - Webhooks: TrackingMore push notification handler
 - Competitions: Active competition endpoint (public)
-- Admin Competitions: Start, end, finalize competitions
+- Admin Competitions: Start, end, finalize competitions, update competition details (PATCH)
 - Admin TikTok Imports: CSV import, batch management, creator lookup/update/delete
 - Submissions: 
   - Volume URL submission endpoint
@@ -707,6 +718,7 @@ creator/
   - Milestone submission endpoint
   - Submission history endpoint
 - Leaderboards: Volume, GMV leaderboard endpoints
+- Public Rewards: Fetch active rewards endpoint (optionally filtered by category)
 - Admin Submissions: Review and manage submissions (including bulk approve/reject)
 - Admin Leaderboards: Finalize and manage leaderboards
 - Admin Rewards: CRUD operations for rewards
@@ -715,11 +727,11 @@ creator/
 - Creator Redemptions: Fetch creator redemption history, claim redemptions (submit payment/shipping info)
 - Creator Stats: Fetch creator statistics
 
-### Components (35 files)
+### Components (36 files)
 - Auth: 2 files
 - Admin: 1 file (TiktokCsvImporter)
 - Creators: 4 files (3 components + barrel export)
-- UI: 28 files (buttons, cards, badges including CreatorSourceBadge, animations, tracking UI, ClaimModal with dynamic colors, etc.)
+- UI: 29 files (buttons, cards, badges including CreatorSourceBadge, animations, tracking UI, ClaimModal with dynamic colors, MilestoneReviewModal, etc.)
 
 ### Libraries (10+ files)
 - Authentication context
@@ -1129,6 +1141,7 @@ creator/
 - TrackingProgress component with 5-stage visual stepper
 - AddTrackingForm component for adding tracking information
 - ApplicationReviewModal for comprehensive application review
+- MilestoneReviewModal for reviewing milestone submissions with view verification
 - Enhanced error handling and user feedback
 - Email verification UI with multi-step flow
 
@@ -1283,8 +1296,8 @@ creator/
   - Automatic redemption creation: Created when milestones approved or competitions finalized
   - Redemption tracking: Status tracking (pending, approved, fulfilled, rejected)
 - **Admin Features**:
-  - Competition management: Start, end, finalize competitions
-  - Submission review: Approve/reject milestone submissions with view verification
+  - Competition management: Start, end, finalize competitions, update competition details (PATCH)
+  - Submission review: Approve/reject milestone submissions with view verification using MilestoneReviewModal
   - Leaderboard management: View, finalize, and manage leaderboards
   - Bulk operations: Bulk GMV entry management
   - Creator submission viewer: Modal to view all submissions for a creator
@@ -1301,6 +1314,8 @@ creator/
   - Stats tracking: Weekly volume stats and milestone stats display
 - **API Enhancements**:
   - Public competition endpoint: No auth required for viewing active competitions
+  - Competition update endpoint: PATCH `/api/admin/competitions/[id]` for updating name and prizes
+  - Public rewards endpoint: GET `/api/rewards` for fetching active rewards (optionally filtered by category)
   - On-demand expiration: Competitions auto-end when accessed (no cron needed)
   - Submission filtering: Filter by type, status, week, creator
   - Leaderboard APIs: Separate endpoints for volume and GMV

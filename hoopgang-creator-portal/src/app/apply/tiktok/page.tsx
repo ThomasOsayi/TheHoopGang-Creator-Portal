@@ -321,11 +321,11 @@ function TiktokApplyContent() {
     }
   };
 
-  // Format number with commas as user types
+  // Format number with commas as user types (strips non-numeric characters)
   const formatFollowerInput = (value: string) => {
-    // Remove non-numeric characters except commas
+    // Remove ALL non-numeric characters (including commas, letters, etc.)
     const numericValue = value.replace(/[^0-9]/g, '');
-    // Format with commas
+    // Format with commas for display
     return numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   };
 
@@ -556,6 +556,7 @@ function TiktokApplyContent() {
                       </label>
                       <input
                         type="text"
+                        inputMode="numeric"
                         id="tiktokFollowers"
                         value={tiktokFollowers}
                         onChange={(e) => setTiktokFollowers(formatFollowerInput(e.target.value))}
@@ -598,6 +599,7 @@ function TiktokApplyContent() {
                         </label>
                         <input
                           type="text"
+                          inputMode="numeric"
                           id="instagramFollowers"
                           value={instagramFollowers}
                           onChange={(e) => setInstagramFollowers(formatFollowerInput(e.target.value))}

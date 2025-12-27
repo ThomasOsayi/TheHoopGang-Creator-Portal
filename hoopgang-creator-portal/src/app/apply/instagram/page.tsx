@@ -168,6 +168,19 @@ function InstagramApplyContent() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
+  // Format number with commas as user types (for follower inputs)
+  const formatFollowerInput = (value: string): string => {
+    // Remove all non-numeric characters
+    const numericValue = value.replace(/[^0-9]/g, '');
+    // Format with commas
+    return numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  };
+
+  // Parse formatted number back to integer
+  const parseFollowerInput = (value: string): number => {
+    return parseInt(value.replace(/,/g, '')) || 0;
+  };
+
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
@@ -181,11 +194,6 @@ function InstagramApplyContent() {
           ...prev.shippingAddress,
           [field]: value,
         },
-      }));
-    } else if (type === 'number') {
-      setFormData((prev) => ({
-        ...prev,
-        [name]: parseInt(value) || 0,
       }));
     } else if (type === 'checkbox') {
       const checked = (e.target as HTMLInputElement).checked;
@@ -204,6 +212,22 @@ function InstagramApplyContent() {
         [name]: value,
       }));
     }
+  };
+
+  // Separate handler for follower inputs (numbers only with formatting)
+  const handleFollowerChange = (field: 'instagramFollowers' | 'tiktokFollowers', value: string) => {
+    const formattedValue = formatFollowerInput(value);
+    const numericValue = parseFollowerInput(formattedValue);
+    setFormData(prev => ({
+      ...prev,
+      [field]: numericValue,
+    }));
+  };
+
+  // Get display value for follower inputs (formatted with commas)
+  const getFollowerDisplayValue = (value: number): string => {
+    if (value === 0) return '';
+    return value.toLocaleString();
   };
 
   const validateStep1 = (): boolean => {
@@ -853,14 +877,14 @@ function InstagramApplyContent() {
                           Followers <span className="text-orange-500">*</span>
                         </label>
                         <input
-                          type="number"
+                          type="text"
+                          inputMode="numeric"
                           id="instagramFollowers"
                           name="instagramFollowers"
-                          value={formData.instagramFollowers || ''}
-                          onChange={handleInputChange}
-                          placeholder="12500"
+                          value={getFollowerDisplayValue(formData.instagramFollowers)}
+                          onChange={(e) => handleFollowerChange('instagramFollowers', e.target.value)}
+                          placeholder="12,500"
                           required
-                          min="1"
                           className={inputClasses}
                         />
                       </div>
@@ -905,14 +929,14 @@ function InstagramApplyContent() {
                           Followers <span className="text-orange-500">*</span>
                         </label>
                         <input
-                          type="number"
+                          type="text"
+                          inputMode="numeric"
                           id="tiktokFollowers"
                           name="tiktokFollowers"
-                          value={formData.tiktokFollowers || ''}
-                          onChange={handleInputChange}
-                          placeholder="8300"
+                          value={getFollowerDisplayValue(formData.tiktokFollowers)}
+                          onChange={(e) => handleFollowerChange('tiktokFollowers', e.target.value)}
+                          placeholder="8,300"
                           required
-                          min="1"
                           className={inputClasses}
                         />
                       </div>
