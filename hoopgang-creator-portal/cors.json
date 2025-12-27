@@ -1,7 +1,17 @@
 [
     {
-      "origin": ["https://thehoopgang.xyz", "http://localhost:3000","http://localhost:3000"],
-      "method": ["GET", "HEAD"],
-      "maxAgeSeconds": 3600
+      "origin": [
+        "https://thehoopgang.xyz",
+        "http://localhost:3000"
+      ],
+      "method": ["GET", "HEAD", "PUT", "POST", "DELETE"],
+      "maxAgeSeconds": 3600,
+      "responseHeader": [
+        "Content-Type",
+        "Authorization", 
+        "Content-Length",
+        "x-goog-resumable",
+        "x-goog-meta-*"
+      ]
     }
   ]
