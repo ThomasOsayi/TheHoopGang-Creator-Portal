@@ -503,44 +503,106 @@ function SubmitContentPageContent() {
       const token = await getAuthToken();
       if (!token) throw new Error('Not authenticated');
 
-      // Create form data
-      const formData = new FormData();
-      formData.append('file', selectedFile);
-
-      // Use XMLHttpRequest for progress tracking
-      const xhr = new XMLHttpRequest();
+      // ============================================
+      // STEP 1: Get signed upload URL from our API
+      // ============================================
+      setUploadProgress(5); // Show initial progress
       
-      const uploadPromise = new Promise<any>((resolve, reject) => {
+      const signedUrlResponse = await fetch('/api/submissions/volume/get-upload-url', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          fileName: selectedFile.name,
+          fileType: selectedFile.type,
+          fileSize: selectedFile.size,
+        }),
+      });
+
+      if (!signedUrlResponse.ok) {
+        const errorData = await signedUrlResponse.json();
+        throw new Error(errorData.error || 'Failed to prepare upload');
+      }
+
+      const { uploadUrl, filePath, fileUrl } = await signedUrlResponse.json();
+      
+      setUploadProgress(10); // Got signed URL
+
+      // ============================================
+      // STEP 2: Upload directly to Firebase Storage
+      // ============================================
+      const uploadPromise = new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        
         xhr.upload.addEventListener('progress', (event) => {
           if (event.lengthComputable) {
-            const progress = Math.round((event.loaded / event.total) * 100);
+            // Map upload progress to 10-90% range
+            const progress = 10 + Math.round((event.loaded / event.total) * 80);
             setUploadProgress(progress);
           }
         });
 
         xhr.addEventListener('load', () => {
           if (xhr.status >= 200 && xhr.status < 300) {
-            resolve(JSON.parse(xhr.responseText));
+            resolve();
           } else {
-            try {
-              const errorData = JSON.parse(xhr.responseText);
-              reject(new Error(errorData.error || 'Upload failed'));
-            } catch {
-              reject(new Error('Upload failed'));
-            }
+            reject(new Error(`Upload failed with status ${xhr.status}`));
           }
         });
 
-        xhr.addEventListener('error', () => reject(new Error('Upload failed')));
-        xhr.addEventListener('abort', () => reject(new Error('Upload cancelled')));
+        xhr.addEventListener('error', () => {
+          reject(new Error('Network error during upload. Please check your connection.'));
+        });
+        
+        xhr.addEventListener('abort', () => {
+          reject(new Error('Upload was cancelled'));
+        });
+        
+        xhr.addEventListener('timeout', () => {
+          reject(new Error('Upload timed out. Please try again.'));
+        });
 
-        xhr.open('POST', '/api/submissions/volume/file');
-        xhr.setRequestHeader('Authorization', `Bearer ${token}`);
-        xhr.send(formData);
+        xhr.open('PUT', uploadUrl);
+        xhr.setRequestHeader('Content-Type', selectedFile.type);
+        xhr.timeout = 300000; // 5 minute timeout for large files
+        xhr.send(selectedFile);
       });
 
       await uploadPromise;
+      
+      setUploadProgress(92); // Upload complete, confirming...
 
+      // ============================================
+      // STEP 3: Confirm upload with our API
+      // ============================================
+      const confirmResponse = await fetch('/api/submissions/volume/confirm-upload', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          filePath,
+          fileUrl,
+          fileName: selectedFile.name,
+          fileSize: selectedFile.size,
+          fileType: selectedFile.type,
+        }),
+      });
+
+      if (!confirmResponse.ok) {
+        const errorData = await confirmResponse.json();
+        throw new Error(errorData.error || 'Failed to confirm upload');
+      }
+
+      setUploadProgress(100);
+
+      // ============================================
+      // SUCCESS! 🎉
+      // ============================================
+      
       // Clear file and refresh stats
       setSelectedFile(null);
       setUploadProgress(0);
@@ -553,9 +615,11 @@ function SubmitContentPageContent() {
       setShowSuccessToast(true);
       
       setTimeout(() => setShowConfetti(false), 3000);
+      
     } catch (error) {
       console.error('Upload error:', error);
-      alert(error instanceof Error ? error.message : 'Upload failed');
+      const errorMessage = error instanceof Error ? error.message : 'Upload failed. Please try again.';
+      alert(errorMessage);
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
