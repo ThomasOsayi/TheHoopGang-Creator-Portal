@@ -57,7 +57,9 @@ export default function CreatorDashboardPage() {
   // Stats modal state
   const [showStatsModal, setShowStatsModal] = useState(false);
   const [updatingStats, setUpdatingStats] = useState(false);
+  const [newInstagramHandle, setNewInstagramHandle] = useState<string>('');
   const [newInstagramFollowers, setNewInstagramFollowers] = useState<number>(0);
+  const [newTiktokHandle, setNewTiktokHandle] = useState<string>('');
   const [newTiktokFollowers, setNewTiktokFollowers] = useState<number>(0);
   
   // Past collaborations state
@@ -262,7 +264,9 @@ export default function CreatorDashboardPage() {
           'Authorization': `Bearer ${idToken}`,
         },
         body: JSON.stringify({
+          instagramHandle: newInstagramHandle,
           instagramFollowers: newInstagramFollowers,
+          tiktokHandle: newTiktokHandle,
           tiktokFollowers: newTiktokFollowers,
         }),
       });
@@ -270,15 +274,15 @@ export default function CreatorDashboardPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Failed to update stats');
+        throw new Error(data.message || 'Failed to update profile');
       }
 
       await fetchCreator();
       setShowStatsModal(false);
-      showToast('Stats updated successfully!', 'success');
+      showToast('Profile updated successfully!', 'success');
     } catch (err) {
-      console.error('Error updating stats:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to update stats';
+      console.error('Error updating profile:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update profile';
       setError(errorMessage);
       showToast(errorMessage, 'error');
     } finally {
@@ -288,8 +292,10 @@ export default function CreatorDashboardPage() {
 
   const openStatsModal = () => {
     if (creator) {
-      setNewInstagramFollowers(creator.instagramFollowers);
-      setNewTiktokFollowers(creator.tiktokFollowers);
+      setNewInstagramHandle(creator.instagramHandle || '');
+      setNewInstagramFollowers(creator.instagramFollowers || 0);
+      setNewTiktokHandle(creator.tiktokHandle || '');
+      setNewTiktokFollowers(creator.tiktokFollowers || 0);
       setShowStatsModal(true);
     }
   };
@@ -483,12 +489,23 @@ export default function CreatorDashboardPage() {
           )}
 
           {/* Welcome Header */}
-          <PageHeader 
-            title={`Welcome back, ${firstName}!`}
-            subtitle="Here's what's happening with your TheHoopGang collaboration"
-            icon="👋"
-            accentColor="orange"
-          />
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6 sm:mb-8 animate-fade-in-up">
+            <PageHeader 
+              title={`Welcome back, ${firstName}!`}
+              subtitle="Here's what's happening with your TheHoopGang collaboration"
+              icon="👋"
+              accentColor="orange"
+            />
+            <button
+              onClick={openStatsModal}
+              className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 hover:border-zinc-600 text-zinc-300 hover:text-white rounded-xl transition-all text-sm font-medium active:scale-[0.98] self-start"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+              Edit Profile
+            </button>
+          </div>
 
           {/* Rewards Notification Card - Mobile Optimized */}
           {rewardStats && rewardStats.readyToClaim > 0 && (
@@ -1120,7 +1137,7 @@ export default function CreatorDashboardPage() {
             </GlowCard>
           )}
 
-          {/* Update Stats Modal - Bottom Sheet on Mobile */}
+          {/* Update Profile Modal - Bottom Sheet on Mobile */}
           {showStatsModal && (
             <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
               <div 
@@ -1128,44 +1145,115 @@ export default function CreatorDashboardPage() {
                 onClick={() => setShowStatsModal(false)}
               />
               
-              <div className="relative bg-zinc-900 border border-zinc-800 rounded-t-2xl sm:rounded-2xl p-6 w-full sm:max-w-md animate-fade-in-up safe-bottom">
+              <div className="relative bg-zinc-900 border border-zinc-800 rounded-t-2xl sm:rounded-2xl p-6 w-full sm:max-w-md animate-fade-in-up safe-bottom max-h-[90vh] overflow-y-auto">
                 {/* Drag indicator for mobile */}
                 <div className="sm:hidden w-12 h-1 bg-zinc-700 rounded-full mx-auto mb-4" />
                 
-                <h3 className="text-lg sm:text-xl font-bold text-white mb-2">Update Your Stats</h3>
+                <h3 className="text-lg sm:text-xl font-bold text-white mb-2">Edit Profile</h3>
                 <p className="text-zinc-500 text-xs sm:text-sm mb-6">
-                  Keep your follower counts up to date to unlock better opportunities.
+                  Update your social handles and follower counts.
                 </p>
 
                 <div className="space-y-4">
-                  <div>
-                    <label className="block text-zinc-500 text-xs uppercase tracking-wider mb-2">
-                      Instagram Followers
-                    </label>
-                    <input
-                      type="number"
-                      value={newInstagramFollowers}
-                      onChange={(e) => setNewInstagramFollowers(parseInt(e.target.value) || 0)}
-                      className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-white text-base focus:outline-none focus:ring-2 focus:ring-orange-500"
-                      min="0"
-                      inputMode="numeric"
-                    />
+                  {/* Instagram Section */}
+                  <div className="p-4 bg-zinc-800/50 rounded-xl border border-zinc-700/50">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{
+                        background: 'linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)',
+                      }}>
+                        <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073z"/>
+                        </svg>
+                      </div>
+                      <span className="text-white font-medium text-sm">Instagram</span>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-zinc-500 text-xs uppercase tracking-wider mb-1.5">
+                          Handle
+                        </label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 text-sm">@</span>
+                          <input
+                            type="text"
+                            value={newInstagramHandle}
+                            onChange={(e) => setNewInstagramHandle(e.target.value.replace('@', ''))}
+                            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg pl-7 pr-3 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                            placeholder="handle"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-zinc-500 text-xs uppercase tracking-wider mb-1.5">
+                          Followers
+                        </label>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          value={newInstagramFollowers > 0 ? newInstagramFollowers.toLocaleString() : ''}
+                          onChange={(e) => {
+                            const numericValue = e.target.value.replace(/[^0-9]/g, '');
+                            setNewInstagramFollowers(parseInt(numericValue) || 0);
+                          }}
+                          className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                          placeholder="10,000"
+                        />
+                      </div>
+                    </div>
                   </div>
 
-                  <div>
-                    <label className="block text-zinc-500 text-xs uppercase tracking-wider mb-2">
-                      TikTok Followers
-                    </label>
-                    <input
-                      type="number"
-                      value={newTiktokFollowers}
-                      onChange={(e) => setNewTiktokFollowers(parseInt(e.target.value) || 0)}
-                      className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-white text-base focus:outline-none focus:ring-2 focus:ring-orange-500"
-                      min="0"
-                      inputMode="numeric"
-                    />
+                  {/* TikTok Section */}
+                  <div className="p-4 bg-zinc-800/50 rounded-xl border border-zinc-700/50">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-6 h-6 bg-black rounded-md flex items-center justify-center">
+                        <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+                        </svg>
+                      </div>
+                      <span className="text-white font-medium text-sm">TikTok</span>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-zinc-500 text-xs uppercase tracking-wider mb-1.5">
+                          Handle
+                        </label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 text-sm">@</span>
+                          <input
+                            type="text"
+                            value={newTiktokHandle}
+                            onChange={(e) => setNewTiktokHandle(e.target.value.replace('@', ''))}
+                            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg pl-7 pr-3 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                            placeholder="handle"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-zinc-500 text-xs uppercase tracking-wider mb-1.5">
+                          Followers
+                        </label>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          value={newTiktokFollowers > 0 ? newTiktokFollowers.toLocaleString() : ''}
+                          onChange={(e) => {
+                            const numericValue = e.target.value.replace(/[^0-9]/g, '');
+                            setNewTiktokFollowers(parseInt(numericValue) || 0);
+                          }}
+                          className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                          placeholder="50,000"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
+
+                {/* Rate limit notice */}
+                <p className="text-zinc-600 text-xs mt-4 text-center">
+                  You can update your profile once every 24 hours
+                </p>
 
                 <div className="flex gap-3 mt-6">
                   <button

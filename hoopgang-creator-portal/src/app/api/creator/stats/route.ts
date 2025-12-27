@@ -1,8 +1,8 @@
 // src/app/api/creator/stats/route.ts
 
 import { NextRequest, NextResponse } from 'next/server';
-import { FieldValue } from 'firebase-admin/firestore';  // ✅ CHANGE THIS
-import { adminAuth, adminDb } from '@/lib/firebase-admin';  // ✅ CHANGE THIS
+import { FieldValue } from 'firebase-admin/firestore';
+import { adminAuth, adminDb } from '@/lib/firebase-admin';
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,9 +23,14 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = await request.json();
-    const { instagramFollowers, tiktokFollowers } = body;
+    const { 
+      instagramHandle, 
+      instagramFollowers, 
+      tiktokHandle, 
+      tiktokFollowers 
+    } = body;
 
-    // Validate input
+    // Validate follower counts
     if (typeof instagramFollowers !== 'number' || instagramFollowers < 0) {
       return NextResponse.json(
         { success: false, message: 'Invalid Instagram followers count' },
@@ -40,9 +45,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate handles (optional but if provided, must be strings)
+    if (instagramHandle !== undefined && typeof instagramHandle !== 'string') {
+      return NextResponse.json(
+        { success: false, message: 'Invalid Instagram handle' },
+        { status: 400 }
+      );
+    }
+
+    if (tiktokHandle !== undefined && typeof tiktokHandle !== 'string') {
+      return NextResponse.json(
+        { success: false, message: 'Invalid TikTok handle' },
+        { status: 400 }
+      );
+    }
+
     // Get user document to find creatorId
-    const userDoc = await adminDb.collection('users').doc(userId).get();  // ✅ CHANGED
-    if (!userDoc.exists) {  // ✅ CHANGED (no parentheses)
+    const userDoc = await adminDb.collection('users').doc(userId).get();
+    if (!userDoc.exists) {
       return NextResponse.json(
         { success: false, message: 'User not found' },
         { status: 404 }
@@ -60,8 +80,8 @@ export async function POST(request: NextRequest) {
     const creatorId = userData.creatorId;
 
     // Get creator document
-    const creatorDoc = await adminDb.collection('creators').doc(creatorId).get();  // ✅ CHANGED
-    if (!creatorDoc.exists) {  // ✅ CHANGED (no parentheses)
+    const creatorDoc = await adminDb.collection('creators').doc(creatorId).get();
+    if (!creatorDoc.exists) {
       return NextResponse.json(
         { success: false, message: 'Creator not found' },
         { status: 404 }
@@ -93,29 +113,42 @@ export async function POST(request: NextRequest) {
 
     // Create new history entry
     const newHistoryEntry = {
-      date: new Date(),  // ✅ Use regular Date object
+      date: new Date(),
+      instagramHandle: instagramHandle?.trim() || creatorData?.instagramHandle || '',
       instagramFollowers,
+      tiktokHandle: tiktokHandle?.trim() || creatorData?.tiktokHandle || '',
       tiktokFollowers,
       source: 'manual',
     };
 
-    // Update creator document
-    await adminDb.collection('creators').doc(creatorId).update({  // ✅ CHANGED
+    // Build update object
+    const updateData: Record<string, any> = {
       instagramFollowers,
       tiktokFollowers,
-      followerHistory: FieldValue.arrayUnion(newHistoryEntry),  // ✅ CHANGED
-      updatedAt: FieldValue.serverTimestamp(),  // ✅ CHANGED
-    });
+      followerHistory: FieldValue.arrayUnion(newHistoryEntry),
+      updatedAt: FieldValue.serverTimestamp(),
+    };
+
+    // Only update handles if provided (don't overwrite with empty string)
+    if (instagramHandle !== undefined && instagramHandle.trim() !== '') {
+      updateData.instagramHandle = instagramHandle.trim().replace('@', '');
+    }
+    if (tiktokHandle !== undefined && tiktokHandle.trim() !== '') {
+      updateData.tiktokHandle = tiktokHandle.trim().replace('@', '');
+    }
+
+    // Update creator document
+    await adminDb.collection('creators').doc(creatorId).update(updateData);
 
     return NextResponse.json({
       success: true,
-      message: 'Stats updated successfully',
+      message: 'Profile updated successfully',
     });
 
   } catch (error) {
     console.error('Error updating creator stats:', error);
     return NextResponse.json(
-      { success: false, message: 'Failed to update stats' },
+      { success: false, message: 'Failed to update profile' },
       { status: 500 }
     );
   }
