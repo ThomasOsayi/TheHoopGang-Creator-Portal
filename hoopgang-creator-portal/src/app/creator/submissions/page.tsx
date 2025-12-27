@@ -70,6 +70,7 @@ function SubmissionRow({
   const typeConfig = {
     volume: { label: 'Volume', bg: 'bg-blue-500/20', text: 'text-blue-400' },
     milestone: { label: 'Milestone', bg: 'bg-purple-500/20', text: 'text-purple-400' },
+    collab: { label: 'Collab', bg: 'bg-orange-500/20', text: 'text-orange-400' },
   };
 
   const statusStyle = statusConfig[submission.status] || statusConfig.pending;

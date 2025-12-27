@@ -1278,6 +1278,81 @@ export async function createVolumeSubmission(
 }
 
 /**
+ * Creates a collab content submission
+ * - Counts toward collaboration requirement (contentSubmissions array)
+ * - Also counts toward leaderboard (auto-approved)
+ * - Prevents duplicate URLs across all submission types
+ */
+export async function createCollabSubmission(
+  creatorId: string,
+  collaborationId: string,
+  tiktokUrl: string,
+  weekOf: string,
+  competitionId?: string | null
+): Promise<{ submission: V3ContentSubmission; collabUpdated: boolean }> {
+  // Check for duplicate URL across ALL submission types (volume, milestone, collab)
+  const existingQuery = query(
+    collection(db, V3_SUBMISSIONS_COLLECTION),
+    where('creatorId', '==', creatorId),
+    where('tiktokUrl', '==', tiktokUrl)
+  );
+  const existing = await getDocs(existingQuery);
+  if (!existing.empty) {
+    throw new Error('You have already submitted this TikTok URL');
+  }
+
+  // Get the collaboration to check submission limit
+  const collaboration = await getCollaborationById(creatorId, collaborationId);
+  if (!collaboration) {
+    throw new Error('Collaboration not found');
+  }
+
+  if (collaboration.contentSubmissions.length >= MAX_CONTENT_SUBMISSIONS) {
+    throw new Error(`Maximum of ${MAX_CONTENT_SUBMISSIONS} collab content submissions allowed`);
+  }
+
+  // Create V3 submission record (for leaderboard tracking)
+  const submissionData: Record<string, any> = {
+    creatorId,
+    tiktokUrl,
+    type: 'collab' as V3SubmissionType,
+    status: 'approved' as V3SubmissionStatus, // Auto-approve like volume
+    submittedAt: Timestamp.fromDate(new Date()),
+    weekOf,
+    submissionFormat: 'url',
+    collaborationId, // Link to the collaboration
+  };
+
+  // Tag with competition if active
+  if (competitionId) {
+    submissionData.competitionId = competitionId;
+  }
+
+  const docRef = await addDoc(collection(db, V3_SUBMISSIONS_COLLECTION), submissionData);
+
+  // Also add to collaboration's contentSubmissions array
+  const newContentSubmission: ContentSubmission = {
+    url: tiktokUrl,
+    submittedAt: new Date(),
+  };
+
+  const updatedSubmissions = [...collaboration.contentSubmissions, newContentSubmission];
+  
+  await updateCollaboration(creatorId, collaborationId, {
+    contentSubmissions: updatedSubmissions,
+  });
+
+  return {
+    submission: {
+      id: docRef.id,
+      ...submissionData,
+      submittedAt: new Date(),
+    } as V3ContentSubmission,
+    collabUpdated: true,
+  };
+}
+
+/**
  * Checks if a file with the same hash has already been submitted by this creator
  */
 export async function checkDuplicateFileHash(
@@ -1693,33 +1768,60 @@ export async function upsertLeaderboardEntry(
  * Recalculates volume leaderboard ranks for a week
  * Call this after new volume submissions
  */
+/**
+ * Recalculates volume leaderboard ranks for a week
+ * Call this after new volume submissions
+ * Tie-breaker: Creator who submitted first gets higher rank
+ */
 export async function recalculateVolumeLeaderboard(weekOf: string): Promise<void> {
-  // Get all approved volume submissions for the week, grouped by creator
+  // Get all approved volume AND collab submissions for the week
   const submissionsQuery = query(
     collection(db, V3_SUBMISSIONS_COLLECTION),
-    where('type', '==', 'volume'),
+    where('type', 'in', ['volume', 'collab']),
     where('weekOf', '==', weekOf),
     where('status', '==', 'approved')
   );
   const snapshot = await getDocs(submissionsQuery);
   
-  // Group by creator
-  const creatorCounts: Map<string, number> = new Map();
+  // Group by creator, tracking count AND earliest submission time
+  const creatorData: Map<string, { count: number; earliestSubmission: Date }> = new Map();
+  
   snapshot.docs.forEach(doc => {
     const data = doc.data();
-    const current = creatorCounts.get(data.creatorId) || 0;
-    creatorCounts.set(data.creatorId, current + 1);
+    const creatorId = data.creatorId;
+    const submittedAt = data.submittedAt?.toDate?.() || data.submittedAt || new Date();
+    
+    const existing = creatorData.get(creatorId);
+    if (existing) {
+      existing.count += 1;
+      // Keep track of earliest submission
+      if (submittedAt < existing.earliestSubmission) {
+        existing.earliestSubmission = submittedAt;
+      }
+    } else {
+      creatorData.set(creatorId, {
+        count: 1,
+        earliestSubmission: submittedAt,
+      });
+    }
   });
 
-  // Sort by count descending
-  const sorted = Array.from(creatorCounts.entries())
-    .sort((a, b) => b[1] - a[1]);
+  // Sort by count descending, then by earliest submission ascending (first submitter wins ties)
+  const sorted = Array.from(creatorData.entries())
+    .sort((a, b) => {
+      // Primary sort: count descending
+      if (b[1].count !== a[1].count) {
+        return b[1].count - a[1].count;
+      }
+      // Tie-breaker: earliest submission wins (ascending)
+      return a[1].earliestSubmission.getTime() - b[1].earliestSubmission.getTime();
+    });
 
   // Update leaderboard entries
   const batch = writeBatch(db);
   
   for (let i = 0; i < sorted.length; i++) {
-    const [creatorId, value] = sorted[i];
+    const [creatorId, data] = sorted[i];
     const rank = i + 1;
     
     // Get creator info for denormalization
@@ -1741,8 +1843,9 @@ export async function recalculateVolumeLeaderboard(weekOf: string): Promise<void
       creatorId,
       creatorName: creator.fullName,
       creatorHandle: creator.tiktokHandle,
-      value,
+      value: data.count,
       rank,
+      earliestSubmission: Timestamp.fromDate(data.earliestSubmission),
       updatedAt: serverTimestamp(),
     };
 
@@ -2276,41 +2379,53 @@ export async function finalizeCompetition(
 /**
  * Get leaderboard for a specific competition
  */
+/**
+ * Get leaderboard for a specific competition
+ * Tie-breaker: Creator who submitted first gets higher rank
+ */
 export async function getCompetitionLeaderboard(
   competitionId: string,
   limitCount: number = 25
 ): Promise<LeaderboardEntry[]> {
-  // Query submissions for this competition, group by creator
+  // Query submissions for this competition (both volume and collab)
   const q = query(
     collection(db, V3_SUBMISSIONS_COLLECTION),
     where('competitionId', '==', competitionId),
-    where('type', '==', 'volume'),
+    where('type', 'in', ['volume', 'collab']),
     where('status', '==', 'approved')
   );
   
   const snapshot = await getDocs(q);
   
-  // Group by creator and count
-  const creatorCounts: Record<string, { 
+  // Group by creator, tracking count AND earliest submission time
+  const creatorData: Record<string, { 
     count: number; 
     creatorId: string;
+    earliestSubmission: Date;
   }> = {};
   
   snapshot.docs.forEach(docSnap => {
     const data = docSnap.data();
     const creatorId = data.creatorId;
+    const submittedAt = data.submittedAt?.toDate?.() || data.submittedAt || new Date();
     
-    if (!creatorCounts[creatorId]) {
-      creatorCounts[creatorId] = {
+    if (!creatorData[creatorId]) {
+      creatorData[creatorId] = {
         count: 0,
         creatorId,
+        earliestSubmission: submittedAt,
       };
     }
-    creatorCounts[creatorId].count++;
+    creatorData[creatorId].count++;
+    
+    // Track earliest submission for tie-breaking
+    if (submittedAt < creatorData[creatorId].earliestSubmission) {
+      creatorData[creatorId].earliestSubmission = submittedAt;
+    }
   });
   
   // Fetch creator info for each unique creator
-  const creatorInfoPromises = Object.keys(creatorCounts).map(async (creatorId) => {
+  const creatorInfoPromises = Object.keys(creatorData).map(async (creatorId) => {
     const creator = await getCreatorById(creatorId);
     return {
       creatorId,
@@ -2322,8 +2437,8 @@ export async function getCompetitionLeaderboard(
   const creatorInfos = await Promise.all(creatorInfoPromises);
   const creatorInfoMap = new Map(creatorInfos.map(info => [info.creatorId, info]));
   
-  // Sort by count and assign ranks
-  const sorted = Object.entries(creatorCounts)
+  // Sort by count descending, then by earliest submission ascending (first submitter wins ties)
+  const sorted = Object.entries(creatorData)
     .map(([creatorId, data]) => {
       const info = creatorInfoMap.get(creatorId);
       return {
@@ -2332,7 +2447,14 @@ export async function getCompetitionLeaderboard(
         creatorHandle: info?.creatorHandle || 'unknown',
       };
     })
-    .sort((a, b) => b.count - a.count)
+    .sort((a, b) => {
+      // Primary sort: count descending
+      if (b.count !== a.count) {
+        return b.count - a.count;
+      }
+      // Tie-breaker: earliest submission wins (ascending)
+      return a.earliestSubmission.getTime() - b.earliestSubmission.getTime();
+    })
     .slice(0, limitCount);
   
   return sorted.map((entry, index) => ({

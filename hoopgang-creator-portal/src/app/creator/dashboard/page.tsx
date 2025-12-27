@@ -46,6 +46,97 @@ function getFirstName(fullName: string): string {
   return fullName.split(' ')[0];
 }
 
+/**
+ * Inline form for submitting collab content
+ */
+function CollabSubmissionForm({ onSuccess }: { onSuccess: () => void }) {
+  const { user } = useAuth();
+  const [tiktokUrl, setTiktokUrl] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!tiktokUrl.trim() || isSubmitting || !user) return;
+
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      const idToken = await user.getIdToken();
+      
+      const response = await fetch('/api/submissions/collab', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({ tiktokUrl: tiktokUrl.trim() }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to submit content');
+      }
+
+      setTiktokUrl('');
+      onSuccess();
+    } catch (err) {
+      console.error('Submission error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to submit');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-3">
+      <div className="relative">
+        <input
+          type="url"
+          value={tiktokUrl}
+          onChange={(e) => setTiktokUrl(e.target.value)}
+          placeholder="Paste your TikTok URL here..."
+          className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent placeholder-zinc-500"
+          disabled={isSubmitting}
+        />
+      </div>
+      
+      {error && (
+        <p className="text-red-400 text-xs">{error}</p>
+      )}
+
+      <div className="flex items-center justify-between">
+        <p className="text-zinc-500 text-xs">
+          Also counts toward the leaderboard! 🏆
+        </p>
+        <button
+          type="submit"
+          disabled={!tiktokUrl.trim() || isSubmitting}
+          className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+            !tiktokUrl.trim() || isSubmitting
+              ? 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
+              : 'bg-orange-500 hover:bg-orange-600 text-white active:scale-[0.98]'
+          }`}
+        >
+          {isSubmitting ? (
+            <span className="flex items-center gap-2">
+              <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+              Submitting...
+            </span>
+          ) : (
+            'Submit Content'
+          )}
+        </button>
+      </div>
+    </form>
+  );
+}
+
 export default function CreatorDashboardPage() {
   const { user } = useAuth();
   const { showToast } = useToast();
@@ -767,7 +858,7 @@ export default function CreatorDashboardPage() {
                   />
                 )}
 
-                {/* Content Progress Card */}
+                {/* Content Progress Card - With Inline Submission */}
                 <GlowCard glowColor="amber" delay="0.2s">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-base sm:text-lg font-semibold text-white flex items-center gap-2">
@@ -786,22 +877,44 @@ export default function CreatorDashboardPage() {
                     </div>
                   </div>
 
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
-                    <p className="text-zinc-400 text-xs sm:text-sm">
-                      {videosSubmitted === 0 
-                        ? "Post your first TikTok featuring your TheHoopGang gear!"
-                        : videosSubmitted >= 1
-                          ? "You've completed your content requirement! 🎉"
-                          : `${1 - videosSubmitted} more to complete your collaboration`
-                      }
-                    </p>
-                    <Link 
-                      href="/creator/submit"
-                      className="text-orange-400 hover:text-orange-300 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap"
-                    >
-                      View Requirements →
-                    </Link>
-                  </div>
+                  {/* Show submission form if not complete */}
+                  {videosSubmitted < 1 ? (
+                    <CollabSubmissionForm 
+                      onSuccess={() => {
+                        fetchCreator();
+                        fetchV3Stats();
+                        showToast('Content submitted! 🎉', 'success');
+                      }}
+                    />
+                  ) : (
+                    <div className="flex items-center gap-2 text-green-400 text-sm">
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      <span>You&apos;ve completed your content requirement! 🎉</span>
+                    </div>
+                  )}
+
+                  {/* Show submitted content */}
+                  {videosSubmitted > 0 && creator.collaboration?.contentSubmissions && (
+                    <div className="mt-4 pt-4 border-t border-zinc-700/50">
+                      <div className="text-xs text-zinc-500 uppercase tracking-wider mb-2">Submitted</div>
+                      {creator.collaboration.contentSubmissions.map((submission, index) => (
+                        <a 
+                          key={index}
+                          href={submission.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 text-sm text-orange-400 hover:text-orange-300 transition-colors"
+                        >
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+                          </svg>
+                          TikTok Video {index + 1}
+                        </a>
+                      ))}
+                    </div>
+                  )}
                 </GlowCard>
               </div>
 

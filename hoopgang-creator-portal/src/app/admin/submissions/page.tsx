@@ -130,6 +130,7 @@ function TypeBadge({ type, size = 'default' }: { type: V3SubmissionType; size?: 
   const config = {
     volume: { bg: 'bg-blue-500/20', text: 'text-blue-400', border: 'border-blue-500/30', label: 'Volume' },
     milestone: { bg: 'bg-purple-500/20', text: 'text-purple-400', border: 'border-purple-500/30', label: 'Milestone' },
+    collab: { bg: 'bg-orange-500/20', text: 'text-orange-400', border: 'border-orange-500/30', label: 'Collab' },
   };
   const style = config[type] || config.volume;
   const sizeClass = size === 'sm' ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-1 text-xs';

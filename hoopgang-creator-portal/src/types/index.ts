@@ -306,7 +306,7 @@ export interface TiktokLookupResult {
  * V3 Content Submissions - for volume and milestone tracking
  * Different from the basic ContentSubmission used in Collaborations
  */
-export type V3SubmissionType = 'volume' | 'milestone';
+export type V3SubmissionType = 'volume' | 'milestone' | 'collab';
 export type V3SubmissionStatus = 'pending' | 'approved' | 'rejected';
 export type MilestoneTier = '100k' | '500k' | '1m';
 export type V3SubmissionFormat = 'url' | 'file';
