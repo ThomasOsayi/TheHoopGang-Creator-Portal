@@ -61,7 +61,9 @@
   - `rewards/route.ts` – Public rewards endpoint (fetch active rewards, optionally filtered by category)
   - `creator/rewards/route.ts`, `creator/rewards/stats/route.ts`, `creator/redemptions/route.ts`, `creator/redemptions/[id]/claim/route.ts`, `creator/stats/route.ts`
   - `email/send/route.ts`, `leaderboard/route.ts`
+  - `submissions/collab/route.ts` – Collaboration submission endpoint
   - `submissions/history/route.ts`, `submissions/volume/...`, `submissions/volume/milestone/...`, `submissions/volume/milestone/stats/...`
+  - `submissions/volume/get-upload-url/route.ts`, `submissions/volume/confirm-upload/route.ts` – Direct file upload flow (signed URLs)
   - `tracking/route.ts`, `webhooks/tracking/route.ts`
 
 ### Components & shared code
@@ -370,6 +372,12 @@ api/
 │   │   └── route.ts            # Public leaderboard API
 │   │                           # - GET: Fetch leaderboard by type and period
 │   ├── submissions/
+│   │   ├── collab/
+│   │   │   └── route.ts        # Collaboration submission API
+│   │   │                       # - POST: Create submission that counts toward both collaboration and leaderboard
+│   │   │                       # - Requires active collaboration
+│   │   │                       # - Auto-tags with active competition
+│   │   │                       # - Recalculates leaderboards
 │   │   ├── history/
 │   │   │   └── route.ts        # Submission history API
 │   │   │                       # - GET: Fetch creator's submission history
@@ -380,7 +388,7 @@ api/
 │   │       │                   # - Recalculates leaderboards
 │   │       │                   # - Sets submissionFormat: 'url'
 │   │       ├── file/
-│   │       │   └── route.ts    # Volume submission API (file upload)
+│   │       │   └── route.ts    # Volume submission API (file upload - multipart)
 │   │       │                   # - POST: Upload video file and create submission
 │   │       │                   # - Multipart form data with file
 │   │       │                   # - Validates file type (MP4, MOV, WebM, AVI, MKV)
@@ -389,6 +397,20 @@ api/
 │   │       │                   # - Sets submissionFormat: 'file'
 │   │       │                   # - Auto-tags with active competition
 │   │       │                   # - Recalculates leaderboards
+│   │       ├── get-upload-url/
+│   │       │   └── route.ts    # Get signed upload URL API
+│   │       │                   # - POST: Generate signed URL for direct file upload
+│   │       │                   # - Validates file metadata (name, type, size)
+│   │       │                   # - Returns signed upload URL (valid 15 minutes)
+│   │       │                   # - Returns public file URL for after upload
+│   │       ├── confirm-upload/
+│   │       │   └── route.ts    # Confirm upload API
+│   │       │                   # - POST: Confirm file upload and create submission
+│   │       │                   # - Verifies file exists in storage
+│   │       │                   # - Calculates file hash for duplicate detection
+│   │       │                   # - Makes file publicly accessible
+│   │       │                   # - Creates submission record
+│   │       │                   # - Auto-tags with active competition
 │   │       ├── stats/
 │   │       │   └── route.ts    # Volume stats API
 │   │       │                   # - GET: Fetch creator volume statistics
@@ -556,8 +578,10 @@ creator/
   - V3 Content Submission functions:
     - `createVolumeSubmission()` - URL-based volume submissions (submissionFormat: 'url')
     - `createFileVolumeSubmission()` - File upload volume submissions (submissionFormat: 'file')
+    - `createCollabSubmission()` - Collaboration submissions (counts toward collab and leaderboard)
     - `createMilestoneSubmission()` - Milestone submissions (requires admin review)
     - File upload validation and duplicate checking
+    - `checkDuplicateFileHash()` - File hash-based duplicate detection for direct uploads
   - Competition management functions
   - Leaderboard calculation and management
   - Rewards and redemptions system
@@ -704,7 +728,7 @@ creator/
 - Admin: creators list, creator detail, submissions list, submission review, volume leaderboard, GMV leaderboard, TikTok imports
 - Creator: dashboard, submit, leaderboard, rewards, redemptions, submissions history, request-product
 
-### API Routes (38 files)
+### API Routes (40 files)
 - Auth: Email verification, TikTok lookup (public), TikTok claim endpoints
 - Email: Send email endpoint
 - Tracking API: POST, GET, DELETE handlers (simplified - no external API)
@@ -713,8 +737,10 @@ creator/
 - Admin Competitions: Start, end, finalize competitions, update competition details (PATCH)
 - Admin TikTok Imports: CSV import, batch management, creator lookup/update/delete
 - Submissions: 
+  - Collaboration submission endpoint (counts toward collab and leaderboard)
   - Volume URL submission endpoint
   - Volume file upload endpoint (multipart form data, Firebase Storage)
+  - Volume direct upload flow (get signed URL, confirm upload)
   - Milestone submission endpoint
   - Submission history endpoint
 - Leaderboards: Volume, GMV leaderboard endpoints
@@ -1270,13 +1296,20 @@ creator/
   - Volume submissions: Auto-approved, tracked by week
     - URL-based submissions: TikTok URL input, sets `submissionFormat: 'url'`
     - File upload submissions: Video file upload (MP4, MOV, WebM, AVI, MKV), sets `submissionFormat: 'file'`
-    - File validation: Type checking, size limit (100MB), duplicate file path prevention
+      - Two upload methods: Multipart form data or direct upload via signed URLs
+      - Direct upload flow: Get signed URL → Upload directly to storage → Confirm upload
+      - File hash-based duplicate detection for direct uploads
+    - File validation: Type checking, size limit (100MB), duplicate detection
     - Firebase Storage integration: Files stored at `videos/{creatorId}/{timestamp}-{filename}`
     - Public file URLs: Files made publicly accessible via Firebase Storage
+  - Collaboration submissions: Count toward both collaboration progress and leaderboard
+    - Requires active collaboration
+    - Auto-tags with active competition
+    - Recalculates both volume and competition leaderboards
   - Milestone submissions: Requires admin review, tracks view milestones
   - Competition integration: Submissions automatically tagged with active competition
   - Submission stats: Weekly volume counts, milestone approval/rejection tracking
-  - Duplicate prevention: Checks for existing URL or file path before creating
+  - Duplicate prevention: Checks for existing URL, file path, or file hash before creating
 - **Competition System**:
   - Competition types: Volume and GMV competitions
   - Competition lifecycle: Start → Active → Ended → Finalized
@@ -1320,19 +1353,37 @@ creator/
   - Submission filtering: Filter by type, status, week, creator
   - Leaderboard APIs: Separate endpoints for volume and GMV
   - Stats APIs: Volume and milestone statistics endpoints
-  - File Upload API (`/api/submissions/volume/file`):
-    - Multipart form data handling
-    - File validation (type, size)
-    - Firebase Storage upload
-    - Public URL generation
-    - Automatic leaderboard recalculation
+  - File Upload APIs:
+    - `/api/submissions/volume/file` - Multipart form data upload
+      - Direct file upload with multipart form data
+      - File validation (type, size)
+      - Firebase Storage upload
+      - Public URL generation
+      - Automatic leaderboard recalculation
+    - `/api/submissions/volume/get-upload-url` - Direct upload flow (signed URLs)
+      - Generates signed upload URLs for direct client-to-storage uploads
+      - Validates file metadata before URL generation
+      - Returns signed URL (valid 15 minutes) and public file URL
+    - `/api/submissions/volume/confirm-upload` - Confirm upload
+      - Verifies file exists in storage
+      - Calculates file hash for duplicate detection
+      - Makes file publicly accessible
+      - Creates submission record
+      - Automatic leaderboard recalculation
+  - Collaboration Submission API (`/api/submissions/collab`):
+    - Creates submission that counts toward both collaboration and leaderboard
+    - Requires active collaboration
+    - Auto-tags with active competition
+    - Recalculates volume and competition leaderboards
 - **Firestore Functions**:
   - Competition functions: getActiveCompetition, startCompetition, endCompetition, finalizeCompetition
   - Submission functions:
     - `createVolumeSubmission()` - URL-based volume submissions (submissionFormat: 'url')
     - `createFileVolumeSubmission()` - File upload volume submissions (submissionFormat: 'file')
+    - `createCollabSubmission()` - Collaboration submissions (counts toward collab and leaderboard)
     - `createMilestoneSubmission()` - Milestone submissions (requires admin review)
     - `reviewMilestoneSubmission()` - Admin review and approval/rejection
+    - `checkDuplicateFileHash()` - File hash-based duplicate detection for direct uploads
   - Leaderboard functions: getLeaderboard, recalculateVolumeLeaderboard, getCompetitionLeaderboard
   - Reward functions: getActiveRewards, getRewardByMilestoneTier, createReward
   - Redemption functions: createRedemption, getRedemptionsByCreatorId, updateRedemptionStatus

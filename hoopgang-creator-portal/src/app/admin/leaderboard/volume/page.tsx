@@ -772,11 +772,11 @@ export default function VolumeCompetitionAdminPage() {
                               {activeCompetition?.status === 'active' ? '● Active' : '⏸ Ended'}
                             </span>
                           </div>
-                          <p className="text-zinc-400 text-xs sm:text-sm">
-                            {activeCompetition?.status === 'active'
-                              ? 'Competition ends automatically at midnight'
-                              : 'Ready to finalize and pay winners'}
-                          </p>
+                          {activeCompetition?.status === 'ended' && (
+                            <p className="text-zinc-400 text-xs sm:text-sm">
+                              Ready to finalize and pay winners
+                            </p>
+                          )}
                         </div>
                       </div>
 

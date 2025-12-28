@@ -259,6 +259,7 @@ export default function CreatorDashboardPage() {
     try {
       const idToken = await user.getIdToken();
       
+      // Step 1: Get stats (includes competitionId)
       const statsResponse = await fetch('/api/submissions/volume/stats', {
         headers: { 'Authorization': `Bearer ${idToken}` },
       });
@@ -266,26 +267,32 @@ export default function CreatorDashboardPage() {
       if (statsResponse.ok) {
         const statsData = await statsResponse.json();
         
-        const currentWeek = getCurrentWeek();
-        const leaderboardResponse = await fetch(
-          `/api/leaderboard?period=${currentWeek}&type=volume`,
-          { headers: { 'Authorization': `Bearer ${idToken}` } }
-        );
+        // Step 2: Use competitionId for leaderboard if there's an active competition
+        const competitionId = statsData.competitionId;
+        const competitionActive = statsData.competitionActive;
         
         let currentRank: number | null = null;
         let totalCreators = 0;
         
-        if (leaderboardResponse.ok) {
-          const leaderboardData = await leaderboardResponse.json();
-          totalCreators = leaderboardData.entries?.length || 0;
+        // Only fetch leaderboard if there's an active competition
+        if (competitionId && competitionActive) {
+          const leaderboardResponse = await fetch(
+            `/api/leaderboard?period=${competitionId}&type=volume`,  // USE COMPETITION ID!
+            { headers: { 'Authorization': `Bearer ${idToken}` } }
+          );
           
-          const creatorDoc = await getCreatorByUserId(user.uid);
-          if (creatorDoc && leaderboardData.entries) {
-            const entry = leaderboardData.entries.find(
-              (e: { creatorId: string; rank: number }) => e.creatorId === creatorDoc.id
-            );
-            if (entry) {
-              currentRank = entry.rank;
+          if (leaderboardResponse.ok) {
+            const leaderboardData = await leaderboardResponse.json();
+            totalCreators = leaderboardData.entries?.length || 0;
+            
+            const creatorDoc = await getCreatorByUserId(user.uid);
+            if (creatorDoc && leaderboardData.entries) {
+              const entry = leaderboardData.entries.find(
+                (e: { creatorId: string; rank: number }) => e.creatorId === creatorDoc.id
+              );
+              if (entry) {
+                currentRank = entry.rank;
+              }
             }
           }
         }
@@ -511,8 +518,8 @@ export default function CreatorDashboardPage() {
       case 'delivered':
         return {
           title: `Post ${1 - videosSubmitted} more video${1 - videosSubmitted !== 1 ? 's' : ''} to complete`,
-          message: 'Show off your TheHoopGang gear!',
-          showCta: true,
+          message: 'Use the Collab Content form below to submit your TikTok!',
+          showCta: false,  // Changed from true - form is on the page
         };
       case 'completed':
         return {
@@ -564,6 +571,8 @@ export default function CreatorDashboardPage() {
   const videosSubmitted = creator.collaboration?.contentSubmissions.length || 0;
   const nextStep = getNextStepMessage();
   const isActiveCollab = creator.collaboration && !['pending', 'denied'].includes(creator.collaboration.status);
+  const isFirstTimePending = creator.collaboration?.status === 'pending' && creator.totalCollaborations === 0;
+  const isReturningWithPendingRequest = creator.collaboration?.status === 'pending' && creator.totalCollaborations > 0;
 
   return (
     <ProtectedRoute allowedRoles={['creator']}>
@@ -628,7 +637,7 @@ export default function CreatorDashboardPage() {
           )}
 
           {/* Status Banners */}
-          {creator.collaboration?.status === 'pending' && (
+          {isFirstTimePending && (
             <GlowCard glowColor="yellow" className="mb-6 bg-gradient-to-r from-yellow-500/10 to-amber-500/10 border-yellow-500/20">
               <div className="flex items-start sm:items-center gap-3 sm:gap-4">
                 <div className="text-3xl sm:text-4xl animate-pulse flex-shrink-0">⏳</div>
@@ -636,6 +645,20 @@ export default function CreatorDashboardPage() {
                   <h2 className="text-base sm:text-lg font-bold text-yellow-400">Application Under Review</h2>
                   <p className="text-white/60 text-xs sm:text-sm">
                     We&apos;ll notify you once your application has been approved. Usually takes 1-3 business days.
+                  </p>
+                </div>
+              </div>
+            </GlowCard>
+          )}
+
+          {isReturningWithPendingRequest && (
+            <GlowCard glowColor="purple" className="mb-6 bg-gradient-to-r from-purple-500/10 to-indigo-500/10 border-purple-500/20">
+              <div className="flex items-start sm:items-center gap-3 sm:gap-4">
+                <div className="text-3xl sm:text-4xl animate-pulse flex-shrink-0">📦</div>
+                <div>
+                  <h2 className="text-base sm:text-lg font-bold text-purple-400">New Product Request Under Review</h2>
+                  <p className="text-white/60 text-xs sm:text-sm">
+                    Your request for <span className="text-white font-medium">{creator.collaboration?.product}</span> ({creator.collaboration?.size}) is being reviewed.
                   </p>
                 </div>
               </div>
@@ -673,6 +696,87 @@ export default function CreatorDashboardPage() {
                 </div>
               </div>
             </GlowCard>
+          )}
+
+          {/* V3 Stats Grid for Returning Creators with Pending Request */}
+          {isReturningWithPendingRequest && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+              {/* This Week Stats */}
+              <div className="bg-gradient-to-br from-orange-500/10 to-amber-500/5 border border-orange-500/20 rounded-2xl p-4 sm:p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-base sm:text-lg font-semibold text-white flex items-center gap-2">
+                    <span>🚀</span> This Week
+                  </h3>
+                  <div className="bg-orange-500/20 px-2 py-1 rounded-full">
+                    <LiveCountdown targetDate={weekResetDate} size="sm" />
+                  </div>
+                </div>
+                <div className="space-y-3 sm:space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-zinc-400 text-sm">Submissions</span>
+                    <span className="text-white font-bold text-lg sm:text-xl">
+                      {v3StatsLoading ? <Skeleton className="w-8 h-6" /> : <AnimatedCounter value={v3Stats?.weeklySubmissions || 0} />}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-zinc-400 text-sm">Your Rank</span>
+                    {v3StatsLoading ? (
+                      <Skeleton className="w-16 h-6" />
+                    ) : v3Stats?.currentRank ? (
+                      <span className="text-orange-400 font-bold text-lg sm:text-xl">#{v3Stats.currentRank}</span>
+                    ) : (
+                      <span className="text-zinc-500 text-sm">Not ranked</span>
+                    )}
+                  </div>
+                </div>
+                <Link href="/creator/leaderboard">
+                  <button className="w-full mt-4 py-2.5 bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 font-medium rounded-xl transition-all text-sm active:scale-[0.98]">
+                    View Leaderboard →
+                  </button>
+                </Link>
+              </div>
+
+              {/* Rewards Card */}
+              <GlowCard glowColor="green">
+                <h3 className="text-base sm:text-lg font-semibold text-white flex items-center gap-2 mb-4">
+                  <span>💰</span> Rewards
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-zinc-400 text-sm">Pending</span>
+                    <span className={`font-semibold ${redemptionStats.pending > 0 ? 'text-yellow-400' : 'text-zinc-500'}`}>
+                      {redemptionsLoading ? <Skeleton className="w-6 h-5" /> : redemptionStats.pending}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-zinc-400 text-sm">Total Earned</span>
+                    <span className="text-green-400 font-semibold">
+                      {redemptionsLoading ? <Skeleton className="w-12 h-5" /> : <>$<AnimatedCounter value={redemptionStats.totalEarned} /></>}
+                    </span>
+                  </div>
+                </div>
+                <Link href="/creator/rewards">
+                  <button className="w-full mt-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-medium rounded-xl transition-all text-sm active:scale-[0.98]">
+                    Browse Rewards →
+                  </button>
+                </Link>
+              </GlowCard>
+
+              {/* Quick Submit Card */}
+              <GlowCard glowColor="purple" className="sm:col-span-2 lg:col-span-1">
+                <h3 className="text-base sm:text-lg font-semibold text-white flex items-center gap-2 mb-4">
+                  <span>📤</span> Submit Content
+                </h3>
+                <p className="text-zinc-400 text-xs sm:text-sm mb-4">
+                  Keep posting TikToks featuring your TheHoopGang gear to earn more rewards!
+                </p>
+                <Link href="/creator/submit">
+                  <Button variant="primary" className="w-full">
+                    Submit TikTok →
+                  </Button>
+                </Link>
+              </GlowCard>
+            </div>
           )}
 
           {/* Primary Action Card - FULL WIDTH - Only for active collaborations */}
@@ -1046,7 +1150,7 @@ export default function CreatorDashboardPage() {
           )}
 
           {/* Timeline for Pending/Denied - Simplified view */}
-          {creator.collaboration && ['pending', 'denied'].includes(creator.collaboration.status) && (
+          {creator.collaboration && (isFirstTimePending || creator.collaboration.status === 'denied') && (
             <GlowCard glowColor="orange" className="mb-6">
               <h3 className="text-base sm:text-lg font-semibold text-white flex items-center gap-2 mb-6">
                 <span>📋</span> Your Journey
@@ -1081,24 +1185,106 @@ export default function CreatorDashboardPage() {
             </GlowCard>
           )}
 
-          {/* No Active Collaboration - Can Request New */}
+          {/* No Active Collaboration - Instagram Creator with Completed Collab(s) */}
           {!creator.collaboration && !creator.isBlocked && creator.totalCollaborations > 0 && creator.source !== 'tiktok' && (
-            <GlowCard glowColor="purple" className="mb-6 bg-gradient-to-r from-purple-500/10 to-indigo-500/10 border-purple-500/20">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="flex items-start sm:items-center gap-3 sm:gap-4">
-                  <div className="text-3xl sm:text-4xl flex-shrink-0">🎯</div>
-                  <div>
-                    <h2 className="text-base sm:text-lg font-bold text-purple-400">Ready for Another Collab?</h2>
-                    <p className="text-white/60 text-xs sm:text-sm">
-                      You&apos;ve completed {creator.totalCollaborations} collaboration{creator.totalCollaborations > 1 ? 's' : ''}. Request your next product!
-                    </p>
+            <div className="space-y-4 sm:space-y-6">
+              {/* Ready for Another Collab Card */}
+              <GlowCard glowColor="purple" className="bg-gradient-to-r from-purple-500/10 to-indigo-500/10 border-purple-500/20">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex items-start sm:items-center gap-3 sm:gap-4">
+                    <div className="text-3xl sm:text-4xl flex-shrink-0">🎯</div>
+                    <div>
+                      <h2 className="text-base sm:text-lg font-bold text-purple-400">Ready for Another Collab?</h2>
+                      <p className="text-white/60 text-xs sm:text-sm">
+                        You&apos;ve completed {creator.totalCollaborations} collaboration{creator.totalCollaborations > 1 ? 's' : ''}. Request your next product!
+                      </p>
+                    </div>
                   </div>
+                  <Link href="/creator/request-product" className="w-full sm:w-auto">
+                    <Button variant="primary" className="w-full sm:w-auto">Request New Product</Button>
+                  </Link>
                 </div>
-                <Link href="/creator/request-product" className="w-full sm:w-auto">
-                  <Button variant="primary" className="w-full sm:w-auto">Request New Product</Button>
-                </Link>
+              </GlowCard>
+
+              {/* V3 Stats Grid - Same as TikTok Creators */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                {/* This Week Stats */}
+                <div className="bg-gradient-to-br from-orange-500/10 to-amber-500/5 border border-orange-500/20 rounded-2xl p-4 sm:p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-base sm:text-lg font-semibold text-white flex items-center gap-2">
+                      <span>🚀</span> This Week
+                    </h3>
+                    <div className="bg-orange-500/20 px-2 py-1 rounded-full">
+                      <LiveCountdown targetDate={weekResetDate} size="sm" />
+                    </div>
+                  </div>
+                  <div className="space-y-3 sm:space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-zinc-400 text-sm">Submissions</span>
+                      <span className="text-white font-bold text-lg sm:text-xl">
+                        {v3StatsLoading ? <Skeleton className="w-8 h-6" /> : <AnimatedCounter value={v3Stats?.weeklySubmissions || 0} />}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-zinc-400 text-sm">Your Rank</span>
+                      {v3StatsLoading ? (
+                        <Skeleton className="w-16 h-6" />
+                      ) : v3Stats?.currentRank ? (
+                        <span className="text-orange-400 font-bold text-lg sm:text-xl">#{v3Stats.currentRank}</span>
+                      ) : (
+                        <span className="text-zinc-500 text-sm">Not ranked</span>
+                      )}
+                    </div>
+                  </div>
+                  <Link href="/creator/leaderboard">
+                    <button className="w-full mt-4 py-2.5 bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 font-medium rounded-xl transition-all text-sm active:scale-[0.98]">
+                      View Leaderboard →
+                    </button>
+                  </Link>
+                </div>
+
+                {/* Rewards Card */}
+                <GlowCard glowColor="green">
+                  <h3 className="text-base sm:text-lg font-semibold text-white flex items-center gap-2 mb-4">
+                    <span>💰</span> Rewards
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-zinc-400 text-sm">Pending</span>
+                      <span className={`font-semibold ${redemptionStats.pending > 0 ? 'text-yellow-400' : 'text-zinc-500'}`}>
+                        {redemptionsLoading ? <Skeleton className="w-6 h-5" /> : redemptionStats.pending}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-zinc-400 text-sm">Total Earned</span>
+                      <span className="text-green-400 font-semibold">
+                        {redemptionsLoading ? <Skeleton className="w-12 h-5" /> : <>$<AnimatedCounter value={redemptionStats.totalEarned} /></>}
+                      </span>
+                    </div>
+                  </div>
+                  <Link href="/creator/rewards">
+                    <button className="w-full mt-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-medium rounded-xl transition-all text-sm active:scale-[0.98]">
+                      Browse Rewards →
+                    </button>
+                  </Link>
+                </GlowCard>
+
+                {/* Quick Submit Card */}
+                <GlowCard glowColor="purple" className="sm:col-span-2 lg:col-span-1">
+                  <h3 className="text-base sm:text-lg font-semibold text-white flex items-center gap-2 mb-4">
+                    <span>📤</span> Submit Content
+                  </h3>
+                  <p className="text-zinc-400 text-xs sm:text-sm mb-4">
+                    Keep posting TikToks featuring your TheHoopGang gear to earn more rewards!
+                  </p>
+                  <Link href="/creator/submit">
+                    <Button variant="primary" className="w-full">
+                      Submit TikTok →
+                    </Button>
+                  </Link>
+                </GlowCard>
               </div>
-            </GlowCard>
+            </div>
           )}
 
           {/* TikTok Creator - No Collaboration Needed */}

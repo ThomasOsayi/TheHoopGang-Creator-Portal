@@ -21,6 +21,8 @@ export function Navbar() {
   const [collabStatus, setCollabStatus] = useState<CollaborationStatus | null>(null);
   // V3: Track creator source for feature restrictions
   const [creatorSource, setCreatorSource] = useState<CreatorSource | null>(null);
+  // Track total collaborations for access control
+  const [totalCollaborations, setTotalCollaborations] = useState<number>(0);
 
   // Hide navbar on admin pages (admin has its own sidebar)
   const isAdminPage = pathname.startsWith('/admin');
@@ -59,8 +61,9 @@ export function Navbar() {
         try {
           const result = await getCreatorWithActiveCollab(userData.creatorId);
           if (result) {
-            // V3: Track creator source
+            // V3: Track creator source and total collaborations
             setCreatorSource(result.source || null);
+            setTotalCollaborations(result.totalCollaborations || 0);
             
             if (result.collaboration) {
               setCollabStatus(result.collaboration.status);
@@ -71,15 +74,18 @@ export function Navbar() {
           } else {
             setCollabStatus(null);
             setCreatorSource(null);
+            setTotalCollaborations(0);
           }
         } catch (error) {
           console.error('Error fetching collaboration status:', error);
           setCollabStatus(null);
           setCreatorSource(null);
+          setTotalCollaborations(0);
         }
       } else {
         setCollabStatus(null);
         setCreatorSource(null);
+        setTotalCollaborations(0);
       }
     };
     fetchCollabStatus();
@@ -113,17 +119,22 @@ export function Navbar() {
 
   // V3: Determine if creator can access full features (Submit Content, Rewards)
   // TikTok creators always have access (no collab flow)
-  // Instagram creators need to be approved/shipped/delivered/completed
+  // Instagram creators need to either:
+  //   1. Have an active collab with approved+ status, OR
+  //   2. Have completed at least one collab (totalCollaborations > 0)
   const canAccessFullFeatures = useMemo(() => {
     // TikTok creators always have full access
     if (creatorSource === 'tiktok') return true;
     
-    // Instagram creators need an active collab with approved+ status
+    // Creators who have completed at least one collab get full access
+    if (totalCollaborations > 0) return true;
+    
+    // Creators with an active collab need approved+ status
     if (!collabStatus) return false;
     
     const activeStatuses: CollaborationStatus[] = ['approved', 'shipped', 'delivered', 'completed'];
     return activeStatuses.includes(collabStatus);
-  }, [creatorSource, collabStatus]);
+  }, [creatorSource, collabStatus, totalCollaborations]);
 
   // Don't render navbar on admin pages (admin has its own sidebar)
   if (isAdminPage) {
